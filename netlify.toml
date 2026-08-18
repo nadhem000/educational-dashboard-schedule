@@ -1,0 +1,11 @@
+[build]
+  publish = "."
+  command = ""
+
+# Optional: Netlify will serve index.html as the default document.
+# No build command is needed for this static project.
+
+[[redirects]]
+  from = "/"
+  to = "/index.html"
+  status = 200

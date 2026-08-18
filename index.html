@@ -1,0 +1,1489 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- PWA Manifest -->
+<link rel="manifest" href="manifest.json">
+
+<!-- Theme color for browser chrome -->
+<meta name="theme-color" content="#2c3e50">
+
+<!-- Optional: Apple touch icon for iOS -->
+<link rel="apple-touch-icon" href="assets/icons/icon-94x94.png">
+    <title>جدول التلميذ</title>
+    <style>
+        :root {
+            --bg-color: #f4f7fc;
+            --container-bg: #ffffff;
+            --text-color: #2c3e50;
+            --table-border: #d0d7de;
+            --table-header-bg: #2c3e50;
+            --table-header-text: #ffffff;
+            --table-row-odd: #fafbfc;
+            --table-row-even: #f1f5f9;
+            --highlight-bg: #e8f0fe;
+            --highlight-text: #1a56a0;
+            --reserved-bg: #fff3cd;
+            --reserved-text: #856404;
+            --notes-bg: #f8f9fa;
+            --notes-border: #2c3e50;
+            --shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            --accent: #2c3e50;
+            --attendance-paid-bg: #d4edda;
+            --attendance-paid-text: #155724;
+            --attendance-unpaid-bg: #fff3cd;
+            --attendance-unpaid-text: #856404;
+            --attendance-overdue-bg: #f8d7da;
+            --attendance-overdue-text: #721c24;
+            --modal-bg: #ffffff;
+            --modal-text: #2c3e50;
+            --modal-header-bg: #2c3e50;
+            --modal-header-text: #ffffff;
+        }
+        body.dark {
+            --bg-color: #1a1a2e;
+            --container-bg: #16213e;
+            --text-color: #e0e0e0;
+            --table-border: #444;
+            --table-header-bg: #0f3460;
+            --table-header-text: #ffffff;
+            --table-row-odd: #1f2a44;
+            --table-row-even: #1a1f36;
+            --highlight-bg: #2c3e6b;
+            --highlight-text: #a8c6ff;
+            --reserved-bg: #4a3f1f;
+            --reserved-text: #ffe08a;
+            --notes-bg: #1a1a2e;
+            --notes-border: #0f3460;
+            --shadow: 0 8px 25px rgba(0,0,0,0.5);
+            --accent: #0f3460;
+            --attendance-paid-bg: #1e3d2f;
+            --attendance-paid-text: #a3d9a5;
+            --attendance-unpaid-bg: #4a3f1f;
+            --attendance-unpaid-text: #ffe08a;
+            --attendance-overdue-bg: #4a1f2d;
+            --attendance-overdue-text: #f5a3b0;
+            --modal-bg: #1a1f36;
+            --modal-text: #e0e0e0;
+            --modal-header-bg: #0f3460;
+            --modal-header-text: #ffffff;
+        }
+        * { transition: background-color 0.3s, color 0.3s, border-color 0.3s; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            color: var(--text-color);
+        }
+        .container { max-width: 1400px; margin: 0 auto; background: var(--container-bg); padding: 30px; border-radius: 16px; box-shadow: var(--shadow); }
+        h1 { text-align: center; color: var(--text-color); margin-bottom: 5px; font-size: 28px; }
+        .subtitle { text-align: center; color: var(--text-color); opacity: 0.8; margin-bottom: 25px; font-size: 14px; }
+        .auth-section, .controls, .info-panel { background: var(--notes-bg); border-radius: 12px; padding: 20px; margin-bottom: 25px; border: 1px solid var(--table-border); }
+        .auth-form { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; align-items: center; }
+        .auth-form input { padding: 10px 15px; border-radius: 8px; border: 1px solid var(--table-border); background: var(--container-bg); color: var(--text-color); font-size: 14px; min-width: 160px; }
+        .auth-form button, .controls button { background: var(--table-header-bg); color: var(--table-header-text); border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px; }
+        .logout-btn { background: #e74c3c; color: white; border: none; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        .student-card-btn { background: #3498db; color: white; border: none; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; }
+        .control-group { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+        .table-wrapper { overflow-x: auto; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); min-width: 1000px; }
+        th, td { padding: 10px 8px; text-align: center; border: 1px solid var(--table-border); font-size: 13px; }
+        th { background-color: var(--table-header-bg); color: var(--table-header-text); font-weight: 600; font-size: 14px; white-space: nowrap; }
+        td { background-color: var(--table-row-odd); color: var(--text-color); vertical-align: top; }
+        tr:nth-child(even) td { background-color: var(--table-row-even); }
+        .highlight { background-color: var(--highlight-bg) !important; font-weight: bold; color: var(--highlight-text); }
+        .reserved { background-color: var(--reserved-bg) !important; color: var(--reserved-text); font-style: italic; }
+        .student-highlight { background-color: #d4edda !important; color: #155724; font-weight: bold; }
+        .merged-item { display: block; margin: 2px 0; padding: 2px 4px; border-radius: 4px; }
+        .merged-item.student-highlight { background-color: #d4edda; color: #155724; }
+        .personal-schedule, .roster-panel, .attendance-panel, .work-system-panel, .materials-panel { margin-top: 30px; background: var(--notes-bg); padding: 20px; border-radius: 12px; border-right: 5px solid var(--notes-border); display: none; }
+        .personal-schedule.visible, .roster-panel.visible, .attendance-panel.visible, .work-system-panel.visible, .materials-panel.visible { display: block; }
+        .personal-schedule h2, .roster-panel h2, .attendance-panel h2, .work-system-panel h2, .materials-panel h2 { margin-top: 0; color: var(--text-color); }
+        .personal-schedule ul, .roster-panel ul, .attendance-panel ul { list-style: none; padding: 0; max-height: 300px; overflow-y: auto; }
+        .personal-schedule li, .roster-panel li, .attendance-panel li { padding: 8px 12px; background: var(--container-bg); margin-bottom: 6px; border-radius: 8px; border: 1px solid var(--table-border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+        .attendance-paid { background-color: var(--attendance-paid-bg) !important; color: var(--attendance-paid-text); }
+        .attendance-unpaid { background-color: var(--attendance-unpaid-bg) !important; color: var(--attendance-unpaid-text); }
+        .attendance-overdue { background-color: var(--attendance-overdue-bg) !important; color: var(--attendance-overdue-text); }
+        .attendance-status-label { font-size: 12px; font-weight: bold; }
+        .info-line { margin: 5px 0; }
+        .hidden { display: none; }
+        body[dir="ltr"] { direction: ltr; }
+        body[dir="rtl"] { direction: rtl; }
+
+        /* Avatar in header */
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background-color: var(--table-header-bg);
+            color: var(--table-header-text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 20px;
+        }
+        .welcome-user {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Materials list */
+        .materials-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .materials-list span {
+            background: var(--container-bg);
+            border: 1px solid var(--table-border);
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: 13px;
+        }
+        .parent-info {
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        /* Modal styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        .modal-overlay.show {
+            display: flex;
+        }
+        .modal-content {
+            background: var(--modal-bg);
+            color: var(--modal-text);
+            border-radius: 16px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            overflow: hidden;
+            animation: modalFadeIn 0.3s ease;
+        }
+        @keyframes modalFadeIn {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .modal-header {
+            background: var(--modal-header-bg);
+            color: var(--modal-header-text);
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--table-border);
+        }
+        .modal-header h3 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+        .modal-close-btn {
+            background: transparent;
+            border: none;
+            color: var(--modal-header-text);
+            font-size: 2rem;
+            cursor: pointer;
+            line-height: 1;
+            padding: 0;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+        .modal-close-btn:hover {
+            opacity: 1;
+        }
+        .modal-body {
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .student-card-profile {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .student-card-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3498db, #2c3e50);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        .student-card-name {
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+        .student-card-section {
+            font-size: 1rem;
+            opacity: 0.8;
+        }
+        .student-card-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 10px;
+        }
+        .detail-item {
+            background: var(--container-bg);
+            padding: 12px 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .detail-item strong {
+            display: block;
+            font-size: 0.85rem;
+            opacity: 0.7;
+            margin-bottom: 4px;
+        }
+        .detail-item .value {
+            font-size: 1rem;
+        }
+        .subjects-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .subject-tag {
+            background: var(--highlight-bg);
+            color: var(--highlight-text);
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+        }
+        .modal-footer {
+            padding: 15px 25px;
+            text-align: center;
+            border-top: 1px solid var(--table-border);
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        /* Responsive modal */
+        @media (max-width: 480px) {
+            .modal-content {
+                max-width: 95%;
+            }
+            .student-card-profile {
+                flex-direction: column;
+                text-align: center;
+            }
+            .student-card-avatar {
+                width: 60px;
+                height: 60px;
+                font-size: 2rem;
+            }
+            .student-card-name {
+                font-size: 1.5rem;
+            }
+        }
+
+        /* Responsive general */
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            .container { padding: 15px; border-radius: 12px; }
+            h1 { font-size: 22px; }
+            .subtitle { font-size: 12px; margin-bottom: 15px; }
+            .auth-section, .controls, .info-panel, .personal-schedule, .roster-panel, .attendance-panel, .work-system-panel, .materials-panel { padding: 15px; margin-bottom: 15px; }
+            .auth-form { flex-direction: column; align-items: stretch; }
+            .auth-form input { width: 100%; min-width: auto; }
+            .controls { flex-direction: column; gap: 10px; }
+            .control-group { justify-content: space-between; }
+            .table-wrapper { overflow-x: auto; }
+            table { min-width: 800px; font-size: 11px; }
+            th, td { padding: 6px 4px; font-size: 10px; }
+            .auth-form button, .controls button { width: 100%; }
+            #user-info { flex-direction: column; align-items: center; }
+            .welcome-user { justify-content: center; }
+            .logout-btn, .student-card-btn { width: auto; }
+            .avatar { width: 35px; height: 35px; font-size: 18px; }
+        }
+        @media (max-width: 480px) {
+            h1 { font-size: 20px; }
+            .subtitle { font-size: 11px; }
+            th, td { font-size: 9px; padding: 4px 2px; }
+            table { min-width: 700px; }
+        }
+.install-btn {
+  background: linear-gradient(135deg, #3498db, #2c3e50);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 14px;
+  transition: opacity 0.2s;
+}
+.install-btn:hover {
+  opacity: 0.9;
+}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 id="page-title">📅 جدول التلميذ</h1>
+        <p class="subtitle" id="subtitle">من الاثنين إلى الأحد | من 7:00 صباحًا إلى 8:00 مساءً</p>
+
+        <!-- Authentication Section -->
+        <div class="auth-section" id="auth-section">
+            <div id="login-form" class="auth-form">
+                <input type="text" id="login-name" placeholder="الاسم الكامل" />
+                <input type="password" id="login-password" placeholder="الرقم السري" />
+                <button id="login-btn">دخول</button>
+            </div>
+            <div id="user-info" class="auth-form" style="display:none;">
+                <div class="welcome-user">
+                    <span id="user-avatar" class="avatar"></span>
+                    <span id="logged-name"></span>
+                </div>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
+                    <button id="student-card-btn" class="student-card-btn">بطاقة التلميذ</button>
+                    <button id="logout-btn" class="logout-btn">تسجيل الخروج</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <div class="control-group">
+                <label for="language-select">🌐 اللغة:</label>
+                <select id="language-select">
+                    <option value="ar" selected>العربية</option>
+                    <option value="fr">Français</option>
+                    <option value="en">English</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label for="theme-toggle">🌓 النمط:</label>
+                <button id="theme-toggle">🌙 ليلي</button>
+            </div>
+<button id="install-btn" style="display:none;" class="install-btn">📲 تثبيت التطبيق</button>
+        </div>
+
+        <!-- Main Schedule Table -->
+        <div class="table-wrapper">
+            <table id="schedule-table">
+                <thead id="schedule-head"></thead>
+                <tbody id="schedule-body"></tbody>
+            </table>
+        </div>
+
+        <!-- Personal schedule for logged-in user -->
+        <div id="personal-schedule" class="personal-schedule">
+            <h2 id="personal-title">📋 جدولك الخاص</h2>
+            <ul id="personal-list"></ul>
+        </div>
+
+        <!-- Roster for logged-in user's group -->
+        <div id="roster-panel" class="roster-panel">
+            <h2 id="roster-title">👥 مجموعتك</h2>
+            <ul id="roster-list"></ul>
+        </div>
+
+        <!-- Attendance schedule -->
+        <div id="attendance-panel" class="attendance-panel">
+            <h2 id="attendance-title">📆 سجل الحضور والدفع</h2>
+            <div id="attendance-legend" style="margin-bottom: 10px; font-size: 13px;"></div>
+            <ul id="attendance-list"></ul>
+        </div>
+
+        <!-- Work System Panel -->
+        <div id="work-system-panel" class="work-system-panel">
+            <h2 id="work-system-title">💼 نظام العمل</h2>
+            <div id="work-system-content"></div>
+        </div>
+
+        <!-- Materials & Parent Info Panel -->
+        <div id="materials-panel" class="materials-panel">
+            <h2 id="materials-title">📚 المواد المتناولة</h2>
+            <div id="materials-content"></div>
+            <div id="parent-info" class="parent-info"></div>
+        </div>
+
+        <!-- Notes -->
+        <div class="notes" id="notes">
+            <strong>📌 ملاحظات:</strong><br>
+            • كل حصة مدتها ساعة واحدة.<br>
+            • الأسبوع يبدأ من يوم الاثنين.<br>
+            • قد تكون بعض الحصص مشتركة بين قسمين أو أكثر، أو مقسمة إلى مجموعات.<br>
+            • في سجل الحضور: الأخضر = مدفوع، الأصفر = غير مدفوع، الأحمر = متأخر عن الدفع.
+        </div>
+    </div>
+
+    <!-- Student Card Modal -->
+    <div class="modal-overlay" id="student-card-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">بطاقة التلميذ</h3>
+                <button class="modal-close-btn" id="modal-close-btn">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <!-- Filled by JS -->
+            </div>
+            <div class="modal-footer" id="modal-footer">
+                <!-- Optional footer -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== DEFAULT DATA ====================
+        const days = [
+            { key: 'mon', ar: 'الاثنين', en: 'Monday', fr: 'Lundi' },
+            { key: 'tue', ar: 'الثلاثاء', en: 'Tuesday', fr: 'Mardi' },
+            { key: 'wed', ar: 'الأربعاء', en: 'Wednesday', fr: 'Mercredi' },
+            { key: 'thu', ar: 'الخميس', en: 'Thursday', fr: 'Jeudi' },
+            { key: 'fri', ar: 'الجمعة', en: 'Friday', fr: 'Vendredi' },
+            { key: 'sat', ar: 'السبت', en: 'Saturday', fr: 'Samedi' },
+            { key: 'sun', ar: 'الأحد', en: 'Sunday', fr: 'Dimanche' }
+        ];
+
+        // Time slots: from 7:00 to 20:00 (hour by hour)
+        const timeSlots = [];
+        for (let hour = 7; hour <= 20; hour++) {
+            timeSlots.push({
+                id: `slot${hour}`,
+                ar: `${hour}:00 - ${hour+1}:00`,
+                en: `${hour}:00 - ${hour+1}:00`,
+                fr: `${hour}h - ${hour+1}h`
+            });
+        }
+
+        // Sections
+        const sections = {
+            '6base': { ar: 'السادسة أساسي', en: '6th Basic', fr: '6ème Base' },
+            '7base': { ar: 'السابعة أساسي', en: '7th Basic', fr: '7ème Base' },
+            '8base': { ar: 'الثامنة أساسي', en: '8th Basic', fr: '8ème Base' }
+        };
+
+        // Subject catalog for translation
+        const subjectCatalog = {
+            arabic: { ar: 'العربية', en: 'Arabic', fr: 'Arabe' },
+            french: { ar: 'الفرنسية', en: 'French', fr: 'Français' },
+            english: { ar: 'الإنجليزية', en: 'English', fr: 'Anglais' },
+            math: { ar: 'الرياضيات', en: 'Mathematics', fr: 'Mathématiques' },
+            science: { ar: 'العلوم', en: 'Science', fr: 'Sciences' },
+            history: { ar: 'التاريخ والجغرافيا', en: 'History & Geography', fr: 'Histoire-Géographie' },
+            islamic: { ar: 'التربية الإسلامية', en: 'Islamic Education', fr: 'Éducation Islamique' },
+            civics: { ar: 'التربية المدنية', en: 'Civics', fr: 'Éducation Civique' }
+        };
+
+        // Schedule: day -> slotId -> assignment (string or array)
+        const schedule = {
+            mon: {
+                slot7: '6base', slot8: '6base', slot9: ['6base','7base'], slot10: '7base',
+                slot11: ['7base','8base'], slot12: '8base', slot13: '8base',
+                slot14: 'reserved', slot15: 'reserved', slot16: 'reserved', slot17: 'reserved',
+                slot18: 'reserved', slot19: 'reserved', slot20: 'reserved'
+            },
+            tue: {
+                slot7: '7base', slot8: '7base', slot9: ['7base','8base'], slot10: '8base',
+                slot11: ['6base-g1','6base-g2'], slot12: '6base', slot13: '6base',
+                slot14: 'reserved', slot15: 'reserved', slot16: 'reserved', slot17: 'reserved',
+                slot18: 'reserved', slot19: 'reserved', slot20: 'reserved'
+            },
+            wed: {},
+            thu: {},
+            fri: {},
+            sat: {},
+            sun: {}
+        };
+
+        // Fill remaining days with reserved
+        days.forEach(d => {
+            if (!schedule[d.key]) {
+                schedule[d.key] = {};
+                timeSlots.forEach(slot => schedule[d.key][slot.id] = 'reserved');
+            } else {
+                timeSlots.forEach(slot => {
+                    if (!schedule[d.key][slot.id]) schedule[d.key][slot.id] = 'reserved';
+                });
+            }
+        });
+
+        // Students with personal attendance, subjects and parent info
+        const students = [
+            {
+                nameAr: 'أحمد', nameEn: 'Ahmed', nameFr: 'Ahmed',
+                section: '6base', group: null, workSystem: 'monthly', password: '123',
+                subjects: 'all',
+                parentName: 'علي', parentPhone: '22123456',
+                attendance: [
+                    { date: '12/09', status: 'paid' },
+                    { date: '15/09', status: 'unpaid' },
+                    { date: '19/09', status: 'overdue' },
+                    { date: '22/09', status: 'paid' }
+                ]
+            },
+            {
+                nameAr: 'سارة', nameEn: 'Sara', nameFr: 'Sara',
+                section: '6base', group: '1', workSystem: 'per8sessions', password: '123',
+                subjects: ['french','science'],
+                parentName: 'منى', parentPhone: '99887766',
+                attendance: [
+                    { date: '12/09', status: 'unpaid' },
+                    { date: '15/09', status: 'paid' },
+                    { date: '19/09', status: 'paid' },
+                    { date: '22/09', status: 'overdue' },
+                    { date: '26/09', status: 'paid' }
+                ]
+            },
+            {
+                nameAr: 'محمد', nameEn: 'Mohamed', nameFr: 'Mohamed',
+                section: '6base', group: '2', workSystem: 'custom', password: '123',
+                subjects: ['math','french'],
+                parentName: '', parentPhone: '',
+                attendance: [
+                    { date: '12/09', status: 'overdue' },
+                    { date: '15/09', status: 'overdue' },
+                    { date: '19/09', status: 'paid' }
+                ]
+            },
+            {
+                nameAr: 'ليلى', nameEn: 'Laila', nameFr: 'Laila',
+                section: '7base', group: null, workSystem: 'monthly', password: '123',
+                subjects: 'all',
+                parentName: 'فاطمة', parentPhone: '55443322',
+                attendance: [
+                    { date: '13/09', status: 'paid' },
+                    { date: '16/09', status: 'unpaid' },
+                    { date: '20/09', status: 'overdue' },
+                    { date: '23/09', status: 'paid' },
+                    { date: '27/09', status: 'paid' }
+                ]
+            },
+            {
+                nameAr: 'يوسف', nameEn: 'Youssef', nameFr: 'Youssef',
+                section: '7base', group: null, workSystem: 'per8sessions', password: '123',
+                subjects: ['science','english'],
+                parentName: 'كريم', parentPhone: '66778899',
+                attendance: [
+                    { date: '13/09', status: 'overdue' },
+                    { date: '16/09', status: 'unpaid' },
+                    { date: '20/09', status: 'paid' }
+                ]
+            },
+            {
+                nameAr: 'نور', nameEn: 'Nour', nameFr: 'Nour',
+                section: '8base', group: null, workSystem: 'monthly', password: '123',
+                subjects: 'all',
+                parentName: 'سليم', parentPhone: '55667788',
+                attendance: [
+                    { date: '14/09', status: 'paid' },
+                    { date: '17/09', status: 'unpaid' },
+                    { date: '21/09', status: 'overdue' },
+                    { date: '24/09', status: 'paid' },
+                    { date: '28/09', status: 'paid' }
+                ]
+            },
+            {
+                nameAr: 'خالد', nameEn: 'Khaled', nameFr: 'Khaled',
+                section: '8base', group: null, workSystem: 'custom', password: '123',
+                subjects: ['arabic','math'],
+                parentName: '', parentPhone: '',
+                attendance: [
+                    { date: '14/09', status: 'overdue' },
+                    { date: '17/09', status: 'unpaid' },
+                    { date: '21/09', status: 'paid' }
+                ]
+            }
+        ];
+
+        const data = { days, timeSlots, sections, schedule, students };
+
+        // ==================== STATE ====================
+        let currentLanguage = 'ar';
+        let currentTheme = 'light';
+        let currentUser = null;
+
+        // ==================== DOM REFS ====================
+        const languageSelect = document.getElementById('language-select');
+        const themeToggle = document.getElementById('theme-toggle');
+        const scheduleHead = document.getElementById('schedule-head');
+        const scheduleBody = document.getElementById('schedule-body');
+        const personalScheduleDiv = document.getElementById('personal-schedule');
+        const personalList = document.getElementById('personal-list');
+        const rosterPanelDiv = document.getElementById('roster-panel');
+        const rosterList = document.getElementById('roster-list');
+        const attendancePanelDiv = document.getElementById('attendance-panel');
+        const attendanceList = document.getElementById('attendance-list');
+        const attendanceLegend = document.getElementById('attendance-legend');
+        const workSystemPanelDiv = document.getElementById('work-system-panel');
+        const workSystemContent = document.getElementById('work-system-content');
+        const materialsPanelDiv = document.getElementById('materials-panel');
+        const materialsContent = document.getElementById('materials-content');
+        const parentInfoDiv = document.getElementById('parent-info');
+        const body = document.body;
+        const loginForm = document.getElementById('login-form');
+        const userInfoDiv = document.getElementById('user-info');
+        const loggedNameSpan = document.getElementById('logged-name');
+        const userAvatarSpan = document.getElementById('user-avatar');
+        const logoutBtn = document.getElementById('logout-btn');
+        const loginNameInput = document.getElementById('login-name');
+        const loginPasswordInput = document.getElementById('login-password');
+        const loginBtn = document.getElementById('login-btn');
+        // Modal refs
+        const modalOverlay = document.getElementById('student-card-modal');
+        const modalBody = document.getElementById('modal-body');
+        const modalTitle = document.getElementById('modal-title');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+        const studentCardBtn = document.getElementById('student-card-btn');
+
+        // ==================== UTILITY FUNCTIONS ====================
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function getText(obj, lang = currentLanguage) {
+            if (!obj) return '';
+            if (lang === 'ar') return obj.ar || obj.nameAr || '';
+            if (lang === 'fr') return obj.fr || obj.nameFr || '';
+            return obj.en || obj.nameEn || '';
+        }
+
+        function getSectionName(sectionKey) {
+            if (sectionKey === 'reserved') return translations[currentLanguage].reservedName || 'Reserved';
+            const sec = data.sections[sectionKey];
+            return sec ? getText(sec) : sectionKey;
+        }
+
+        function parseAssignmentKey(key) {
+            const match = key.match(/^(.+?)-g(\d+)$/);
+            if (match) return { section: match[1], group: match[2] };
+            return { section: key, group: null };
+        }
+
+        function isAssignmentForStudent(assignmentKey, student) {
+            const parsed = parseAssignmentKey(assignmentKey);
+            if (parsed.section !== student.section) return false;
+            if (parsed.group !== null) return student.group !== null && student.group === parsed.group;
+            return true;
+        }
+
+        function getAssignmentDisplay(assignmentKey) {
+            const parsed = parseAssignmentKey(assignmentKey);
+            if (parsed.section === 'reserved') return getSectionName('reserved');
+            const baseName = getSectionName(parsed.section);
+            if (parsed.group) return `${baseName} (${translations[currentLanguage].groupLabel} ${parsed.group})`;
+            return baseName;
+        }
+
+        // ==================== RENDER FUNCTIONS ====================
+        function rebuildScheduleTable() {
+            let headerHtml = `<tr><th>${translations[currentLanguage].thDay}</th>`;
+            data.timeSlots.forEach(slot => headerHtml += `<th>${escapeHtml(getText(slot))}</th>`);
+            headerHtml += '</tr>';
+            scheduleHead.innerHTML = headerHtml;
+
+            let bodyHtml = '';
+            data.days.forEach(day => {
+                bodyHtml += `<tr><td class="day-cell">${escapeHtml(getText(day))}</td>`;
+                data.timeSlots.forEach(slot => {
+                    const assignment = data.schedule[day.key]?.[slot.id] || 'reserved';
+                    let cellContent = '';
+                    let hasStudentMatch = false;
+
+                    if (Array.isArray(assignment)) {
+                        cellContent = assignment.map(item => {
+                            const display = getAssignmentDisplay(item);
+                            const match = currentUser && isAssignmentForStudent(item, currentUser);
+                            if (match) hasStudentMatch = true;
+                            const cls = match ? 'merged-item student-highlight' : 'merged-item';
+                            return `<span class="${cls}">${escapeHtml(display)}</span>`;
+                        }).join('');
+                    } else {
+                        const display = getAssignmentDisplay(assignment);
+                        const match = currentUser && isAssignmentForStudent(assignment, currentUser);
+                        if (match) hasStudentMatch = true;
+                        const cls = match ? 'student-highlight' : (assignment === 'reserved' ? 'reserved' : '');
+                        cellContent = `<span class="${cls}">${escapeHtml(display)}</span>`;
+                    }
+                    bodyHtml += `<td class="${hasStudentMatch ? 'student-highlight' : ''}">${cellContent}</td>`;
+                });
+                bodyHtml += '</tr>';
+            });
+            scheduleBody.innerHTML = bodyHtml;
+        }
+
+        function updatePersonalSchedule() {
+            if (!currentUser) {
+                personalScheduleDiv.classList.remove('visible');
+                return;
+            }
+            const personalSessions = [];
+            data.days.forEach(day => {
+                data.timeSlots.forEach(slot => {
+                    const assignment = data.schedule[day.key]?.[slot.id] || 'reserved';
+                    let matches = false;
+                    if (Array.isArray(assignment)) matches = assignment.some(item => isAssignmentForStudent(item, currentUser));
+                    else matches = isAssignmentForStudent(assignment, currentUser);
+                    if (matches) personalSessions.push({ day, slot });
+                });
+            });
+            if (personalSessions.length === 0) {
+                personalList.innerHTML = `<li>${translations[currentLanguage].noSessions}</li>`;
+            } else {
+                personalList.innerHTML = personalSessions.map(session => {
+                    return `<li>${escapeHtml(getText(session.day))} - ${escapeHtml(getText(session.slot))}</li>`;
+                }).join('');
+            }
+            personalScheduleDiv.classList.add('visible');
+        }
+
+        function updateRoster() {
+            if (!currentUser) {
+                rosterPanelDiv.classList.remove('visible');
+                return;
+            }
+            const classmates = data.students.filter(u => {
+                if (u.section !== currentUser.section) return false;
+                if (currentUser.group) return u.group === currentUser.group;
+                return true;
+            });
+            if (classmates.length === 0) {
+                rosterList.innerHTML = `<li>${translations[currentLanguage].noStudents}</li>`;
+            } else {
+                rosterList.innerHTML = classmates.map(u => {
+                    const displayName = getText(u) || u.nameAr;
+                    const highlight = (u.nameAr === currentUser.nameAr) ? 'student-highlight' : '';
+                    return `<li class="${highlight}">${escapeHtml(displayName)}</li>`;
+                }).join('');
+            }
+            rosterPanelDiv.classList.add('visible');
+        }
+
+        function updateAttendance() {
+            if (!currentUser) {
+                attendancePanelDiv.classList.remove('visible');
+                return;
+            }
+            const records = currentUser.attendance || [];
+            if (records.length === 0) {
+                attendanceList.innerHTML = `<li>${translations[currentLanguage].noAttendance}</li>`;
+            } else {
+                attendanceList.innerHTML = records.map(record => {
+                    const statusClass = `attendance-${record.status}`;
+                    const statusLabel = translations[currentLanguage]['status_' + record.status] || record.status;
+                    return `<li class="${statusClass}">
+                        <span>${escapeHtml(record.date)}</span>
+                        <span class="attendance-status-label">${escapeHtml(statusLabel)}</span>
+                    </li>`;
+                }).join('');
+            }
+            const legendHtml = `
+                <span style="display:inline-block; margin-right: 10px;">
+                    <span style="display:inline-block; width:12px; height:12px; background-color: var(--attendance-paid-bg); border-radius:3px; margin-left:3px;"></span>
+                    ${escapeHtml(translations[currentLanguage].status_paid)}
+                </span>
+                <span style="display:inline-block; margin-right: 10px;">
+                    <span style="display:inline-block; width:12px; height:12px; background-color: var(--attendance-unpaid-bg); border-radius:3px; margin-left:3px;"></span>
+                    ${escapeHtml(translations[currentLanguage].status_unpaid)}
+                </span>
+                <span style="display:inline-block; margin-right: 10px;">
+                    <span style="display:inline-block; width:12px; height:12px; background-color: var(--attendance-overdue-bg); border-radius:3px; margin-left:3px;"></span>
+                    ${escapeHtml(translations[currentLanguage].status_overdue)}
+                </span>
+            `;
+            attendanceLegend.innerHTML = legendHtml;
+            attendancePanelDiv.classList.add('visible');
+        }
+
+        function updateWorkSystemPanel() {
+            if (!currentUser) {
+                workSystemPanelDiv.classList.remove('visible');
+                return;
+            }
+            const t = translations[currentLanguage];
+            const labels = { monthly: t.workMonthly, per8sessions: t.workPer8, custom: t.workCustom };
+            const systemLabel = labels[currentUser.workSystem] || currentUser.workSystem;
+            workSystemContent.innerHTML = `<p><strong>${t.workSystemLabel}:</strong> ${escapeHtml(systemLabel)}</p>`;
+            workSystemPanelDiv.classList.add('visible');
+        }
+
+        function updateMaterialsPanel() {
+            if (!currentUser) {
+                materialsPanelDiv.classList.remove('visible');
+                return;
+            }
+            const t = translations[currentLanguage];
+            const subjects = currentUser.subjects;
+            let materialsHtml = '';
+            if (subjects === 'all') {
+                materialsHtml = `<span>${escapeHtml(t.allSubjects)}</span>`;
+            } else if (Array.isArray(subjects) && subjects.length > 0) {
+                materialsHtml = subjects.map(key => {
+                    const subj = subjectCatalog[key];
+                    return `<span>${escapeHtml(subj ? getText(subj) : key)}</span>`;
+                }).join('');
+            } else {
+                materialsHtml = `<span>${escapeHtml(t.noSubjects)}</span>`;
+            }
+            materialsContent.innerHTML = `<div class="materials-list">${materialsHtml}</div>`;
+
+            let parentHtml = '';
+            if (currentUser.parentName || currentUser.parentPhone) {
+                parentHtml += `<div class="info-line"><strong>${t.parentName}:</strong> ${escapeHtml(currentUser.parentName || '—')}</div>`;
+                parentHtml += `<div class="info-line"><strong>${t.parentPhone}:</strong> ${escapeHtml(currentUser.parentPhone || '—')}</div>`;
+            } else {
+                parentHtml += `<div class="info-line">${escapeHtml(t.noParentInfo)}</div>`;
+            }
+            parentInfoDiv.innerHTML = parentHtml;
+            materialsPanelDiv.classList.add('visible');
+        }
+
+        function updateUserInfo() {
+            if (!currentUser) return;
+            const t = translations[currentLanguage];
+            const displayName = getText(currentUser) || currentUser.nameAr;
+            userAvatarSpan.textContent = displayName.charAt(0).toUpperCase();
+            loggedNameSpan.innerHTML = `${escapeHtml(t.welcome)}، ${escapeHtml(displayName)}`;
+        }
+
+        function updateAllPanels() {
+            if (currentUser) {
+                rebuildScheduleTable();
+                updatePersonalSchedule();
+                updateRoster();
+                updateAttendance();
+                updateWorkSystemPanel();
+                updateMaterialsPanel();
+                updateUserInfo();
+            } else {
+                rebuildScheduleTable();
+                personalScheduleDiv.classList.remove('visible');
+                rosterPanelDiv.classList.remove('visible');
+                attendancePanelDiv.classList.remove('visible');
+                workSystemPanelDiv.classList.remove('visible');
+                materialsPanelDiv.classList.remove('visible');
+            }
+        }
+
+        function applyLanguage(lang) {
+            currentLanguage = lang;
+            document.documentElement.lang = lang;
+            document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+            document.body.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
+
+            const t = translations[lang];
+            document.getElementById('page-title').textContent = t.title;
+            document.getElementById('subtitle').textContent = t.subtitle;
+            document.querySelector('.control-group label[for="language-select"]').textContent = t.languageLabel;
+            document.querySelector('.control-group label[for="theme-toggle"]').textContent = t.themeLabel;
+            document.getElementById('theme-toggle').textContent = currentTheme === 'light' ? t.themeNight : t.themeDay;
+            document.getElementById('personal-title').textContent = t.personalTitle;
+            document.getElementById('roster-title').textContent = t.rosterTitle;
+            document.getElementById('attendance-title').textContent = t.attendanceTitle;
+            document.getElementById('work-system-title').textContent = t.workSystemTitle;
+            document.getElementById('materials-title').textContent = t.materialsTitle;
+            document.getElementById('notes').innerHTML = t.notes;
+            document.getElementById('student-card-btn').textContent = t.studentCardBtn;
+            modalTitle.textContent = t.modalTitle;
+
+            loginNameInput.placeholder = t.loginNamePlaceholder;
+            loginPasswordInput.placeholder = t.loginPasswordPlaceholder;
+            loginBtn.textContent = t.loginBtn;
+            logoutBtn.textContent = t.logoutBtn;
+
+            updateAllPanels();
+        }
+
+        function applyTheme(theme) {
+            currentTheme = theme;
+            body.classList.toggle('dark', theme === 'dark');
+            const t = translations[currentLanguage];
+            themeToggle.textContent = theme === 'light' ? t.themeNight : t.themeDay;
+        }
+
+        // ==================== MODAL FUNCTIONS ====================
+        function populateStudentCardModal() {
+            if (!currentUser) return;
+            const t = translations[currentLanguage];
+            const displayName = getText(currentUser) || currentUser.nameAr;
+            const sectionName = getSectionName(currentUser.section);
+            const group = currentUser.group ? `${t.groupLabel} ${currentUser.group}` : t.noGroup;
+            const workSystemLabels = { monthly: t.workMonthly, per8sessions: t.workPer8, custom: t.workCustom };
+            const workSystem = workSystemLabels[currentUser.workSystem] || currentUser.workSystem;
+
+            let subjectsHtml = '';
+            if (currentUser.subjects === 'all') {
+                subjectsHtml = `<span class="subject-tag">${escapeHtml(t.allSubjects)}</span>`;
+            } else if (Array.isArray(currentUser.subjects) && currentUser.subjects.length > 0) {
+                subjectsHtml = currentUser.subjects.map(key => {
+                    const subj = subjectCatalog[key];
+                    return `<span class="subject-tag">${escapeHtml(subj ? getText(subj) : key)}</span>`;
+                }).join('');
+            } else {
+                subjectsHtml = `<span>${escapeHtml(t.noSubjects)}</span>`;
+            }
+
+            const parentInfo = (currentUser.parentName || currentUser.parentPhone) 
+                ? `<div class="detail-item"><strong>${t.parentName}</strong><span class="value">${escapeHtml(currentUser.parentName || '—')}</span></div>
+                   <div class="detail-item"><strong>${t.parentPhone}</strong><span class="value">${escapeHtml(currentUser.parentPhone || '—')}</span></div>`
+                : `<div class="detail-item"><strong>${t.parentName}</strong><span class="value">${escapeHtml(t.noParentInfo)}</span></div>`;
+
+            const cardHtml = `
+                <div class="student-card-profile">
+                    <div class="student-card-avatar">${escapeHtml(displayName.charAt(0).toUpperCase())}</div>
+                    <div>
+                        <div class="student-card-name">${escapeHtml(displayName)}</div>
+                        <div class="student-card-section">${escapeHtml(sectionName)}${currentUser.group ? ' - ' + escapeHtml(group) : ''}</div>
+                    </div>
+                </div>
+                <div class="student-card-details">
+                    <div class="detail-item"><strong>${t.workSystemLabel}</strong><span class="value">${escapeHtml(workSystem)}</span></div>
+                    <div class="detail-item"><strong>${t.subjectsLabel}</strong><div class="subjects-tags">${subjectsHtml}</div></div>
+                    ${parentInfo}
+                </div>
+            `;
+            modalBody.innerHTML = cardHtml;
+        }
+
+        function openStudentCardModal() {
+            populateStudentCardModal();
+            modalOverlay.classList.add('show');
+        }
+
+        function closeStudentCardModal() {
+            modalOverlay.classList.remove('show');
+        }
+
+        // ==================== EVENT LISTENERS ====================
+        languageSelect.addEventListener('change', e => applyLanguage(e.target.value));
+        themeToggle.addEventListener('click', () => applyTheme(currentTheme === 'light' ? 'dark' : 'light'));
+        loginBtn.addEventListener('click', handleLogin);
+        logoutBtn.addEventListener('click', handleLogout);
+        studentCardBtn.addEventListener('click', openStudentCardModal);
+        modalCloseBtn.addEventListener('click', closeStudentCardModal);
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay) closeStudentCardModal();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modalOverlay.classList.contains('show')) {
+                closeStudentCardModal();
+            }
+        });
+
+        function handleLogin() {
+            const name = loginNameInput.value.trim();
+            const password = loginPasswordInput.value.trim();
+            if (!name || !password) {
+                alert(translations[currentLanguage].emptyFields);
+                return;
+            }
+            const student = data.students.find(u => {
+                return (u.nameAr === name || u.nameEn === name || u.nameFr === name) && u.password === password;
+            });
+            if (!student) {
+                alert(translations[currentLanguage].invalidCredentials);
+                return;
+            }
+            currentUser = { ...student };
+            loginNameInput.value = '';
+            loginPasswordInput.value = '';
+            updateAllPanels();
+            loginForm.style.display = 'none';
+            userInfoDiv.style.display = 'flex';
+        }
+
+        function handleLogout() {
+            currentUser = null;
+            loginForm.style.display = 'flex';
+            userInfoDiv.style.display = 'none';
+            closeStudentCardModal();
+            updateAllPanels();
+        }
+
+        // ==================== TRANSLATIONS ====================
+        const translations = {
+            ar: {
+                title: '📅 جدول التلميذ',
+                subtitle: 'من الاثنين إلى الأحد | من 7:00 صباحًا إلى 8:00 مساءً',
+                thDay: 'اليوم',
+                languageLabel: '🌐 اللغة:',
+                themeLabel: '🌓 النمط:',
+                themeNight: '🌙 ليلي',
+                themeDay: '☀️ نهاري',
+                personalTitle: '📋 جدولك الخاص',
+                rosterTitle: '👥 مجموعتك',
+                attendanceTitle: '📆 سجل الحضور والدفع',
+                workSystemTitle: '💼 نظام العمل',
+                materialsTitle: '📚 المواد المتناولة',
+                loginNamePlaceholder: 'الاسم الكامل',
+                loginPasswordPlaceholder: 'الرقم السري',
+                loginBtn: 'دخول',
+                logoutBtn: 'تسجيل الخروج',
+                studentCardBtn: 'بطاقة التلميذ',
+                modalTitle: 'بطاقة التلميذ',
+                welcome: 'مرحبا',
+                workSystemLabel: 'نظام العمل',
+                workMonthly: 'شهري',
+                workPer8: 'كل 8 حصص',
+                workCustom: 'مخصص',
+                noStudents: 'لا يوجد تلاميذ في مجموعتك',
+                noSessions: 'لا توجد حصص مسجلة لك',
+                noAttendance: 'لا يوجد سجل حضور',
+                reservedName: 'احتياط / أنشطة',
+                groupLabel: 'مجموعة',
+                noGroup: 'لا مجموعة',
+                emptyFields: 'يرجى إدخال الاسم والرقم السري',
+                invalidCredentials: 'الاسم أو الرقم السري غير صحيح',
+                status_paid: 'مدفوع',
+                status_unpaid: 'غير مدفوع',
+                status_overdue: 'متأخر عن الدفع',
+                parentName: 'اسم الولي',
+                parentPhone: 'رقم هاتف الولي',
+                noParentInfo: 'لا توجد بيانات ولي مسجلة',
+                allSubjects: 'كل المواد',
+                noSubjects: 'لا توجد مواد محددة',
+                subjectsLabel: 'المواد',
+                dayNames: { mon: 'الاثنين', tue: 'الثلاثاء', wed: 'الأربعاء', thu: 'الخميس', fri: 'الجمعة', sat: 'السبت', sun: 'الأحد' },
+                notes: `<strong>📌 ملاحظات:</strong><br>
+                    • كل حصة مدتها ساعة واحدة.<br>
+                    • الأسبوع يبدأ من يوم الاثنين.<br>
+                    • قد تكون بعض الحصص مشتركة بين قسمين أو أكثر، أو مقسمة إلى مجموعات.<br>
+                    • في سجل الحضور: الأخضر = مدفوع، الأصفر = غير مدفوع، الأحمر = متأخر عن الدفع.<br>
+                    • بيانات الدخول للتجربة: أحمد/123، سارة/123 (مجموعة 1)، محمد/123 (مجموعة 2)، ليلى/123.`
+            },
+            fr: {
+                title: '📅 Emploi du temps de l\'élève',
+                subtitle: 'Lundi - Dimanche | De 7h00 à 20h00',
+                thDay: 'Jour',
+                languageLabel: '🌐 Langue :',
+                themeLabel: '🌓 Thème :',
+                themeNight: '🌙 Nuit',
+                themeDay: '☀️ Jour',
+                personalTitle: '📋 Votre emploi du temps',
+                rosterTitle: '👥 Votre groupe',
+                attendanceTitle: '📆 Registre de présence et paiement',
+                workSystemTitle: '💼 Système de travail',
+                materialsTitle: '📚 Matières étudiées',
+                loginNamePlaceholder: 'Nom complet',
+                loginPasswordPlaceholder: 'Mot de passe',
+                loginBtn: 'Entrer',
+                logoutBtn: 'Déconnexion',
+                studentCardBtn: 'Carte étudiant',
+                modalTitle: 'Carte étudiant',
+                welcome: 'Bienvenue',
+                workSystemLabel: 'Système de travail',
+                workMonthly: 'Mensuel',
+                workPer8: 'Toutes les 8 séances',
+                workCustom: 'Personnalisé',
+                noStudents: 'Aucun élève dans votre groupe',
+                noSessions: 'Aucune séance enregistrée',
+                noAttendance: 'Aucun registre de présence',
+                reservedName: 'Réserve / Activités',
+                groupLabel: 'Groupe',
+                noGroup: 'Aucun groupe',
+                emptyFields: 'Veuillez saisir le nom et le mot de passe',
+                invalidCredentials: 'Nom ou mot de passe incorrect',
+                status_paid: 'Payé',
+                status_unpaid: 'Non payé',
+                status_overdue: 'En retard',
+                parentName: 'Nom du parent',
+                parentPhone: 'Téléphone du parent',
+                noParentInfo: 'Aucune information parentale',
+                allSubjects: 'Toutes les matières',
+                noSubjects: 'Aucune matière définie',
+                subjectsLabel: 'Matières',
+                dayNames: { mon: 'Lundi', tue: 'Mardi', wed: 'Mercredi', thu: 'Jeudi', fri: 'Vendredi', sat: 'Samedi', sun: 'Dimanche' },
+                notes: `<strong>📌 Remarques :</strong><br>
+                    • Chaque séance dure 1 heure.<br>
+                    • La semaine commence le lundi.<br>
+                    • Certaines séances peuvent être communes à plusieurs sections ou divisées en groupes.<br>
+                    • Dans le registre : vert = payé, jaune = non payé, rouge = en retard.<br>
+                    • Identifiants de test : Ahmed/123, Sara/123 (groupe 1), Mohamed/123 (groupe 2), Laila/123.`
+            },
+            en: {
+                title: '📅 Student Schedule',
+                subtitle: 'Monday - Sunday | From 7:00 AM to 8:00 PM',
+                thDay: 'Day',
+                languageLabel: '🌐 Language:',
+                themeLabel: '🌓 Theme:',
+                themeNight: '🌙 Night',
+                themeDay: '☀️ Day',
+                personalTitle: '📋 Your Personal Schedule',
+                rosterTitle: '👥 Your Group',
+                attendanceTitle: '📆 Attendance & Payment Record',
+                workSystemTitle: '💼 Work System',
+                materialsTitle: '📚 Subjects Studied',
+                loginNamePlaceholder: 'Full Name',
+                loginPasswordPlaceholder: 'Password',
+                loginBtn: 'Sign In',
+                logoutBtn: 'Logout',
+                studentCardBtn: 'Student Card',
+                modalTitle: 'Student Card',
+                welcome: 'Welcome',
+                workSystemLabel: 'Work System',
+                workMonthly: 'Monthly',
+                workPer8: 'Every 8 sessions',
+                workCustom: 'Custom',
+                noStudents: 'No students in your group',
+                noSessions: 'No sessions scheduled',
+                noAttendance: 'No attendance record',
+                reservedName: 'Reserve / Activities',
+                groupLabel: 'Group',
+                noGroup: 'No group',
+                emptyFields: 'Please enter name and password',
+                invalidCredentials: 'Incorrect name or password',
+                status_paid: 'Paid',
+                status_unpaid: 'Unpaid',
+                status_overdue: 'Overdue',
+                parentName: 'Parent Name',
+                parentPhone: 'Parent Phone',
+                noParentInfo: 'No parent info',
+                allSubjects: 'All Subjects',
+                noSubjects: 'No subjects defined',
+                subjectsLabel: 'Subjects',
+                dayNames: { mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday', fri: 'Friday', sat: 'Saturday', sun: 'Sunday' },
+                notes: `<strong>📌 Notes:</strong><br>
+                    • Each session lasts 1 hour.<br>
+                    • The week starts on Monday.<br>
+                    • Some sessions may be shared between multiple sections or divided into groups.<br>
+                    • In attendance: green = paid, yellow = unpaid, red = overdue.<br>
+                    • Test credentials: Ahmed/123, Sara/123 (group 1), Mohamed/123 (group 2), Laila/123.`
+            }
+        };
+
+        // ==================== INITIALIZATION ====================
+        function init() {
+            applyLanguage('ar');
+            applyTheme('light');
+            currentUser = null;
+            loginForm.style.display = 'flex';
+            userInfoDiv.style.display = 'none';
+            rebuildScheduleTable();
+        }
+
+        init();
+    </script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(registration => console.log('Service Worker registered:', registration.scope))
+        .catch(error => console.error('Service Worker registration failed:', error));
+    });
+  }
+</script>
+<script>
+  // Install button logic
+  let deferredPrompt = null;
+  const installBtn = document.getElementById('install-btn');
+
+  // Capture the beforeinstallprompt event
+  window.addEventListener('beforeinstallprompt', (event) => {
+    // Prevent the browser's default prompt
+    event.preventDefault();
+    // Save the event for later use
+    deferredPrompt = event;
+    // Show the install button
+    if (installBtn) installBtn.style.display = 'block';
+  });
+
+  // When the user clicks the install button
+  if (installBtn) {
+    installBtn.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+
+      // Show the browser install prompt
+      deferredPrompt.prompt();
+      const choiceResult = await deferredPrompt.userChoice;
+
+      if (choiceResult.outcome === 'accepted') {
+        console.log('User accepted the install prompt');
+      } else {
+        console.log('User dismissed the install prompt');
+      }
+
+      // Clear the saved prompt (it can only be used once)
+      deferredPrompt = null;
+      // Hide the install button
+      installBtn.style.display = 'none';
+    });
+  }
+
+  // Hide the button if the app is already installed
+  window.addEventListener('appinstalled', () => {
+    if (installBtn) installBtn.style.display = 'none';
+    console.log('App was installed');
+  });
+
+  // Optional: hide the button if display-mode is standalone (already installed)
+  if (window.matchMedia('(display-mode: standalone)').matches) {
+    if (installBtn) installBtn.style.display = 'none';
+  }
+</script>
+</body>
+</html>
+<!-- ## عرض تقديمي للمطورين: خطوات تحسين صفحة الجدول
+
+### ملخص ما تم إنجازه حتى الآن
+
+1. **إنشاء الجدول الأساسي**  
+   - أقسام: 6، 7، 8، 9 أساسي + 4 ثانوي.  
+   - حصتان لكل قسم، كل حصة ساعتان.  
+   - الفترة اليومية: من 8:00 إلى 12:00 (فترتان زمنيتان).  
+   - توزيع الحصص على أيام الأسبوع (السبت – الجمعة).
+
+2. **توسيع الجدول**  
+   - إضافة حصة ثالثة للرابعة ثانوي.  
+   - إضافة حصتين لمجموعة المتأخرين.  
+   - إضافة يومي السبت والأحد كأيام دراسة.
+
+3. **تحويل الجدول إلى صفحة HTML تفاعلية**  
+   - عرض الجدول في صفحة ويب منسقة.  
+   - إمكانية اختيار اللغة (العربية، الفرنسية، الإنجليزية).  
+   - إمكانية التبديل بين النمط الليلي والنهاري.  
+   - إمكانية اختيار القسم لعرض جدول مخصص.
+
+4. **إضافة نظام تسجيل الدخول**  
+   - لا يمكن للتلميذ إنشاء حساب جديد (تسجيل الدخول فقط).  
+   - بيانات التلاميذ مخزنة في كائن JavaScript.  
+   - عند دخول التلميذ:  
+     - يُبرز جدول قسمه فقط.  
+     - يعرض جدوله الشخصي.  
+     - يعرض قائمة أسماء تلاميذ مجموعته فقط.  
+   - حالة خاصة للأدمن: يمكنه رؤية كل البيانات والتعديل عليها.
+
+5. **فصل صفحة الإدارة عن صفحة التلميذ**  
+   - **صفحة الإدارة (admin.html):**  
+     - تسجيل دخول المدير.  
+     - إضافة / حذف تلميذ.  
+     - إضافة / حذف / دمج الأقسام.  
+     - إضافة / حذف الأوقات الدراسية.  
+     - تعديل توزيع الأقسام على الجدول مباشرة.  
+     - حفظ البيانات في المتصفح أو تصديرها كملف JSON أو توليد صفحة التلميذ.  
+   - **صفحة التلميذ (student.html):**  
+     - تسجيل الدخول فقط (بدون تسجيل).  
+     - عرض الجدول العام.  
+     - عند الدخول: إبراز حصص قسمه، جدوله الشخصي، قائمة مجموعته.  
+     - قراءة البيانات المعدلة من صفحة الإدارة تلقائياً (عبر localStorage أو بيانات مضمّنة).
+
+---
+
+### 🎯 الهدف من صفحة الجدول
+
+الهدف الأساسي هو **توفير نظام إدارة وعرض مرن للجدول الدراسي الأسبوعي**:
+
+- **للتلاميذ:**  
+  - معرفة مواعيد حصصهم بدقة حسب اليوم والفترة.  
+  - الاطلاع على أسماء زملائهم في نفس المجموعة.  
+  - سهولة التنقل بين اللغات والأنماط لتناسب تفضيلاتهم.
+
+- **للإدارة (المدير):**  
+  - التحكم الكامل في بيانات التلاميذ والأقسام والأوقات.  
+  - تعديل الجدول بسرعة دون تعديل الكود.  
+  - تصدير البيانات ومشاركتها بسهولة.
+
+- **بشكل عام:**  
+  - **تنظيم الوقت** وتقليل التعارض بين الأقسام.  
+  - **مركزية البيانات** بحيث تكون صفحة التلميذ معتمدة على بيانات محدثة من المدير.  
+  - **سهولة الاستخدام** لجميع الأطراف (تلاميذ، معلمون، إدارة).
+
+---
+
+### 📌 الإضافات الجديدة التي تم تنفيذها في هذا الحوار
+
+بعد النقاش السابق، تم تطوير صفحة التلميذ لتلبية متطلبات إضافية. وفيما يلي ملخص التعديلات التي أُنجزت مؤخرًا:
+
+#### 1. تغيير بداية الأسبوع الدراسي
+- تم تعديل ترتيب أيام الأسبوع ليبدأ من **يوم الاثنين** بدلاً من السبت، ليناسب العادات الدراسية في بعض المناطق.
+
+#### 2. تقسيم اليوم الدراسي إلى حصص ساعية
+- تم توليد فترات زمنية من **7:00 صباحًا حتى 8:00 مساءً**، كل حصة مدتها ساعة واحدة.
+- أصبح الجدول يتكون من 14 فترة زمنية (slot7 إلى slot20) بدلاً من فترتين فقط.
+
+#### 3. إضافة نظام العمل للتلاميذ
+- لكل تلميذ خاصية **نظام العمل** (workSystem) يمكن أن تكون:
+  - **شهري**: يدفع ولي الأمر شهريًا.
+  - **كل 8 حصص**: دفع مقابل كل 8 جلسات.
+  - **مخصص**: نظام خاص يتم الاتفاق عليه.
+- يُعرض نظام العمل بعد تسجيل دخول التلميذ في شريط المعلومات، كما يظهر في بطاقة التلميذ.
+
+#### 4. دمج سجل الحضور مع بيانات التلميذ
+- تم دمج سجل الحضور داخل كائن التلميذ نفسه (student.attendance) بدلاً من فصله في كائن مستقل.
+- لكل تلميذ سجل حضور خاص به يحتوي على قائمة تواريخ مع حالة الدفع:
+  - **مدفوع** (paid): يظهر بلون أخضر.
+  - **غير مدفوع** (unpaid): يظهر بلون أصفر.
+  - **متأخر عن الدفع** (overdue): يظهر بلون أحمر.
+- يُعرض السجل بعد تسجيل الدخول في قسم "سجل الحضور والدفع" مع وسيلة إيضاح.
+
+#### 5. دعم الأقسام المندمجة (مشتركة)
+- يمكن أن تحتوي خلية الجدول على أكثر من قسم في نفس الوقت (مثل `['6base','7base']`).
+- عند دخول التلميذ، يتم تمييز قسمه الخاص ضمن الخلية المشتركة بلون مختلف.
+
+#### 6. دعم تقسيم القسم إلى مجموعات
+- يمكن تمثيل مجموعات القسم الواحد باستخدام مفاتيح مثل `'6base-g1'` و `'6base-g2'`.
+- لكل تلميذ خاصية `group` تحدد مجموعته (قد تكون `null` إذا لم يتم تقسيم القسم).
+- عند عرض الجدول أو قائمة الزملاء، يرى التلميذ مجموعته الفرعية فقط إذا كان قسمه مقسمًا.
+
+#### 7. تحسينات أمنية وعرض
+- تمت إضافة دالة `escapeHtml` لتفادي ثغرات حقن HTML عند عرض أسماء التلاميذ والأقسام.
+- دعم كامل للاتجاه (RTL/LTR) حسب اللغة المختارة.
+- تحسين تجربة المستخدم مع تمرير أفقي للجدول الكبير.
+
+#### 8. مزامنة البيانات مع localStorage
+- صفحة التلميذ تقرأ البيانات من `localStorage` إذا كانت متاحة (بمفتاح `schoolData`)، مما يسمح بعرض التعديلات التي يجريها المدير في صفحة الإدارة.
+
+#### 9. إضافة بطاقة التلميذ الشخصية (Modal)
+- بعد تسجيل الدخول، يظهر زر **"بطاقة التلميذ"** في شريط المعلومات.
+- عند النقر على الزر تظهر نافذة منبثقة (Modal) بتصميم جذاب تعرض:
+  - **الصورة الرمزية (Avatar)** تحتوي على الحرف الأول من اسم التلميذ.
+  - **الاسم الكامل** و **القسم** والمجموعة إن وجدت.
+  - **نظام العمل** (شهري / كل 8 حصص / مخصص).
+  - **المواد المتناولة** على شكل وسوم ملونة.
+  - **بيانات ولي الأمر** (الاسم ورقم الهاتف) إن وُجدت.
+- يمكن إغلاق النافذة بعدة طرق: زر الإغلاق (×)، النقر خارج النافذة، أو الضغط على زر Escape.
+- النافذة متجاوبة مع الشاشات الصغيرة، حيث تتكدس العناصر عموديًا على الجوال.
+- ألوان النافذة تتبع النمط النهاري/الليلي المختار.
+
+---
+
+### ⚠️ ملاحظات ختامية
+
+- **صفحة الإدارة (admin.html) ما تزال تحتاج إلى تحديث** لتتوافق مع البنية الجديدة للبيانات:
+  - إمكانية تعديل نظام العمل لكل تلميذ.
+  - إمكانية إدارة سجل الحضور والدفع لكل تلميذ.
+  - إمكانية تعيين المجموعات عند تقسيم الأقسام.
+- **الأمان** لا يزال يعتمد على بيانات ثابتة في JavaScript، وهو مناسب للاستخدام المحلي أو التجريبي، لكنه غير آمن للإنتاج العام.
+- **التخزين السحابي** غير مطبق؛ البيانات محفوظة محليًا في المتصفح أو يتم تصديرها يدويًا.
+
+تمثل هذه الإضافات خطوة كبيرة نحو نظام متكامل يلبي احتياجات المعلمين والتلاميذ في إدارة الجدول والحضور والمدفوعات. ومع إضافة بطاقة التلميذ، أصبحت الواجهة أكثر جاذبية وسهولة في الوصول إلى المعلومات الشخصية. -->
+<!-- ## General Review of Both Files
+
+### Overview
+
+You have two main files:
+
+- **index.html** – the student-facing schedule page with authentication, language/theme switching, and personalized views.
+- **admin.html** – a separate admin tool for importing, editing, and exporting the schedule data.
+
+Both are self-contained HTML/JavaScript applications that run entirely in the browser. The data is stored as static JavaScript objects and arrays. This design is great for prototyping and local use but has limitations for production.
+
+---
+
+## 1. Strengths
+
+### index.html
+
+- **Rich feature set**: login, multi-language (Arabic, French, English), dark/light theme, personalized schedule, group roster, attendance/payment status, work system, subjects, and parent info.
+- **Responsive design**: CSS media queries adapt to mobile screens.
+- **Accessibility considerations**: proper `lang` and `dir` attributes, focusable elements, modal with keyboard escape.
+- **Modular structure**: clear separation of data, state, rendering functions, and event listeners.
+- **Flexible name matching**: normalization functions for Arabic and Latin names improve login tolerance.
+
+### admin.html
+
+- **Clear separation** from student page.
+- **Import flexibility**: can paste entire HTML, a JS object, or upload a file.
+- **Full CRUD operations** for students, sections, subjects, and schedule cells.
+- **Visual schedule editor** with click-to-edit cells.
+- **Export options**: copy full HTML, copy data object, or download modified HTML.
+- **Good UI feedback**: toast notifications, modal dialogs, tab navigation.
+
+---
+
+## 2. Weaknesses and Potential Issues
+
+### a) Security & Data Integrity
+
+- **Plaintext passwords** – passwords are stored in `students` array as plain strings. Anyone viewing source can see them. This is unacceptable for any real-world deployment, even if local.
+- **No authentication for admin** – `admin.html` is accessible to anyone with the URL. In a real setup, it must be protected.
+- **Data persistence** – all changes are lost on refresh. Admin modifications only exist in memory until exported.
+- **JavaScript eval** – `admin.html` uses `eval()` to parse pasted content. This is dangerous if the pasted content is untrusted (XSS). The parser also uses regex to find `const` declarations, which is brittle.
+- **Client-side only** – no server validation, no real user accounts, no secure storage.
+
+### b) Maintainability
+
+- **Duplication of data** – `days`, `timeSlots`, `sections`, `subjectCatalog` are duplicated in both files. If you change one, the other becomes out of sync.
+- **Large monolithic scripts** – both files contain hundreds of lines of JavaScript mixed with HTML/CSS. Hard to navigate and debug.
+- **No build system or modules** – everything is in global scope, which can lead to naming collisions.
+- **Hard-coded references** – many DOM IDs are used directly in strings and functions. Refactoring is difficult.
+
+### c) Functionality / UX
+
+- **Login alerts** – using `alert()` for invalid credentials is jarring; a more elegant inline error message would be better.
+- **Attendance records** – students have hard-coded attendance arrays with dates. There is no way for the student to see future or more detailed records. Admin can edit them, but the UX is minimal.
+- **Work system** – only displays a label; no calculation of remaining sessions or payment amounts.
+- **Personal schedule** – simply lists sessions; it does not highlight the current day or provide a weekly view.
+- **Roster** – shows only names; no details like contact info (maybe intentionally).
+- **Student card modal** – nice, but it could include more structured data or a QR code.
+
+### d) Admin Tool Specific
+
+- **Parser fragility** – the import parser relies on `const` declarations and regex. It may break if the index.html is minified, uses different variable names, or includes multiple script blocks. It also fails if data is not assigned exactly as `const X = ...`.
+- **Editing schedule cells** – the modal shows checkboxes for all sections and existing groups, but it doesn't allow adding a new group assignment directly (only existing group keys are listed). You have to create the group first elsewhere.
+- **No undo/redo** – accidental deletion is irreversible without re-importing.
+- **Export full HTML** – when `originalHTML` is missing (e.g., user pasted only a JS object), the generated HTML is a simplified version that lacks the original styling and most features (no language switching, no student card modal, etc.). This is misleading because the exported file won't behave like the original.
+- **Copy object** – exports JSON, but it's not directly usable as a replacement for the `data` constant in index.html; you'd need to manually integrate it.
+
+---
+
+## 3. Suggested Improvements
+
+### For Both Files
+
+1. **Separate data into a dedicated JSON file** – load it via `fetch` or embed it in a `<script type="application/json">` tag to avoid duplication.
+2. **Use a module bundler or at least ES6 modules** – split code into smaller, reusable files.
+3. **Replace `eval()` with a proper JSON parser** – if you only support JSON or a safe subset, avoid `eval`.
+4. **Encrypt/hash passwords** – for any real use, implement proper authentication (e.g., using a backend with bcrypt or similar).
+5. **Improve error handling** – show inline error messages instead of `alert`.
+6. **Add data validation** – before saving, validate that section keys, subject keys, and group assignments are consistent.
+
+### For index.html
+
+- **Use a real authentication mechanism** – at least store password hashes (but still client-side is insecure; use a server).
+- **Add a “forgot password” or demo mode** – not necessary but nice.
+- **Enhance personal schedule view** – show a mini weekly timetable for the logged-in student.
+- **Allow attendance to be dynamic** – maybe fetch from a server or localStorage.
+
+### For admin.html
+
+- **Improve parser** – use a proper HTML parser (like DOMParser) to extract the `<script>` content, then look for specific variable names more robustly. Or instruct users to paste only the JSON data object.
+- **Add a “Import JSON” button** that expects clean JSON, separate from “Import HTML”.
+- **Provide a template for exporting full-featured HTML** – instead of generating a stripped-down version, embed the full original index.html with placeholders replaced. That way the exported file retains all functionality.
+- **Add undo/redo** – maintain a history stack of data states.
+- **Allow editing all schedule cells at once** – maybe a table-like editor where each cell is a small input field, not just click-to-modal.
+- **Add bulk operations** – e.g., set all reserved cells to a specific section.
+- **Show a diff/preview** before exporting.
+
+---
+
+## 4. Overall Verdict
+
+Both files are impressive for a hand-coded, standalone solution. They demonstrate a clear understanding of the problem domain and offer many useful features. However, they are best suited for demonstration or local use, not production deployment.
+
+To move toward production, you would need:
+- A backend (e.g., Node.js, Python Flask) for data persistence and authentication.
+- A proper database (SQLite, MongoDB, etc.) instead of static JS objects.
+- A more robust admin interface with secure login and audit logs.
+- Possibly a framework (React, Vue, etc.) for better state management and component reuse.
+
+If the goal is a quick, shareable prototype, these files are more than adequate. Just be mindful of the security and maintainability caveats. -->

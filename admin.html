@@ -1,0 +1,1389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- PWA Manifest -->
+<link rel="manifest" href="manifest.json">
+
+<!-- Theme color for browser chrome -->
+<meta name="theme-color" content="#2c3e50">
+
+<!-- Optional: Apple touch icon for iOS -->
+<link rel="apple-touch-icon" href="assets/icons/icon-94x94.png">
+    <title>Admin - Schedule Manager</title>
+    <style>
+        :root {
+            --bg: #f0f2f5;
+            --surface: #ffffff;
+            --text: #1e293b;
+            --border: #e2e8f0;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+            --success: #10b981;
+            --shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+            --radius: 12px;
+            --transition: 0.2s ease;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        .import-section {
+            background: var(--surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+        .import-section h2 {
+            margin-bottom: 15px;
+        }
+        textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 15px;
+            border: 2px dashed var(--border);
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            resize: vertical;
+            transition: var(--transition);
+            background: #f8fafc;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: #fff;
+        }
+        .file-upload {
+            margin: 15px 0;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: var(--transition);
+            text-decoration: none;
+            color: #fff;
+            background: var(--primary);
+        }
+        .btn:hover { background: var(--primary-hover); }
+        .btn-danger { background: var(--danger); }
+        .btn-danger:hover { background: var(--danger-hover); }
+        .btn-success { background: var(--success); }
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+        }
+        .btn-outline:hover { background: var(--primary); color: #fff; }
+        .editor {
+            display: none;
+            background: var(--surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid var(--border);
+            background: #f8fafc;
+        }
+        .tab {
+            padding: 12px 25px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #64748b;
+            border-bottom: 3px solid transparent;
+            transition: var(--transition);
+        }
+        .tab:hover { color: var(--primary); }
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            background: #fff;
+        }
+        .tab-content {
+            display: none;
+            padding: 25px;
+        }
+        .tab-content.active { display: block; }
+        .list-item {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .list-item .info {
+            flex: 1;
+            min-width: 200px;
+        }
+        .actions {
+            display: flex;
+            gap: 10px;
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal {
+            background: #fff;
+            border-radius: var(--radius);
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+            padding: 25px;
+        }
+        .modal h3 {
+            margin-bottom: 20px;
+            color: var(--primary);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.95rem;
+        }
+        .form-group textarea { min-height: 80px; }
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .checkbox-group label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: normal;
+            cursor: pointer;
+        }
+        .table-schedule {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        .table-schedule th, .table-schedule td {
+            border: 1px solid var(--border);
+            padding: 8px;
+            text-align: center;
+            font-size: 0.85rem;
+        }
+        .table-schedule th {
+            background: var(--primary);
+            color: #fff;
+        }
+        .schedule-cell {
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .schedule-cell:hover {
+            background: #eff6ff;
+        }
+        .export-btns {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #333;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 6px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: 2000;
+        }
+        .toast.show { opacity: 1; }
+        @media (max-width: 768px) {
+            .tab { padding: 10px 15px; font-size: 0.9rem; }
+            .modal { padding: 15px; }
+        }
+.install-btn {
+  background: linear-gradient(135deg, #3498db, #2c3e50);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 14px;
+  transition: opacity 0.2s;
+}
+.install-btn:hover {
+  opacity: 0.9;
+}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🛠️ Admin Panel</h1>
+            <p>Manage schedule, students, sections, subjects</p>
+  <button id="install-btn" style="display:none;">📲 Install Admin</button>
+        </header>
+
+        <!-- Import Section -->
+        <div class="import-section">
+            <h2>Import Data</h2>
+            <p>Paste the entire <strong>index.html</strong> content or a JavaScript object containing <code>data</code> and <code>subjectCatalog</code>.</p>
+            <textarea id="import-text" placeholder="Paste here..."></textarea>
+            <div class="file-upload">
+                <input type="file" id="file-input" accept=".html,.txt,.json,.js" style="display:none;" />
+                <button class="btn btn-outline" onclick="document.getElementById('file-input').click()">📁 Upload File</button>
+                <button class="btn" id="parse-btn">🔍 Parse & Load</button>
+            </div>
+        </div>
+
+        <!-- Editor (hidden initially) -->
+        <div class="editor" id="editor">
+            <div class="tabs">
+                <div class="tab active" data-tab="students">👥 Students</div>
+                <div class="tab" data-tab="schedule">📅 Schedule</div>
+                <div class="tab" data-tab="sections">🏫 Sections</div>
+                <div class="tab" data-tab="subjects">📚 Subjects</div>
+            </div>
+            <div class="tab-content active" id="tab-students">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <h3>Student List</h3>
+                    <button class="btn btn-success" id="add-student-btn">+ Add Student</button>
+                </div>
+                <div id="students-list"></div>
+            </div>
+            <div class="tab-content" id="tab-schedule">
+                <h3>Weekly Schedule</h3>
+                <p>Click on any cell to edit assignment(s).</p>
+                <div id="schedule-editor"></div>
+            </div>
+            <div class="tab-content" id="tab-sections">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <h3>Sections</h3>
+                    <button class="btn btn-success" id="add-section-btn">+ Add Section</button>
+                </div>
+                <div id="sections-list"></div>
+            </div>
+            <div class="tab-content" id="tab-subjects">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                    <h3>Subject Catalog</h3>
+                    <button class="btn btn-success" id="add-subject-btn">+ Add Subject</button>
+                </div>
+                <div id="subjects-list"></div>
+            </div>
+
+            <div class="export-btns">
+                <button class="btn" id="copy-html-btn">📄 Copy Full HTML</button>
+                <button class="btn" id="copy-object-btn">🧾 Copy Data Object</button>
+                <button class="btn btn-outline" id="download-html-btn">⬇️ Download HTML</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for editing student / schedule cell -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal" id="modal-content">
+            <!-- Dynamic content -->
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // ==================== Default Constants (copied from original index.html) ====================
+        const DEFAULT_SECTIONS = {
+            '6base': { ar: 'السادسة أساسي', en: '6th Basic', fr: '6ème Base' },
+            '7base': { ar: 'السابعة أساسي', en: '7th Basic', fr: '7ème Base' },
+            '8base': { ar: 'الثامنة أساسي', en: '8th Basic', fr: '8ème Base' }
+        };
+        const DEFAULT_SUBJECT_CATALOG = {
+            arabic: { ar: 'العربية', en: 'Arabic', fr: 'Arabe' },
+            french: { ar: 'الفرنسية', en: 'French', fr: 'Français' },
+            english: { ar: 'الإنجليزية', en: 'English', fr: 'Anglais' },
+            math: { ar: 'الرياضيات', en: 'Mathematics', fr: 'Mathématiques' },
+            science: { ar: 'العلوم', en: 'Science', fr: 'Sciences' },
+            history: { ar: 'التاريخ والجغرافيا', en: 'History & Geography', fr: 'Histoire-Géographie' },
+            islamic: { ar: 'التربية الإسلامية', en: 'Islamic Education', fr: 'Éducation Islamique' },
+            civics: { ar: 'التربية المدنية', en: 'Civics', fr: 'Éducation Civique' }
+        };
+        const DAYS = [
+            { key: 'mon', ar: 'الاثنين', en: 'Monday', fr: 'Lundi' },
+            { key: 'tue', ar: 'الثلاثاء', en: 'Tuesday', fr: 'Mardi' },
+            { key: 'wed', ar: 'الأربعاء', en: 'Wednesday', fr: 'Mercredi' },
+            { key: 'thu', ar: 'الخميس', en: 'Thursday', fr: 'Jeudi' },
+            { key: 'fri', ar: 'الجمعة', en: 'Friday', fr: 'Vendredi' },
+            { key: 'sat', ar: 'السبت', en: 'Saturday', fr: 'Samedi' },
+            { key: 'sun', ar: 'الأحد', en: 'Sunday', fr: 'Dimanche' }
+        ];
+        const TIME_SLOTS = [];
+        for (let hour = 7; hour <= 20; hour++) {
+            TIME_SLOTS.push({
+                id: `slot${hour}`,
+                ar: `${hour}:00 - ${hour+1}:00`,
+                en: `${hour}:00 - ${hour+1}:00`,
+                fr: `${hour}h - ${hour+1}h`
+            });
+        }
+
+        // ==================== State ====================
+        let adminData = {
+            sections: JSON.parse(JSON.stringify(DEFAULT_SECTIONS)),
+            subjectCatalog: JSON.parse(JSON.stringify(DEFAULT_SUBJECT_CATALOG)),
+            schedule: {},
+            students: []
+        };
+        let originalHTML = null; // if full HTML was imported
+        let currentModalCallback = null;
+
+        // ==================== Utility Functions ====================
+        function toast(message) {
+            const t = document.getElementById('toast');
+            t.textContent = message;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 2000);
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function deepClone(obj) {
+            return JSON.parse(JSON.stringify(obj));
+        }
+
+        function openModal(html, callback) {
+            document.getElementById('modal-content').innerHTML = html;
+            document.getElementById('modal-overlay').classList.add('show');
+            currentModalCallback = callback;
+        }
+
+        function closeModal() {
+            document.getElementById('modal-overlay').classList.remove('show');
+            currentModalCallback = null;
+        }
+
+        document.getElementById('modal-overlay').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+
+        // ==================== Import / Parse ====================
+        function findMatchingDelimiter(str, startIndex, openChar, closeChar) {
+            let count = 0;
+            for (let i = startIndex; i < str.length; i++) {
+                if (str[i] === openChar) count++;
+                else if (str[i] === closeChar) {
+                    count--;
+                    if (count === 0) return i;
+                }
+            }
+            return -1;
+        }
+
+        function extractObjectFromCode(code, varName) {
+            const constDecl = `const ${varName} = `;
+            let idx = code.indexOf(constDecl);
+            if (idx === -1) return null;
+            idx += constDecl.length;
+            while (idx < code.length && /\s/.test(code[idx])) idx++;
+            if (code[idx] !== '{' && code[idx] !== '[') return null;
+            const openChar = code[idx];
+            const closeChar = openChar === '{' ? '}' : ']';
+            const end = findMatchingDelimiter(code, idx, openChar, closeChar);
+            if (end === -1) return null;
+            const objStr = code.substring(idx, end + 1);
+            try {
+                return eval('(' + objStr + ')');
+            } catch (e) {
+                console.error('Failed to eval object:', e);
+                return null;
+            }
+        }
+
+        function parseContent(text) {
+            text = text.trim();
+            let sections = null, subjectCatalog = null, schedule = null, students = null;
+            let fullHTML = false;
+
+            // Check if it's full HTML
+            if (text.includes('<html') || text.includes('<!DOCTYPE html') || text.includes('<script')) {
+                fullHTML = true;
+                originalHTML = text; // store original
+                const scriptMatch = text.match(/<script>([\s\S]*?)<\/script>/);
+                if (!scriptMatch) {
+                    alert('No <script> block found in HTML');
+                    return;
+                }
+                const scriptContent = scriptMatch[1];
+
+                // Extract individual variables (more reliable than data object)
+                subjectCatalog = extractObjectFromCode(scriptContent, 'subjectCatalog');
+                sections = extractObjectFromCode(scriptContent, 'sections');
+                schedule = extractObjectFromCode(scriptContent, 'schedule');
+                students = extractObjectFromCode(scriptContent, 'students');
+
+                // If any missing, try to extract from data object (in case of non-shorthand)
+                if (!sections || !schedule || !students) {
+                    const dataObj = extractObjectFromCode(scriptContent, 'data');
+                    if (dataObj) {
+                        sections = dataObj.sections || sections;
+                        schedule = dataObj.schedule || schedule;
+                        students = dataObj.students || students;
+                    }
+                }
+            } else {
+                // Assume it's a JavaScript object or JSON
+                try {
+                    const obj = JSON.parse(text);
+                    if (obj.data && obj.subjectCatalog) {
+                        subjectCatalog = obj.subjectCatalog;
+                        sections = obj.data.sections;
+                        schedule = obj.data.schedule;
+                        students = obj.data.students;
+                    } else if (obj.sections && obj.schedule && obj.students && obj.subjectCatalog) {
+                        sections = obj.sections;
+                        schedule = obj.schedule;
+                        students = obj.students;
+                        subjectCatalog = obj.subjectCatalog;
+                    } else {
+                        alert('Invalid object: missing required fields');
+                        return;
+                    }
+                } catch (e) {
+                    // Try to extract from JavaScript code
+                    subjectCatalog = extractObjectFromCode(text, 'subjectCatalog');
+                    const dataObj = extractObjectFromCode(text, 'data');
+                    if (dataObj) {
+                        sections = dataObj.sections;
+                        schedule = dataObj.schedule;
+                        students = dataObj.students;
+                    } else {
+                        sections = extractObjectFromCode(text, 'sections');
+                        schedule = extractObjectFromCode(text, 'schedule');
+                        students = extractObjectFromCode(text, 'students');
+                    }
+                }
+            }
+
+            if (!sections || !schedule || !students) {
+                alert('Could not parse the data. Please check your input.');
+                return;
+            }
+            if (!subjectCatalog) {
+                subjectCatalog = DEFAULT_SUBJECT_CATALOG;
+            }
+            // Ensure schedule is complete for all days/slots
+            DAYS.forEach(d => {
+                if (!schedule[d.key]) schedule[d.key] = {};
+                TIME_SLOTS.forEach(slot => {
+                    if (!schedule[d.key][slot.id]) schedule[d.key][slot.id] = 'reserved';
+                });
+            });
+            adminData.sections = sections;
+            adminData.subjectCatalog = subjectCatalog;
+            adminData.schedule = schedule;
+            adminData.students = students;
+
+            document.getElementById('editor').style.display = 'block';
+            renderAll();
+        }
+
+        document.getElementById('parse-btn').addEventListener('click', function() {
+            const text = document.getElementById('import-text').value.trim();
+            if (!text) {
+                alert('Please paste content first');
+                return;
+            }
+            parseContent(text);
+        });
+
+        document.getElementById('file-input').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                document.getElementById('import-text').value = ev.target.result;
+                parseContent(ev.target.result);
+            };
+            reader.readAsText(file);
+        });
+
+        // ==================== Tabs ====================
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                const tabName = this.dataset.tab;
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                this.classList.add('active');
+                document.getElementById('tab-' + tabName).classList.add('active');
+            });
+        });
+
+        // ==================== Render Functions ====================
+        function renderAll() {
+            renderStudents();
+            renderSchedule();
+            renderSections();
+            renderSubjects();
+        }
+
+        function renderStudents() {
+            const container = document.getElementById('students-list');
+            if (adminData.students.length === 0) {
+                container.innerHTML = '<p>No students yet.</p>';
+                return;
+            }
+            let html = '';
+            adminData.students.forEach((student, index) => {
+                const name = student.nameAr || student.nameEn || student.nameFr || 'Unnamed';
+                html += `
+                <div class="list-item">
+                    <div class="info">
+                        <strong>${escapeHtml(name)}</strong>
+                        <span style="margin-left:10px; color:#64748b;">${escapeHtml(student.section || '')}</span>
+                        ${student.group ? `<span style="margin-left:5px; color:#64748b;">Group ${escapeHtml(student.group)}</span>` : ''}
+                    </div>
+                    <div class="actions">
+                        <button class="btn" onclick="editStudent(${index})">✏️ Edit</button>
+                        <button class="btn btn-danger" onclick="deleteStudent(${index})">🗑️ Delete</button>
+                    </div>
+                </div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function renderSections() {
+            const container = document.getElementById('sections-list');
+            const keys = Object.keys(adminData.sections);
+            if (keys.length === 0) {
+                container.innerHTML = '<p>No sections.</p>';
+                return;
+            }
+            let html = '';
+            keys.forEach(key => {
+                const sec = adminData.sections[key];
+                html += `
+                <div class="list-item">
+                    <div class="info">
+                        <strong>${escapeHtml(key)}</strong>
+                        <span style="margin-left:10px;">${escapeHtml(sec.ar || '')} | ${escapeHtml(sec.en || '')} | ${escapeHtml(sec.fr || '')}</span>
+                    </div>
+                    <div class="actions">
+                        <button class="btn" onclick="editSection('${key}')">✏️ Edit</button>
+                        <button class="btn btn-danger" onclick="deleteSection('${key}')">🗑️ Delete</button>
+                    </div>
+                </div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function renderSubjects() {
+            const container = document.getElementById('subjects-list');
+            const keys = Object.keys(adminData.subjectCatalog);
+            if (keys.length === 0) {
+                container.innerHTML = '<p>No subjects.</p>';
+                return;
+            }
+            let html = '';
+            keys.forEach(key => {
+                const subj = adminData.subjectCatalog[key];
+                html += `
+                <div class="list-item">
+                    <div class="info">
+                        <strong>${escapeHtml(key)}</strong>
+                        <span style="margin-left:10px;">${escapeHtml(subj.ar || '')} | ${escapeHtml(subj.en || '')} | ${escapeHtml(subj.fr || '')}</span>
+                    </div>
+                    <div class="actions">
+                        <button class="btn" onclick="editSubject('${key}')">✏️ Edit</button>
+                        <button class="btn btn-danger" onclick="deleteSubject('${key}')">🗑️ Delete</button>
+                    </div>
+                </div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function renderSchedule() {
+            const container = document.getElementById('schedule-editor');
+            let tableHtml = '<table class="table-schedule"><thead><tr><th>Day</th>';
+            TIME_SLOTS.forEach(slot => {
+                tableHtml += `<th>${escapeHtml(slot.ar || slot.en)}</th>`;
+            });
+            tableHtml += '</tr></thead><tbody>';
+            DAYS.forEach(day => {
+                tableHtml += `<tr><th>${escapeHtml(day.ar || day.en)}</th>`;
+                TIME_SLOTS.forEach(slot => {
+                    const assignment = adminData.schedule[day.key]?.[slot.id] || 'reserved';
+                    let display = '';
+                    if (Array.isArray(assignment)) {
+                        display = assignment.map(a => getAssignmentDisplay(a)).join(', ');
+                    } else {
+                        display = getAssignmentDisplay(assignment);
+                    }
+                    tableHtml += `<td class="schedule-cell" data-day="${day.key}" data-slot="${slot.id}" onclick="editScheduleCell('${day.key}', '${slot.id}')">${escapeHtml(display)}</td>`;
+                });
+                tableHtml += '</tr>';
+            });
+            tableHtml += '</tbody></table>';
+            container.innerHTML = tableHtml;
+        }
+
+        function getAssignmentDisplay(assignmentKey) {
+            if (assignmentKey === 'reserved') return 'Reserved';
+            const parts = assignmentKey.split('-g');
+            const sectionKey = parts[0];
+            const group = parts.length > 1 ? parts[1] : null;
+            let display = adminData.sections[sectionKey] ? (adminData.sections[sectionKey].ar || sectionKey) : sectionKey;
+            if (group) display += ` (Group ${group})`;
+            return display;
+        }
+
+        // ==================== Student CRUD ====================
+        function editStudent(index) {
+            const student = adminData.students[index];
+            if (!student) return;
+            let subjectsOptions = '';
+            const allSubjects = Object.keys(adminData.subjectCatalog);
+            if (student.subjects === 'all') {
+                subjectsOptions += `<option value="all" selected>All Subjects</option>`;
+            } else {
+                subjectsOptions += `<option value="all">All Subjects</option>`;
+            }
+            allSubjects.forEach(subj => {
+                const selected = Array.isArray(student.subjects) && student.subjects.includes(subj) ? 'selected' : '';
+                subjectsOptions += `<option value="${subj}" ${selected}>${escapeHtml(adminData.subjectCatalog[subj].ar || subj)}</option>`;
+            });
+            let attendanceRows = '';
+            (student.attendance || []).forEach((att, i) => {
+                attendanceRows += `
+                <div style="display:flex; gap:10px; margin-bottom:5px;">
+                    <input type="text" value="${escapeHtml(att.date)}" placeholder="Date" data-att-index="${i}" data-att-field="date">
+                    <select data-att-index="${i}" data-att-field="status">
+                        <option value="paid" ${att.status === 'paid' ? 'selected' : ''}>Paid</option>
+                        <option value="unpaid" ${att.status === 'unpaid' ? 'selected' : ''}>Unpaid</option>
+                        <option value="overdue" ${att.status === 'overdue' ? 'selected' : ''}>Overdue</option>
+                    </select>
+                </div>`;
+            });
+            const modalHtml = `
+                <h3>Edit Student</h3>
+                <div class="form-group">
+                    <label>Name (Arabic)</label>
+                    <input type="text" id="edit-nameAr" value="${escapeHtml(student.nameAr || '')}">
+                </div>
+                <div class="form-group">
+                    <label>Name (English)</label>
+                    <input type="text" id="edit-nameEn" value="${escapeHtml(student.nameEn || '')}">
+                </div>
+                <div class="form-group">
+                    <label>Name (French)</label>
+                    <input type="text" id="edit-nameFr" value="${escapeHtml(student.nameFr || '')}">
+                </div>
+                <div class="form-group">
+                    <label>Section</label>
+                    <select id="edit-section">
+                        ${Object.keys(adminData.sections).map(key => `<option value="${key}" ${student.section === key ? 'selected' : ''}>${key}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Group (optional)</label>
+                    <input type="text" id="edit-group" value="${escapeHtml(student.group || '')}">
+                </div>
+                <div class="form-group">
+                    <label>Work System</label>
+                    <select id="edit-workSystem">
+                        <option value="monthly" ${student.workSystem === 'monthly' ? 'selected' : ''}>Monthly</option>
+                        <option value="per8sessions" ${student.workSystem === 'per8sessions' ? 'selected' : ''}>Per 8 Sessions</option>
+                        <option value="custom" ${student.workSystem === 'custom' ? 'selected' : ''}>Custom</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="text" id="edit-password" value="${escapeHtml(student.password || '')}">
+                </div>
+                <div class="form-group">
+                    <label>Subjects (select multiple)</label>
+                    <select id="edit-subjects" multiple size="5">${subjectsOptions}</select>
+                    <small>Hold Ctrl to select multiple</small>
+                </div>
+                <div class="form-group">
+                    <label>Parent Name</label>
+                    <input type="text" id="edit-parentName" value="${escapeHtml(student.parentName || '')}">
+                </div>
+                <div class="form-group">
+                    <label>Parent Phone</label>
+                    <input type="text" id="edit-parentPhone" value="${escapeHtml(student.parentPhone || '')}">
+                </div>
+                <div class="form-group">
+                    <label>Attendance Records</label>
+                    <div id="attendance-edit-container">${attendanceRows}</div>
+                    <button class="btn btn-outline" type="button" onclick="addAttendanceRow()">+ Add Attendance</button>
+                </div>
+                <div style="display:flex; gap:10px; justify-content:flex-end;">
+                    <button class="btn" onclick="saveStudent(${index})">Save</button>
+                    <button class="btn btn-danger" onclick="closeModal()">Cancel</button>
+                </div>
+            `;
+            openModal(modalHtml, null);
+        }
+
+        function addStudent() {
+            const modalHtml = `
+                <h3>Add New Student</h3>
+                <div class="form-group">
+                    <label>Name (Arabic)</label>
+                    <input type="text" id="new-nameAr" value="">
+                </div>
+                <div class="form-group">
+                    <label>Name (English)</label>
+                    <input type="text" id="new-nameEn" value="">
+                </div>
+                <div class="form-group">
+                    <label>Name (French)</label>
+                    <input type="text" id="new-nameFr" value="">
+                </div>
+                <div class="form-group">
+                    <label>Section</label>
+                    <select id="new-section">
+                        ${Object.keys(adminData.sections).map(key => `<option value="${key}">${key}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Group (optional)</label>
+                    <input type="text" id="new-group" value="">
+                </div>
+                <div class="form-group">
+                    <label>Work System</label>
+                    <select id="new-workSystem">
+                        <option value="monthly">Monthly</option>
+                        <option value="per8sessions">Per 8 Sessions</option>
+                        <option value="custom">Custom</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="text" id="new-password" value="123">
+                </div>
+                <div class="form-group">
+                    <label>Subjects</label>
+                    <select id="new-subjects" multiple size="5">
+                        <option value="all" selected>All Subjects</option>
+                        ${Object.keys(adminData.subjectCatalog).map(key => `<option value="${key}">${escapeHtml(adminData.subjectCatalog[key].ar || key)}</option>`).join('')}
+                    </select>
+                    <small>Hold Ctrl to select multiple</small>
+                </div>
+                <div class="form-group">
+                    <label>Parent Name</label>
+                    <input type="text" id="new-parentName" value="">
+                </div>
+                <div class="form-group">
+                    <label>Parent Phone</label>
+                    <input type="text" id="new-parentPhone" value="">
+                </div>
+                <div style="display:flex; gap:10px; justify-content:flex-end;">
+                    <button class="btn btn-success" onclick="saveNewStudent()">Add Student</button>
+                    <button class="btn btn-danger" onclick="closeModal()">Cancel</button>
+                </div>
+            `;
+            openModal(modalHtml, null);
+        }
+
+        function saveStudent(index) {
+            const student = adminData.students[index];
+            student.nameAr = document.getElementById('edit-nameAr').value;
+            student.nameEn = document.getElementById('edit-nameEn').value;
+            student.nameFr = document.getElementById('edit-nameFr').value;
+            student.section = document.getElementById('edit-section').value;
+            student.group = document.getElementById('edit-group').value || null;
+            student.workSystem = document.getElementById('edit-workSystem').value;
+            student.password = document.getElementById('edit-password').value;
+            const selectedSubjects = Array.from(document.getElementById('edit-subjects').selectedOptions).map(opt => opt.value);
+            if (selectedSubjects.includes('all')) {
+                student.subjects = 'all';
+            } else {
+                student.subjects = selectedSubjects.length > 0 ? selectedSubjects : [];
+            }
+            student.parentName = document.getElementById('edit-parentName').value;
+            student.parentPhone = document.getElementById('edit-parentPhone').value;
+            const attendance = [];
+            const container = document.getElementById('attendance-edit-container');
+            const rows = container.querySelectorAll('div[style*="display:flex"]');
+            rows.forEach(row => {
+                const dateInput = row.querySelector('input[data-att-field="date"]');
+                const statusSelect = row.querySelector('select[data-att-field="status"]');
+                if (dateInput && statusSelect) {
+                    attendance.push({ date: dateInput.value, status: statusSelect.value });
+                }
+            });
+            student.attendance = attendance;
+            closeModal();
+            renderStudents();
+            toast('Student updated');
+        }
+
+        function saveNewStudent() {
+            const newStudent = {
+                nameAr: document.getElementById('new-nameAr').value,
+                nameEn: document.getElementById('new-nameEn').value,
+                nameFr: document.getElementById('new-nameFr').value,
+                section: document.getElementById('new-section').value,
+                group: document.getElementById('new-group').value || null,
+                workSystem: document.getElementById('new-workSystem').value,
+                password: document.getElementById('new-password').value,
+                subjects: [],
+                parentName: document.getElementById('new-parentName').value,
+                parentPhone: document.getElementById('new-parentPhone').value,
+                attendance: []
+            };
+            const selectedSubjects = Array.from(document.getElementById('new-subjects').selectedOptions).map(opt => opt.value);
+            if (selectedSubjects.includes('all')) {
+                newStudent.subjects = 'all';
+            } else {
+                newStudent.subjects = selectedSubjects;
+            }
+            adminData.students.push(newStudent);
+            closeModal();
+            renderStudents();
+            toast('Student added');
+        }
+
+        function deleteStudent(index) {
+            if (confirm('Are you sure you want to delete this student?')) {
+                adminData.students.splice(index, 1);
+                renderStudents();
+                toast('Student deleted');
+            }
+        }
+
+        // ==================== Section CRUD ====================
+        function editSection(key) {
+            const sec = adminData.sections[key];
+            const modalHtml = `
+                <h3>Edit Section</h3>
+                <div class="form-group">
+                    <label>Key</label>
+                    <input type="text" id="edit-section-key" value="${escapeHtml(key)}" disabled>
+                </div>
+                <div class="form-group">
+                    <label>Arabic Name</label>
+                    <input type="text" id="edit-section-ar" value="${escapeHtml(sec.ar || '')}">
+                </div>
+                <div class="form-group">
+                    <label>English Name</label>
+                    <input type="text" id="edit-section-en" value="${escapeHtml(sec.en || '')}">
+                </div>
+                <div class="form-group">
+                    <label>French Name</label>
+                    <input type="text" id="edit-section-fr" value="${escapeHtml(sec.fr || '')}">
+                </div>
+                <div style="display:flex; gap:10px; justify-content:flex-end;">
+                    <button class="btn" onclick="saveSection('${key}')">Save</button>
+                    <button class="btn btn-danger" onclick="closeModal()">Cancel</button>
+                </div>
+            `;
+            openModal(modalHtml, null);
+        }
+
+        function addSection() {
+            const modalHtml = `
+                <h3>Add Section</h3>
+                <div class="form-group">
+                    <label>Key</label>
+                    <input type="text" id="new-section-key" placeholder="e.g., 9base">
+                </div>
+                <div class="form-group">
+                    <label>Arabic Name</label>
+                    <input type="text" id="new-section-ar">
+                </div>
+                <div class="form-group">
+                    <label>English Name</label>
+                    <input type="text" id="new-section-en">
+                </div>
+                <div class="form-group">
+                    <label>French Name</label>
+                    <input type="text" id="new-section-fr">
+                </div>
+                <div style="display:flex; gap:10px; justify-content:flex-end;">
+                    <button class="btn btn-success" onclick="saveNewSection()">Add</button>
+                    <button class="btn btn-danger" onclick="closeModal()">Cancel</button>
+                </div>
+            `;
+            openModal(modalHtml, null);
+        }
+
+        function saveSection(key) {
+            adminData.sections[key].ar = document.getElementById('edit-section-ar').value;
+            adminData.sections[key].en = document.getElementById('edit-section-en').value;
+            adminData.sections[key].fr = document.getElementById('edit-section-fr').value;
+            closeModal();
+            renderSections();
+            toast('Section updated');
+        }
+
+        function saveNewSection() {
+            const key = document.getElementById('new-section-key').value.trim();
+            if (!key) { alert('Key required'); return; }
+            if (adminData.sections[key]) { alert('Key already exists'); return; }
+            adminData.sections[key] = {
+                ar: document.getElementById('new-section-ar').value,
+                en: document.getElementById('new-section-en').value,
+                fr: document.getElementById('new-section-fr').value
+            };
+            closeModal();
+            renderSections();
+            toast('Section added');
+        }
+
+        function deleteSection(key) {
+            if (confirm('Delete this section? It may affect schedule and students.')) {
+                delete adminData.sections[key];
+                DAYS.forEach(d => {
+                    TIME_SLOTS.forEach(slot => {
+                        const assignment = adminData.schedule[d.key]?.[slot.id];
+                        if (Array.isArray(assignment)) {
+                            adminData.schedule[d.key][slot.id] = assignment.filter(a => !a.startsWith(key));
+                        } else if (assignment && assignment.startsWith(key)) {
+                            adminData.schedule[d.key][slot.id] = 'reserved';
+                        }
+                    });
+                });
+                adminData.students.forEach(student => {
+                    if (student.section === key) student.section = null;
+                });
+                renderSections();
+                renderSchedule();
+                renderStudents();
+                toast('Section deleted');
+            }
+        }
+
+        // ==================== Subject CRUD ====================
+        function editSubject(key) {
+            const subj = adminData.subjectCatalog[key];
+            const modalHtml = `
+                <h3>Edit Subject</h3>
+                <div class="form-group">
+                    <label>Key</label>
+                    <input type="text" id="edit-subject-key" value="${escapeHtml(key)}" disabled>
+                </div>
+                <div class="form-group">
+                    <label>Arabic Name</label>
+                    <input type="text" id="edit-subject-ar" value="${escapeHtml(subj.ar || '')}">
+                </div>
+                <div class="form-group">
+                    <label>English Name</label>
+                    <input type="text" id="edit-subject-en" value="${escapeHtml(subj.en || '')}">
+                </div>
+                <div class="form-group">
+                    <label>French Name</label>
+                    <input type="text" id="edit-subject-fr" value="${escapeHtml(subj.fr || '')}">
+                </div>
+                <div style="display:flex; gap:10px; justify-content:flex-end;">
+                    <button class="btn" onclick="saveSubject('${key}')">Save</button>
+                    <button class="btn btn-danger" onclick="closeModal()">Cancel</button>
+                </div>
+            `;
+            openModal(modalHtml, null);
+        }
+
+        function addSubject() {
+            const modalHtml = `
+                <h3>Add Subject</h3>
+                <div class="form-group">
+                    <label>Key</label>
+                    <input type="text" id="new-subject-key" placeholder="e.g., physics">
+                </div>
+                <div class="form-group">
+                    <label>Arabic Name</label>
+                    <input type="text" id="new-subject-ar">
+                </div>
+                <div class="form-group">
+                    <label>English Name</label>
+                    <input type="text" id="new-subject-en">
+                </div>
+                <div class="form-group">
+                    <label>French Name</label>
+                    <input type="text" id="new-subject-fr">
+                </div>
+                <div style="display:flex; gap:10px; justify-content:flex-end;">
+                    <button class="btn btn-success" onclick="saveNewSubject()">Add</button>
+                    <button class="btn btn-danger" onclick="closeModal()">Cancel</button>
+                </div>
+            `;
+            openModal(modalHtml, null);
+        }
+
+        function saveSubject(key) {
+            adminData.subjectCatalog[key].ar = document.getElementById('edit-subject-ar').value;
+            adminData.subjectCatalog[key].en = document.getElementById('edit-subject-en').value;
+            adminData.subjectCatalog[key].fr = document.getElementById('edit-subject-fr').value;
+            closeModal();
+            renderSubjects();
+            toast('Subject updated');
+        }
+
+        function saveNewSubject() {
+            const key = document.getElementById('new-subject-key').value.trim();
+            if (!key) { alert('Key required'); return; }
+            if (adminData.subjectCatalog[key]) { alert('Key already exists'); return; }
+            adminData.subjectCatalog[key] = {
+                ar: document.getElementById('new-subject-ar').value,
+                en: document.getElementById('new-subject-en').value,
+                fr: document.getElementById('new-subject-fr').value
+            };
+            closeModal();
+            renderSubjects();
+            toast('Subject added');
+        }
+
+        function deleteSubject(key) {
+            if (confirm('Delete this subject?')) {
+                delete adminData.subjectCatalog[key];
+                adminData.students.forEach(student => {
+                    if (Array.isArray(student.subjects)) {
+                        student.subjects = student.subjects.filter(s => s !== key);
+                    }
+                });
+                renderSubjects();
+                renderStudents();
+                toast('Subject deleted');
+            }
+        }
+
+        // ==================== Schedule Editing ====================
+        function editScheduleCell(dayKey, slotId) {
+            const current = adminData.schedule[dayKey]?.[slotId] || 'reserved';
+            const allOptions = [
+                { value: 'reserved', label: 'Reserved' },
+                ...Object.keys(adminData.sections).map(key => ({ value: key, label: adminData.sections[key].ar || key })),
+                ...generateGroupOptions()
+            ];
+            const selectedValues = Array.isArray(current) ? current : [current];
+            const optionsHtml = allOptions.map(opt => {
+                const checked = selectedValues.includes(opt.value) ? 'checked' : '';
+                return `<label style="display:block;"><input type="checkbox" value="${opt.value}" ${checked}> ${escapeHtml(opt.label)}</label>`;
+            }).join('');
+            const modalHtml = `
+                <h3>Edit Schedule Cell (${dayKey} ${slotId})</h3>
+                <p>Select one or more assignments:</p>
+                <div class="checkbox-group" style="flex-direction:column; align-items:flex-start;">
+                    ${optionsHtml}
+                </div>
+                <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:15px;">
+                    <button class="btn" onclick="saveScheduleCell('${dayKey}', '${slotId}')">Save</button>
+                    <button class="btn btn-danger" onclick="closeModal()">Cancel</button>
+                </div>
+            `;
+            openModal(modalHtml, null);
+        }
+
+        function generateGroupOptions() {
+            const groupSet = new Set();
+            DAYS.forEach(d => {
+                TIME_SLOTS.forEach(slot => {
+                    const assignment = adminData.schedule[d.key]?.[slot.id];
+                    if (Array.isArray(assignment)) {
+                        assignment.forEach(a => {
+                            if (a.includes('-g')) groupSet.add(a);
+                        });
+                    } else if (assignment && assignment.includes('-g')) {
+                        groupSet.add(assignment);
+                    }
+                });
+            });
+            return Array.from(groupSet).map(val => ({ value: val, label: getAssignmentDisplay(val) }));
+        }
+
+        function saveScheduleCell(dayKey, slotId) {
+            const checkboxes = document.querySelectorAll('#modal-content input[type="checkbox"]:checked');
+            const selected = Array.from(checkboxes).map(cb => cb.value);
+            if (selected.length === 0) {
+                adminData.schedule[dayKey][slotId] = 'reserved';
+            } else if (selected.length === 1) {
+                adminData.schedule[dayKey][slotId] = selected[0];
+            } else {
+                adminData.schedule[dayKey][slotId] = selected;
+            }
+            closeModal();
+            renderSchedule();
+            toast('Schedule updated');
+        }
+
+        // ==================== Attendance Row Helper ====================
+        function addAttendanceRow() {
+            const container = document.getElementById('attendance-edit-container');
+            const div = document.createElement('div');
+            div.style.cssText = 'display:flex; gap:10px; margin-bottom:5px;';
+            div.innerHTML = `
+                <input type="text" placeholder="Date" data-att-field="date">
+                <select data-att-field="status">
+                    <option value="paid">Paid</option>
+                    <option value="unpaid">Unpaid</option>
+                    <option value="overdue">Overdue</option>
+                </select>
+            `;
+            container.appendChild(div);
+        }
+
+        // ==================== Export ====================
+        function generateDataObject() {
+            return {
+                subjectCatalog: adminData.subjectCatalog,
+                data: {
+                    days: DAYS,
+                    timeSlots: TIME_SLOTS,
+                    sections: adminData.sections,
+                    schedule: adminData.schedule,
+                    students: adminData.students
+                }
+            };
+        }
+
+        function generateFullHTML() {
+            if (originalHTML) {
+                let html = originalHTML;
+                const subjStr = `const subjectCatalog = ${JSON.stringify(adminData.subjectCatalog)};`;
+                html = html.replace(/const subjectCatalog = \{[\s\S]*?\};/, subjStr);
+                const dataObj = {
+                    days: DAYS,
+                    timeSlots: TIME_SLOTS,
+                    sections: adminData.sections,
+                    schedule: adminData.schedule,
+                    students: adminData.students
+                };
+                const dataStr = `const data = ${JSON.stringify(dataObj)};`;
+                html = html.replace(/const data = \{[\s\S]*?\};/, dataStr);
+                return html;
+            } else {
+                return generateBasicHTML();
+            }
+        }
+
+        function generateBasicHTML() {
+            const dataObj = {
+                days: DAYS,
+                timeSlots: TIME_SLOTS,
+                sections: adminData.sections,
+                schedule: adminData.schedule,
+                students: adminData.students
+            };
+            const html = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>جدول التلميذ</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; background: #f4f7fc; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #d0d7de; padding: 8px; text-align: center; }
+        th { background: #2c3e50; color: white; }
+        .reserved { background: #fff3cd; font-style: italic; }
+        .student-highlight { background: #d4edda !important; }
+        .merged-item { display: block; margin: 2px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📅 جدول التلميذ</h1>
+        <p>من الاثنين إلى الأحد | من 7:00 صباحًا إلى 8:00 مساءً</p>
+        <div class="auth-section">
+            <div id="login-form">
+                <input type="text" id="login-name" placeholder="الاسم الكامل" />
+                <input type="password" id="login-password" placeholder="الرقم السري" />
+                <button id="login-btn">دخول</button>
+            </div>
+            <div id="user-info" style="display:none;">
+                <span id="user-avatar"></span>
+                <span id="logged-name"></span>
+                <button id="logout-btn">تسجيل الخروج</button>
+                <button id="student-card-btn">بطاقة التلميذ</button>
+            </div>
+        </div>
+        <div class="table-wrapper">
+            <table id="schedule-table">
+                <thead id="schedule-head"></thead>
+                <tbody id="schedule-body"></tbody>
+            </table>
+        </div>
+        <div id="personal-schedule" class="personal-schedule" style="display:none;"></div>
+        <div id="roster-panel" class="roster-panel" style="display:none;"></div>
+        <div id="attendance-panel" class="attendance-panel" style="display:none;"></div>
+        <div id="work-system-panel" class="work-system-panel" style="display:none;"></div>
+        <div id="materials-panel" class="materials-panel" style="display:none;"></div>
+    </div>
+    <script>
+        const days = ${JSON.stringify(DAYS)};
+        const timeSlots = ${JSON.stringify(TIME_SLOTS)};
+        const sections = ${JSON.stringify(adminData.sections)};
+        const subjectCatalog = ${JSON.stringify(adminData.subjectCatalog)};
+        const schedule = ${JSON.stringify(adminData.schedule)};
+        const students = ${JSON.stringify(adminData.students)};
+        const data = { days, timeSlots, sections, schedule, students };
+    <\/script>
+</body>
+</html>`;
+            return html;
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => toast('Copied to clipboard!'), () => toast('Failed to copy'));
+        }
+
+        document.getElementById('copy-html-btn').addEventListener('click', function() {
+            const html = generateFullHTML();
+            copyToClipboard(html);
+        });
+
+        document.getElementById('copy-object-btn').addEventListener('click', function() {
+            const obj = generateDataObject();
+            copyToClipboard(JSON.stringify(obj, null, 2));
+        });
+
+        document.getElementById('download-html-btn').addEventListener('click', function() {
+            const html = generateFullHTML();
+            const blob = new Blob([html], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'index_modified.html';
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        // ==================== Event Listeners ====================
+        document.getElementById('add-student-btn').addEventListener('click', addStudent);
+        document.getElementById('add-section-btn').addEventListener('click', addSection);
+        document.getElementById('add-subject-btn').addEventListener('click', addSubject);
+
+        // Expose functions to global scope
+        window.editStudent = editStudent;
+        window.deleteStudent = deleteStudent;
+        window.editSection = editSection;
+        window.deleteSection = deleteSection;
+        window.editSubject = editSubject;
+        window.deleteSubject = deleteSubject;
+        window.editScheduleCell = editScheduleCell;
+        window.saveScheduleCell = saveScheduleCell;
+        window.saveStudent = saveStudent;
+        window.saveNewStudent = saveNewStudent;
+        window.saveSection = saveSection;
+        window.saveNewSection = saveNewSection;
+        window.saveSubject = saveSubject;
+        window.saveNewSubject = saveNewSubject;
+        window.addAttendanceRow = addAttendanceRow;
+        window.closeModal = closeModal;
+    </script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(registration => console.log('Service Worker registered:', registration.scope))
+        .catch(error => console.error('Service Worker registration failed:', error));
+    });
+  }
+</script>
+<script>
+  // Install button logic
+  let deferredPrompt = null;
+  const installBtn = document.getElementById('install-btn');
+
+  // Capture the beforeinstallprompt event
+  window.addEventListener('beforeinstallprompt', (event) => {
+    // Prevent the browser's default prompt
+    event.preventDefault();
+    // Save the event for later use
+    deferredPrompt = event;
+    // Show the install button
+    if (installBtn) installBtn.style.display = 'block';
+  });
+
+  // When the user clicks the install button
+  if (installBtn) {
+    installBtn.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+
+      // Show the browser install prompt
+      deferredPrompt.prompt();
+      const choiceResult = await deferredPrompt.userChoice;
+
+      if (choiceResult.outcome === 'accepted') {
+        console.log('User accepted the install prompt');
+      } else {
+        console.log('User dismissed the install prompt');
+      }
+
+      // Clear the saved prompt (it can only be used once)
+      deferredPrompt = null;
+      // Hide the install button
+      installBtn.style.display = 'none';
+    });
+  }
+
+  // Hide the button if the app is already installed
+  window.addEventListener('appinstalled', () => {
+    if (installBtn) installBtn.style.display = 'none';
+    console.log('App was installed');
+  });
+
+  // Optional: hide the button if display-mode is standalone (already installed)
+  if (window.matchMedia('(display-mode: standalone)').matches) {
+    if (installBtn) installBtn.style.display = 'none';
+  }
+</script>
+</body>
+</html>
