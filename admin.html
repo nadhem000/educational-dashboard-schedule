@@ -5,10 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- PWA Manifest -->
 <link rel="manifest" href="manifest.json">
-
 <!-- Theme color for browser chrome -->
 <meta name="theme-color" content="#2c3e50">
-
 <!-- Optional: Apple touch icon for iOS -->
 <link rel="apple-touch-icon" href="assets/icons/icon-94x94.png">
     <title>Admin - Schedule Manager</title>
@@ -255,20 +253,20 @@
             .tab { padding: 10px 15px; font-size: 0.9rem; }
             .modal { padding: 15px; }
         }
-.install-btn {
-  background: linear-gradient(135deg, #3498db, #2c3e50);
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  font-size: 14px;
-  transition: opacity 0.2s;
-}
-.install-btn:hover {
-  opacity: 0.9;
-}
+        .install-btn {
+            background: linear-gradient(135deg, #3498db, #2c3e50);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+            transition: opacity 0.2s;
+        }
+        .install-btn:hover {
+            opacity: 0.9;
+        }
     </style>
 </head>
 <body>
@@ -276,9 +274,8 @@
         <header>
             <h1>🛠️ Admin Panel</h1>
             <p>Manage schedule, students, sections, subjects</p>
-  <button id="install-btn" style="display:none;">📲 Install Admin</button>
+            <button id="install-btn" style="display:none;">📲 Install Admin</button>
         </header>
-
         <!-- Import Section -->
         <div class="import-section">
             <h2>Import Data</h2>
@@ -290,7 +287,6 @@
                 <button class="btn" id="parse-btn">🔍 Parse & Load</button>
             </div>
         </div>
-
         <!-- Editor (hidden initially) -->
         <div class="editor" id="editor">
             <div class="tabs">
@@ -325,7 +321,6 @@
                 </div>
                 <div id="subjects-list"></div>
             </div>
-
             <div class="export-btns">
                 <button class="btn" id="copy-html-btn">📄 Copy Full HTML</button>
                 <button class="btn" id="copy-object-btn">🧾 Copy Data Object</button>
@@ -333,16 +328,13 @@
             </div>
         </div>
     </div>
-
     <!-- Modal for editing student / schedule cell -->
     <div class="modal-overlay" id="modal-overlay">
         <div class="modal" id="modal-content">
             <!-- Dynamic content -->
         </div>
     </div>
-
     <div class="toast" id="toast"></div>
-
     <script>
         // ==================== Default Constants (copied from original index.html) ====================
         const DEFAULT_SECTIONS = {
@@ -378,7 +370,6 @@
                 fr: `${hour}h - ${hour+1}h`
             });
         }
-
         // ==================== State ====================
         let adminData = {
             sections: JSON.parse(JSON.stringify(DEFAULT_SECTIONS)),
@@ -388,7 +379,6 @@
         };
         let originalHTML = null; // if full HTML was imported
         let currentModalCallback = null;
-
         // ==================== Utility Functions ====================
         function toast(message) {
             const t = document.getElementById('toast');
@@ -396,32 +386,26 @@
             t.classList.add('show');
             setTimeout(() => t.classList.remove('show'), 2000);
         }
-
         function escapeHtml(str) {
             const div = document.createElement('div');
             div.textContent = str;
             return div.innerHTML;
         }
-
         function deepClone(obj) {
             return JSON.parse(JSON.stringify(obj));
         }
-
         function openModal(html, callback) {
             document.getElementById('modal-content').innerHTML = html;
             document.getElementById('modal-overlay').classList.add('show');
             currentModalCallback = callback;
         }
-
         function closeModal() {
             document.getElementById('modal-overlay').classList.remove('show');
             currentModalCallback = null;
         }
-
         document.getElementById('modal-overlay').addEventListener('click', function(e) {
             if (e.target === this) closeModal();
         });
-
         // ==================== Import / Parse ====================
         function findMatchingDelimiter(str, startIndex, openChar, closeChar) {
             let count = 0;
@@ -434,7 +418,6 @@
             }
             return -1;
         }
-
         function extractObjectFromCode(code, varName) {
             const constDecl = `const ${varName} = `;
             let idx = code.indexOf(constDecl);
@@ -454,12 +437,10 @@
                 return null;
             }
         }
-
         function parseContent(text) {
             text = text.trim();
             let sections = null, subjectCatalog = null, schedule = null, students = null;
             let fullHTML = false;
-
             // Check if it's full HTML
             if (text.includes('<html') || text.includes('<!DOCTYPE html') || text.includes('<script')) {
                 fullHTML = true;
@@ -470,13 +451,11 @@
                     return;
                 }
                 const scriptContent = scriptMatch[1];
-
                 // Extract individual variables (more reliable than data object)
                 subjectCatalog = extractObjectFromCode(scriptContent, 'subjectCatalog');
                 sections = extractObjectFromCode(scriptContent, 'sections');
                 schedule = extractObjectFromCode(scriptContent, 'schedule');
                 students = extractObjectFromCode(scriptContent, 'students');
-
                 // If any missing, try to extract from data object (in case of non-shorthand)
                 if (!sections || !schedule || !students) {
                     const dataObj = extractObjectFromCode(scriptContent, 'data');
@@ -519,7 +498,6 @@
                     }
                 }
             }
-
             if (!sections || !schedule || !students) {
                 alert('Could not parse the data. Please check your input.');
                 return;
@@ -538,11 +516,9 @@
             adminData.subjectCatalog = subjectCatalog;
             adminData.schedule = schedule;
             adminData.students = students;
-
             document.getElementById('editor').style.display = 'block';
             renderAll();
         }
-
         document.getElementById('parse-btn').addEventListener('click', function() {
             const text = document.getElementById('import-text').value.trim();
             if (!text) {
@@ -551,7 +527,6 @@
             }
             parseContent(text);
         });
-
         document.getElementById('file-input').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -562,7 +537,6 @@
             };
             reader.readAsText(file);
         });
-
         // ==================== Tabs ====================
         document.querySelectorAll('.tab').forEach(tab => {
             tab.addEventListener('click', function() {
@@ -573,7 +547,6 @@
                 document.getElementById('tab-' + tabName).classList.add('active');
             });
         });
-
         // ==================== Render Functions ====================
         function renderAll() {
             renderStudents();
@@ -581,7 +554,6 @@
             renderSections();
             renderSubjects();
         }
-
         function renderStudents() {
             const container = document.getElementById('students-list');
             if (adminData.students.length === 0) {
@@ -606,7 +578,6 @@
             });
             container.innerHTML = html;
         }
-
         function renderSections() {
             const container = document.getElementById('sections-list');
             const keys = Object.keys(adminData.sections);
@@ -631,7 +602,6 @@
             });
             container.innerHTML = html;
         }
-
         function renderSubjects() {
             const container = document.getElementById('subjects-list');
             const keys = Object.keys(adminData.subjectCatalog);
@@ -656,7 +626,6 @@
             });
             container.innerHTML = html;
         }
-
         function renderSchedule() {
             const container = document.getElementById('schedule-editor');
             let tableHtml = '<table class="table-schedule"><thead><tr><th>Day</th>';
@@ -681,7 +650,6 @@
             tableHtml += '</tbody></table>';
             container.innerHTML = tableHtml;
         }
-
         function getAssignmentDisplay(assignmentKey) {
             if (assignmentKey === 'reserved') return 'Reserved';
             const parts = assignmentKey.split('-g');
@@ -691,7 +659,6 @@
             if (group) display += ` (Group ${group})`;
             return display;
         }
-
         // ==================== Student CRUD ====================
         function editStudent(index) {
             const student = adminData.students[index];
@@ -711,7 +678,7 @@
             (student.attendance || []).forEach((att, i) => {
                 attendanceRows += `
                 <div style="display:flex; gap:10px; margin-bottom:5px;">
-                    <input type="text" value="${escapeHtml(att.date)}" placeholder="Date" data-att-index="${i}" data-att-field="date">
+                    <input type="text" value="${escapeHtml(att.date)}" placeholder="dd/mm/yyyy" data-att-index="${i}" data-att-field="date">
                     <select data-att-index="${i}" data-att-field="status">
                         <option value="paid" ${att.status === 'paid' ? 'selected' : ''}>Paid</option>
                         <option value="unpaid" ${att.status === 'unpaid' ? 'selected' : ''}>Unpaid</option>
@@ -769,7 +736,7 @@
                     <input type="text" id="edit-parentPhone" value="${escapeHtml(student.parentPhone || '')}">
                 </div>
                 <div class="form-group">
-                    <label>Attendance Records</label>
+                    <label>Attendance Records (dd/mm/yyyy)</label>
                     <div id="attendance-edit-container">${attendanceRows}</div>
                     <button class="btn btn-outline" type="button" onclick="addAttendanceRow()">+ Add Attendance</button>
                 </div>
@@ -780,7 +747,6 @@
             `;
             openModal(modalHtml, null);
         }
-
         function addStudent() {
             const modalHtml = `
                 <h3>Add New Student</h3>
@@ -841,7 +807,6 @@
             `;
             openModal(modalHtml, null);
         }
-
         function saveStudent(index) {
             const student = adminData.students[index];
             student.nameAr = document.getElementById('edit-nameAr').value;
@@ -874,7 +839,6 @@
             renderStudents();
             toast('Student updated');
         }
-
         function saveNewStudent() {
             const newStudent = {
                 nameAr: document.getElementById('new-nameAr').value,
@@ -900,7 +864,6 @@
             renderStudents();
             toast('Student added');
         }
-
         function deleteStudent(index) {
             if (confirm('Are you sure you want to delete this student?')) {
                 adminData.students.splice(index, 1);
@@ -908,7 +871,6 @@
                 toast('Student deleted');
             }
         }
-
         // ==================== Section CRUD ====================
         function editSection(key) {
             const sec = adminData.sections[key];
@@ -937,7 +899,6 @@
             `;
             openModal(modalHtml, null);
         }
-
         function addSection() {
             const modalHtml = `
                 <h3>Add Section</h3>
@@ -964,7 +925,6 @@
             `;
             openModal(modalHtml, null);
         }
-
         function saveSection(key) {
             adminData.sections[key].ar = document.getElementById('edit-section-ar').value;
             adminData.sections[key].en = document.getElementById('edit-section-en').value;
@@ -973,7 +933,6 @@
             renderSections();
             toast('Section updated');
         }
-
         function saveNewSection() {
             const key = document.getElementById('new-section-key').value.trim();
             if (!key) { alert('Key required'); return; }
@@ -987,7 +946,6 @@
             renderSections();
             toast('Section added');
         }
-
         function deleteSection(key) {
             if (confirm('Delete this section? It may affect schedule and students.')) {
                 delete adminData.sections[key];
@@ -1010,7 +968,6 @@
                 toast('Section deleted');
             }
         }
-
         // ==================== Subject CRUD ====================
         function editSubject(key) {
             const subj = adminData.subjectCatalog[key];
@@ -1039,7 +996,6 @@
             `;
             openModal(modalHtml, null);
         }
-
         function addSubject() {
             const modalHtml = `
                 <h3>Add Subject</h3>
@@ -1066,7 +1022,6 @@
             `;
             openModal(modalHtml, null);
         }
-
         function saveSubject(key) {
             adminData.subjectCatalog[key].ar = document.getElementById('edit-subject-ar').value;
             adminData.subjectCatalog[key].en = document.getElementById('edit-subject-en').value;
@@ -1075,7 +1030,6 @@
             renderSubjects();
             toast('Subject updated');
         }
-
         function saveNewSubject() {
             const key = document.getElementById('new-subject-key').value.trim();
             if (!key) { alert('Key required'); return; }
@@ -1089,7 +1043,6 @@
             renderSubjects();
             toast('Subject added');
         }
-
         function deleteSubject(key) {
             if (confirm('Delete this subject?')) {
                 delete adminData.subjectCatalog[key];
@@ -1103,7 +1056,6 @@
                 toast('Subject deleted');
             }
         }
-
         // ==================== Schedule Editing ====================
         function editScheduleCell(dayKey, slotId) {
             const current = adminData.schedule[dayKey]?.[slotId] || 'reserved';
@@ -1130,7 +1082,6 @@
             `;
             openModal(modalHtml, null);
         }
-
         function generateGroupOptions() {
             const groupSet = new Set();
             DAYS.forEach(d => {
@@ -1147,7 +1098,6 @@
             });
             return Array.from(groupSet).map(val => ({ value: val, label: getAssignmentDisplay(val) }));
         }
-
         function saveScheduleCell(dayKey, slotId) {
             const checkboxes = document.querySelectorAll('#modal-content input[type="checkbox"]:checked');
             const selected = Array.from(checkboxes).map(cb => cb.value);
@@ -1162,14 +1112,13 @@
             renderSchedule();
             toast('Schedule updated');
         }
-
         // ==================== Attendance Row Helper ====================
         function addAttendanceRow() {
             const container = document.getElementById('attendance-edit-container');
             const div = document.createElement('div');
             div.style.cssText = 'display:flex; gap:10px; margin-bottom:5px;';
             div.innerHTML = `
-                <input type="text" placeholder="Date" data-att-field="date">
+                <input type="text" placeholder="dd/mm/yyyy" data-att-field="date">
                 <select data-att-field="status">
                     <option value="paid">Paid</option>
                     <option value="unpaid">Unpaid</option>
@@ -1178,7 +1127,6 @@
             `;
             container.appendChild(div);
         }
-
         // ==================== Export ====================
         function generateDataObject() {
             return {
@@ -1192,7 +1140,6 @@
                 }
             };
         }
-
         function generateFullHTML() {
             if (originalHTML) {
                 let html = originalHTML;
@@ -1212,7 +1159,6 @@
                 return generateBasicHTML();
             }
         }
-
         function generateBasicHTML() {
             const dataObj = {
                 days: DAYS,
@@ -1279,21 +1225,17 @@
 </html>`;
             return html;
         }
-
         function copyToClipboard(text) {
             navigator.clipboard.writeText(text).then(() => toast('Copied to clipboard!'), () => toast('Failed to copy'));
         }
-
         document.getElementById('copy-html-btn').addEventListener('click', function() {
             const html = generateFullHTML();
             copyToClipboard(html);
         });
-
         document.getElementById('copy-object-btn').addEventListener('click', function() {
             const obj = generateDataObject();
             copyToClipboard(JSON.stringify(obj, null, 2));
         });
-
         document.getElementById('download-html-btn').addEventListener('click', function() {
             const html = generateFullHTML();
             const blob = new Blob([html], { type: 'text/html' });
@@ -1304,12 +1246,10 @@
             a.click();
             URL.revokeObjectURL(url);
         });
-
         // ==================== Event Listeners ====================
         document.getElementById('add-student-btn').addEventListener('click', addStudent);
         document.getElementById('add-section-btn').addEventListener('click', addSection);
         document.getElementById('add-subject-btn').addEventListener('click', addSubject);
-
         // Expose functions to global scope
         window.editStudent = editStudent;
         window.deleteStudent = deleteStudent;
@@ -1341,46 +1281,29 @@
   // Install button logic
   let deferredPrompt = null;
   const installBtn = document.getElementById('install-btn');
-
-  // Capture the beforeinstallprompt event
   window.addEventListener('beforeinstallprompt', (event) => {
-    // Prevent the browser's default prompt
     event.preventDefault();
-    // Save the event for later use
     deferredPrompt = event;
-    // Show the install button
     if (installBtn) installBtn.style.display = 'block';
   });
-
-  // When the user clicks the install button
   if (installBtn) {
     installBtn.addEventListener('click', async () => {
       if (!deferredPrompt) return;
-
-      // Show the browser install prompt
       deferredPrompt.prompt();
       const choiceResult = await deferredPrompt.userChoice;
-
       if (choiceResult.outcome === 'accepted') {
         console.log('User accepted the install prompt');
       } else {
         console.log('User dismissed the install prompt');
       }
-
-      // Clear the saved prompt (it can only be used once)
       deferredPrompt = null;
-      // Hide the install button
       installBtn.style.display = 'none';
     });
   }
-
-  // Hide the button if the app is already installed
   window.addEventListener('appinstalled', () => {
     if (installBtn) installBtn.style.display = 'none';
     console.log('App was installed');
   });
-
-  // Optional: hide the button if display-mode is standalone (already installed)
   if (window.matchMedia('(display-mode: standalone)').matches) {
     if (installBtn) installBtn.style.display = 'none';
   }

@@ -5,10 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- PWA Manifest -->
 <link rel="manifest" href="manifest.json">
-
 <!-- Theme color for browser chrome -->
 <meta name="theme-color" content="#2c3e50">
-
 <!-- Optional: Apple touch icon for iOS -->
 <link rel="apple-touch-icon" href="assets/icons/icon-94x94.png">
     <title>جدول التلميذ</title>
@@ -112,7 +110,6 @@
         .hidden { display: none; }
         body[dir="ltr"] { direction: ltr; }
         body[dir="rtl"] { direction: rtl; }
-
         /* Avatar in header */
         .avatar {
             width: 40px;
@@ -131,7 +128,6 @@
             align-items: center;
             gap: 10px;
         }
-
         /* Materials list */
         .materials-list {
             display: flex;
@@ -150,7 +146,6 @@
             font-size: 14px;
             margin-top: 10px;
         }
-
         /* Modal styles */
         .modal-overlay {
             position: fixed;
@@ -173,7 +168,7 @@
             background: var(--modal-bg);
             color: var(--modal-text);
             border-radius: 16px;
-            max-width: 500px;
+            max-width: 600px; /* Increased width for calendar */
             width: 100%;
             box-shadow: 0 20px 40px rgba(0,0,0,0.3);
             overflow: hidden;
@@ -215,6 +210,8 @@
             display: flex;
             flex-direction: column;
             gap: 15px;
+            max-height: 70vh;
+            overflow-y: auto;
         }
         .student-card-profile {
             display: flex;
@@ -283,6 +280,63 @@
             opacity: 0.7;
         }
 
+        /* Attendance Calendar in Modal */
+        .attendance-calendar-section {
+            margin-top: 10px;
+            border-top: 1px solid var(--table-border);
+            padding-top: 15px;
+        }
+        .attendance-calendar-section h4 {
+            margin: 0 0 10px;
+            text-align: center;
+        }
+        .calendar-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .calendar-header button {
+            background: var(--table-header-bg);
+            color: var(--table-header-text);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            padding: 5px 10px;
+            font-size: 14px;
+        }
+        .attendance-calendar-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .attendance-calendar-table th,
+        .attendance-calendar-table td {
+            border: 1px solid var(--table-border);
+            padding: 5px;
+            text-align: center;
+            font-size: 12px;
+        }
+        .attendance-calendar-table th {
+            background: var(--table-header-bg);
+            color: var(--table-header-text);
+        }
+        .calendar-day.attendance-paid {
+            background-color: var(--attendance-paid-bg);
+            color: var(--attendance-paid-text);
+            font-weight: bold;
+        }
+        .calendar-day.attendance-unpaid {
+            background-color: var(--attendance-unpaid-bg);
+            color: var(--attendance-unpaid-text);
+            font-weight: bold;
+        }
+        .calendar-day.attendance-overdue {
+            background-color: var(--attendance-overdue-bg);
+            color: var(--attendance-overdue-text);
+            font-weight: bold;
+        }
+
         /* Responsive modal */
         @media (max-width: 480px) {
             .modal-content {
@@ -300,8 +354,12 @@
             .student-card-name {
                 font-size: 1.5rem;
             }
+            .attendance-calendar-table th,
+            .attendance-calendar-table td {
+                padding: 3px;
+                font-size: 10px;
+            }
         }
-
         /* Responsive general */
         @media (max-width: 768px) {
             body { padding: 10px; }
@@ -328,27 +386,26 @@
             th, td { font-size: 9px; padding: 4px 2px; }
             table { min-width: 700px; }
         }
-.install-btn {
-  background: linear-gradient(135deg, #3498db, #2c3e50);
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  font-size: 14px;
-  transition: opacity 0.2s;
-}
-.install-btn:hover {
-  opacity: 0.9;
-}
+        .install-btn {
+            background: linear-gradient(135deg, #3498db, #2c3e50);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+            transition: opacity 0.2s;
+        }
+        .install-btn:hover {
+            opacity: 0.9;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1 id="page-title">📅 جدول التلميذ</h1>
         <p class="subtitle" id="subtitle">من الاثنين إلى الأحد | من 7:00 صباحًا إلى 8:00 مساءً</p>
-
         <!-- Authentication Section -->
         <div class="auth-section" id="auth-section">
             <div id="login-form" class="auth-form">
@@ -367,7 +424,6 @@
                 </div>
             </div>
         </div>
-
         <!-- Controls -->
         <div class="controls">
             <div class="control-group">
@@ -382,9 +438,8 @@
                 <label for="theme-toggle">🌓 النمط:</label>
                 <button id="theme-toggle">🌙 ليلي</button>
             </div>
-<button id="install-btn" style="display:none;" class="install-btn">📲 تثبيت التطبيق</button>
+            <button id="install-btn" style="display:none;" class="install-btn">📲 تثبيت التطبيق</button>
         </div>
-
         <!-- Main Schedule Table -->
         <div class="table-wrapper">
             <table id="schedule-table">
@@ -392,39 +447,33 @@
                 <tbody id="schedule-body"></tbody>
             </table>
         </div>
-
         <!-- Personal schedule for logged-in user -->
         <div id="personal-schedule" class="personal-schedule">
             <h2 id="personal-title">📋 جدولك الخاص</h2>
             <ul id="personal-list"></ul>
         </div>
-
         <!-- Roster for logged-in user's group -->
         <div id="roster-panel" class="roster-panel">
             <h2 id="roster-title">👥 مجموعتك</h2>
             <ul id="roster-list"></ul>
         </div>
-
         <!-- Attendance schedule -->
         <div id="attendance-panel" class="attendance-panel">
             <h2 id="attendance-title">📆 سجل الحضور والدفع</h2>
             <div id="attendance-legend" style="margin-bottom: 10px; font-size: 13px;"></div>
             <ul id="attendance-list"></ul>
         </div>
-
         <!-- Work System Panel -->
         <div id="work-system-panel" class="work-system-panel">
             <h2 id="work-system-title">💼 نظام العمل</h2>
             <div id="work-system-content"></div>
         </div>
-
         <!-- Materials & Parent Info Panel -->
         <div id="materials-panel" class="materials-panel">
             <h2 id="materials-title">📚 المواد المتناولة</h2>
             <div id="materials-content"></div>
             <div id="parent-info" class="parent-info"></div>
         </div>
-
         <!-- Notes -->
         <div class="notes" id="notes">
             <strong>📌 ملاحظات:</strong><br>
@@ -434,7 +483,6 @@
             • في سجل الحضور: الأخضر = مدفوع، الأصفر = غير مدفوع، الأحمر = متأخر عن الدفع.
         </div>
     </div>
-
     <!-- Student Card Modal -->
     <div class="modal-overlay" id="student-card-modal">
         <div class="modal-content">
@@ -450,7 +498,6 @@
             </div>
         </div>
     </div>
-
     <script>
         // ==================== DEFAULT DATA ====================
         const days = [
@@ -462,7 +509,6 @@
             { key: 'sat', ar: 'السبت', en: 'Saturday', fr: 'Samedi' },
             { key: 'sun', ar: 'الأحد', en: 'Sunday', fr: 'Dimanche' }
         ];
-
         // Time slots: from 7:00 to 20:00 (hour by hour)
         const timeSlots = [];
         for (let hour = 7; hour <= 20; hour++) {
@@ -473,14 +519,12 @@
                 fr: `${hour}h - ${hour+1}h`
             });
         }
-
         // Sections
         const sections = {
             '6base': { ar: 'السادسة أساسي', en: '6th Basic', fr: '6ème Base' },
             '7base': { ar: 'السابعة أساسي', en: '7th Basic', fr: '7ème Base' },
             '8base': { ar: 'الثامنة أساسي', en: '8th Basic', fr: '8ème Base' }
         };
-
         // Subject catalog for translation
         const subjectCatalog = {
             arabic: { ar: 'العربية', en: 'Arabic', fr: 'Arabe' },
@@ -492,7 +536,6 @@
             islamic: { ar: 'التربية الإسلامية', en: 'Islamic Education', fr: 'Éducation Islamique' },
             civics: { ar: 'التربية المدنية', en: 'Civics', fr: 'Éducation Civique' }
         };
-
         // Schedule: day -> slotId -> assignment (string or array)
         const schedule = {
             mon: {
@@ -513,7 +556,6 @@
             sat: {},
             sun: {}
         };
-
         // Fill remaining days with reserved
         days.forEach(d => {
             if (!schedule[d.key]) {
@@ -525,8 +567,8 @@
                 });
             }
         });
-
         // Students with personal attendance, subjects and parent info
+        // Updated attendance dates to full dd/mm/yyyy format
         const students = [
             {
                 nameAr: 'أحمد', nameEn: 'Ahmed', nameFr: 'Ahmed',
@@ -534,10 +576,10 @@
                 subjects: 'all',
                 parentName: 'علي', parentPhone: '22123456',
                 attendance: [
-                    { date: '12/09', status: 'paid' },
-                    { date: '15/09', status: 'unpaid' },
-                    { date: '19/09', status: 'overdue' },
-                    { date: '22/09', status: 'paid' }
+                    { date: '12/09/2025', status: 'paid' },
+                    { date: '15/09/2025', status: 'unpaid' },
+                    { date: '19/09/2025', status: 'overdue' },
+                    { date: '22/09/2025', status: 'paid' }
                 ]
             },
             {
@@ -546,11 +588,11 @@
                 subjects: ['french','science'],
                 parentName: 'منى', parentPhone: '99887766',
                 attendance: [
-                    { date: '12/09', status: 'unpaid' },
-                    { date: '15/09', status: 'paid' },
-                    { date: '19/09', status: 'paid' },
-                    { date: '22/09', status: 'overdue' },
-                    { date: '26/09', status: 'paid' }
+                    { date: '12/09/2025', status: 'unpaid' },
+                    { date: '15/09/2025', status: 'paid' },
+                    { date: '19/09/2025', status: 'paid' },
+                    { date: '22/09/2025', status: 'overdue' },
+                    { date: '26/09/2025', status: 'paid' }
                 ]
             },
             {
@@ -559,9 +601,9 @@
                 subjects: ['math','french'],
                 parentName: '', parentPhone: '',
                 attendance: [
-                    { date: '12/09', status: 'overdue' },
-                    { date: '15/09', status: 'overdue' },
-                    { date: '19/09', status: 'paid' }
+                    { date: '12/09/2025', status: 'overdue' },
+                    { date: '15/09/2025', status: 'overdue' },
+                    { date: '19/09/2025', status: 'paid' }
                 ]
             },
             {
@@ -570,11 +612,11 @@
                 subjects: 'all',
                 parentName: 'فاطمة', parentPhone: '55443322',
                 attendance: [
-                    { date: '13/09', status: 'paid' },
-                    { date: '16/09', status: 'unpaid' },
-                    { date: '20/09', status: 'overdue' },
-                    { date: '23/09', status: 'paid' },
-                    { date: '27/09', status: 'paid' }
+                    { date: '13/09/2025', status: 'paid' },
+                    { date: '16/09/2025', status: 'unpaid' },
+                    { date: '20/09/2025', status: 'overdue' },
+                    { date: '23/09/2025', status: 'paid' },
+                    { date: '27/09/2025', status: 'paid' }
                 ]
             },
             {
@@ -583,9 +625,9 @@
                 subjects: ['science','english'],
                 parentName: 'كريم', parentPhone: '66778899',
                 attendance: [
-                    { date: '13/09', status: 'overdue' },
-                    { date: '16/09', status: 'unpaid' },
-                    { date: '20/09', status: 'paid' }
+                    { date: '13/09/2025', status: 'overdue' },
+                    { date: '16/09/2025', status: 'unpaid' },
+                    { date: '20/09/2025', status: 'paid' }
                 ]
             },
             {
@@ -594,11 +636,11 @@
                 subjects: 'all',
                 parentName: 'سليم', parentPhone: '55667788',
                 attendance: [
-                    { date: '14/09', status: 'paid' },
-                    { date: '17/09', status: 'unpaid' },
-                    { date: '21/09', status: 'overdue' },
-                    { date: '24/09', status: 'paid' },
-                    { date: '28/09', status: 'paid' }
+                    { date: '14/09/2025', status: 'paid' },
+                    { date: '17/09/2025', status: 'unpaid' },
+                    { date: '21/09/2025', status: 'overdue' },
+                    { date: '24/09/2025', status: 'paid' },
+                    { date: '28/09/2025', status: 'paid' }
                 ]
             },
             {
@@ -607,20 +649,19 @@
                 subjects: ['arabic','math'],
                 parentName: '', parentPhone: '',
                 attendance: [
-                    { date: '14/09', status: 'overdue' },
-                    { date: '17/09', status: 'unpaid' },
-                    { date: '21/09', status: 'paid' }
+                    { date: '14/09/2025', status: 'overdue' },
+                    { date: '17/09/2025', status: 'unpaid' },
+                    { date: '21/09/2025', status: 'paid' }
                 ]
             }
         ];
-
         const data = { days, timeSlots, sections, schedule, students };
-
         // ==================== STATE ====================
         let currentLanguage = 'ar';
         let currentTheme = 'light';
         let currentUser = null;
-
+        // Attendance calendar state
+        let attendanceCalendarMonth = new Date(); // initialize to current month
         // ==================== DOM REFS ====================
         const languageSelect = document.getElementById('language-select');
         const themeToggle = document.getElementById('theme-toggle');
@@ -653,40 +694,34 @@
         const modalTitle = document.getElementById('modal-title');
         const modalCloseBtn = document.getElementById('modal-close-btn');
         const studentCardBtn = document.getElementById('student-card-btn');
-
         // ==================== UTILITY FUNCTIONS ====================
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
         }
-
         function getText(obj, lang = currentLanguage) {
             if (!obj) return '';
             if (lang === 'ar') return obj.ar || obj.nameAr || '';
             if (lang === 'fr') return obj.fr || obj.nameFr || '';
             return obj.en || obj.nameEn || '';
         }
-
         function getSectionName(sectionKey) {
             if (sectionKey === 'reserved') return translations[currentLanguage].reservedName || 'Reserved';
             const sec = data.sections[sectionKey];
             return sec ? getText(sec) : sectionKey;
         }
-
         function parseAssignmentKey(key) {
             const match = key.match(/^(.+?)-g(\d+)$/);
             if (match) return { section: match[1], group: match[2] };
             return { section: key, group: null };
         }
-
         function isAssignmentForStudent(assignmentKey, student) {
             const parsed = parseAssignmentKey(assignmentKey);
             if (parsed.section !== student.section) return false;
             if (parsed.group !== null) return student.group !== null && student.group === parsed.group;
             return true;
         }
-
         function getAssignmentDisplay(assignmentKey) {
             const parsed = parseAssignmentKey(assignmentKey);
             if (parsed.section === 'reserved') return getSectionName('reserved');
@@ -694,14 +729,12 @@
             if (parsed.group) return `${baseName} (${translations[currentLanguage].groupLabel} ${parsed.group})`;
             return baseName;
         }
-
         // ==================== RENDER FUNCTIONS ====================
         function rebuildScheduleTable() {
             let headerHtml = `<tr><th>${translations[currentLanguage].thDay}</th>`;
             data.timeSlots.forEach(slot => headerHtml += `<th>${escapeHtml(getText(slot))}</th>`);
             headerHtml += '</tr>';
             scheduleHead.innerHTML = headerHtml;
-
             let bodyHtml = '';
             data.days.forEach(day => {
                 bodyHtml += `<tr><td class="day-cell">${escapeHtml(getText(day))}</td>`;
@@ -709,7 +742,6 @@
                     const assignment = data.schedule[day.key]?.[slot.id] || 'reserved';
                     let cellContent = '';
                     let hasStudentMatch = false;
-
                     if (Array.isArray(assignment)) {
                         cellContent = assignment.map(item => {
                             const display = getAssignmentDisplay(item);
@@ -731,7 +763,6 @@
             });
             scheduleBody.innerHTML = bodyHtml;
         }
-
         function updatePersonalSchedule() {
             if (!currentUser) {
                 personalScheduleDiv.classList.remove('visible');
@@ -756,7 +787,6 @@
             }
             personalScheduleDiv.classList.add('visible');
         }
-
         function updateRoster() {
             if (!currentUser) {
                 rosterPanelDiv.classList.remove('visible');
@@ -778,7 +808,6 @@
             }
             rosterPanelDiv.classList.add('visible');
         }
-
         function updateAttendance() {
             if (!currentUser) {
                 attendancePanelDiv.classList.remove('visible');
@@ -814,7 +843,6 @@
             attendanceLegend.innerHTML = legendHtml;
             attendancePanelDiv.classList.add('visible');
         }
-
         function updateWorkSystemPanel() {
             if (!currentUser) {
                 workSystemPanelDiv.classList.remove('visible');
@@ -826,7 +854,6 @@
             workSystemContent.innerHTML = `<p><strong>${t.workSystemLabel}:</strong> ${escapeHtml(systemLabel)}</p>`;
             workSystemPanelDiv.classList.add('visible');
         }
-
         function updateMaterialsPanel() {
             if (!currentUser) {
                 materialsPanelDiv.classList.remove('visible');
@@ -846,7 +873,6 @@
                 materialsHtml = `<span>${escapeHtml(t.noSubjects)}</span>`;
             }
             materialsContent.innerHTML = `<div class="materials-list">${materialsHtml}</div>`;
-
             let parentHtml = '';
             if (currentUser.parentName || currentUser.parentPhone) {
                 parentHtml += `<div class="info-line"><strong>${t.parentName}:</strong> ${escapeHtml(currentUser.parentName || '—')}</div>`;
@@ -857,7 +883,6 @@
             parentInfoDiv.innerHTML = parentHtml;
             materialsPanelDiv.classList.add('visible');
         }
-
         function updateUserInfo() {
             if (!currentUser) return;
             const t = translations[currentLanguage];
@@ -865,7 +890,6 @@
             userAvatarSpan.textContent = displayName.charAt(0).toUpperCase();
             loggedNameSpan.innerHTML = `${escapeHtml(t.welcome)}، ${escapeHtml(displayName)}`;
         }
-
         function updateAllPanels() {
             if (currentUser) {
                 rebuildScheduleTable();
@@ -884,13 +908,11 @@
                 materialsPanelDiv.classList.remove('visible');
             }
         }
-
         function applyLanguage(lang) {
             currentLanguage = lang;
             document.documentElement.lang = lang;
             document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
             document.body.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
-
             const t = translations[lang];
             document.getElementById('page-title').textContent = t.title;
             document.getElementById('subtitle').textContent = t.subtitle;
@@ -905,23 +927,81 @@
             document.getElementById('notes').innerHTML = t.notes;
             document.getElementById('student-card-btn').textContent = t.studentCardBtn;
             modalTitle.textContent = t.modalTitle;
-
             loginNameInput.placeholder = t.loginNamePlaceholder;
             loginPasswordInput.placeholder = t.loginPasswordPlaceholder;
             loginBtn.textContent = t.loginBtn;
             logoutBtn.textContent = t.logoutBtn;
-
             updateAllPanels();
         }
-
         function applyTheme(theme) {
             currentTheme = theme;
             body.classList.toggle('dark', theme === 'dark');
             const t = translations[currentLanguage];
             themeToggle.textContent = theme === 'light' ? t.themeNight : t.themeDay;
         }
-
         // ==================== MODAL FUNCTIONS ====================
+        function parseAttendanceDate(dateStr) {
+            const parts = dateStr.split('/');
+            if (parts.length !== 3) return null;
+            const day = parseInt(parts[0], 10);
+            const month = parseInt(parts[1], 10) - 1;
+            const year = parseInt(parts[2], 10);
+            if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
+            return new Date(year, month, day);
+        }
+        function getAttendanceStatusForDate(date) {
+            if (!currentUser || !currentUser.attendance) return null;
+            const target = date.toDateString();
+            for (const att of currentUser.attendance) {
+                const attDate = parseAttendanceDate(att.date);
+                if (attDate && attDate.toDateString() === target) {
+                    return att.status;
+                }
+            }
+            return null;
+        }
+        function renderAttendanceCalendar() {
+            const container = document.getElementById('attendance-calendar');
+            if (!container) return;
+            const t = translations[currentLanguage];
+            const year = attendanceCalendarMonth.getFullYear();
+            const month = attendanceCalendarMonth.getMonth();
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const daysInMonth = lastDay.getDate();
+            const startWeekday = firstDay.getDay(); // 0=Sunday
+            const monthNames = t.monthNames;
+            const weekdayNames = t.weekdayNames;
+            let html = `<div class="calendar-header">
+                <button type="button" onclick="changeAttendanceMonth(-1)">‹</button>
+                <span>${monthNames[month]} ${year}</span>
+                <button type="button" onclick="changeAttendanceMonth(1)">›</button>
+            </div>`;
+            html += `<table class="attendance-calendar-table"><thead><tr>`;
+            weekdayNames.forEach(w => html += `<th>${w}</th>`);
+            html += `</tr></thead><tbody><tr>`;
+            for (let i = 0; i < startWeekday; i++) html += `<td></td>`;
+            for (let day = 1; day <= daysInMonth; day++) {
+                const date = new Date(year, month, day);
+                const status = getAttendanceStatusForDate(date);
+                const statusClass = status ? `attendance-${status}` : '';
+                html += `<td class="calendar-day ${statusClass}">${day}</td>`;
+                if ((startWeekday + day) % 7 === 0) html += `</tr><tr>`;
+            }
+            const totalCells = startWeekday + daysInMonth;
+            const remainder = totalCells % 7;
+            if (remainder !== 0) {
+                for (let i = remainder; i < 7; i++) html += `<td></td>`;
+            }
+            html += `</tr></tbody></table>`;
+            container.innerHTML = html;
+        }
+        function changeAttendanceMonth(delta) {
+            attendanceCalendarMonth.setMonth(attendanceCalendarMonth.getMonth() + delta);
+            renderAttendanceCalendar();
+        }
+        // Expose to global for inline onclick
+        window.changeAttendanceMonth = changeAttendanceMonth;
         function populateStudentCardModal() {
             if (!currentUser) return;
             const t = translations[currentLanguage];
@@ -930,7 +1010,6 @@
             const group = currentUser.group ? `${t.groupLabel} ${currentUser.group}` : t.noGroup;
             const workSystemLabels = { monthly: t.workMonthly, per8sessions: t.workPer8, custom: t.workCustom };
             const workSystem = workSystemLabels[currentUser.workSystem] || currentUser.workSystem;
-
             let subjectsHtml = '';
             if (currentUser.subjects === 'all') {
                 subjectsHtml = `<span class="subject-tag">${escapeHtml(t.allSubjects)}</span>`;
@@ -942,12 +1021,10 @@
             } else {
                 subjectsHtml = `<span>${escapeHtml(t.noSubjects)}</span>`;
             }
-
             const parentInfo = (currentUser.parentName || currentUser.parentPhone) 
                 ? `<div class="detail-item"><strong>${t.parentName}</strong><span class="value">${escapeHtml(currentUser.parentName || '—')}</span></div>
                    <div class="detail-item"><strong>${t.parentPhone}</strong><span class="value">${escapeHtml(currentUser.parentPhone || '—')}</span></div>`
                 : `<div class="detail-item"><strong>${t.parentName}</strong><span class="value">${escapeHtml(t.noParentInfo)}</span></div>`;
-
             const cardHtml = `
                 <div class="student-card-profile">
                     <div class="student-card-avatar">${escapeHtml(displayName.charAt(0).toUpperCase())}</div>
@@ -961,19 +1038,33 @@
                     <div class="detail-item"><strong>${t.subjectsLabel}</strong><div class="subjects-tags">${subjectsHtml}</div></div>
                     ${parentInfo}
                 </div>
+                <div class="attendance-calendar-section">
+                    <h4>${t.attendanceCalendarTitle}</h4>
+                    <div id="attendance-calendar"></div>
+                </div>
             `;
             modalBody.innerHTML = cardHtml;
+            // Initialize calendar to the month of the most recent attendance, or current month
+            if (currentUser.attendance && currentUser.attendance.length > 0) {
+                const latestDateStr = currentUser.attendance[currentUser.attendance.length - 1].date;
+                const latestDate = parseAttendanceDate(latestDateStr);
+                if (latestDate) {
+                    attendanceCalendarMonth = new Date(latestDate.getFullYear(), latestDate.getMonth(), 1);
+                } else {
+                    attendanceCalendarMonth = new Date();
+                }
+            } else {
+                attendanceCalendarMonth = new Date();
+            }
+            renderAttendanceCalendar();
         }
-
         function openStudentCardModal() {
             populateStudentCardModal();
             modalOverlay.classList.add('show');
         }
-
         function closeStudentCardModal() {
             modalOverlay.classList.remove('show');
         }
-
         // ==================== EVENT LISTENERS ====================
         languageSelect.addEventListener('change', e => applyLanguage(e.target.value));
         themeToggle.addEventListener('click', () => applyTheme(currentTheme === 'light' ? 'dark' : 'light'));
@@ -989,7 +1080,6 @@
                 closeStudentCardModal();
             }
         });
-
         function handleLogin() {
             const name = loginNameInput.value.trim();
             const password = loginPasswordInput.value.trim();
@@ -1011,7 +1101,6 @@
             loginForm.style.display = 'none';
             userInfoDiv.style.display = 'flex';
         }
-
         function handleLogout() {
             currentUser = null;
             loginForm.style.display = 'flex';
@@ -1019,7 +1108,6 @@
             closeStudentCardModal();
             updateAllPanels();
         }
-
         // ==================== TRANSLATIONS ====================
         const translations = {
             ar: {
@@ -1064,6 +1152,9 @@
                 noSubjects: 'لا توجد مواد محددة',
                 subjectsLabel: 'المواد',
                 dayNames: { mon: 'الاثنين', tue: 'الثلاثاء', wed: 'الأربعاء', thu: 'الخميس', fri: 'الجمعة', sat: 'السبت', sun: 'الأحد' },
+                attendanceCalendarTitle: 'تقويم الحضور',
+                monthNames: ['جانفي', 'فيفري', 'مارس', 'أفريل', 'ماي', 'جوان', 'جويلية', 'أوت', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'],
+                weekdayNames: ['أحد', 'اثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت'],
                 notes: `<strong>📌 ملاحظات:</strong><br>
                     • كل حصة مدتها ساعة واحدة.<br>
                     • الأسبوع يبدأ من يوم الاثنين.<br>
@@ -1113,6 +1204,9 @@
                 noSubjects: 'Aucune matière définie',
                 subjectsLabel: 'Matières',
                 dayNames: { mon: 'Lundi', tue: 'Mardi', wed: 'Mercredi', thu: 'Jeudi', fri: 'Vendredi', sat: 'Samedi', sun: 'Dimanche' },
+                attendanceCalendarTitle: 'Calendrier de présence',
+                monthNames: ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'],
+                weekdayNames: ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'],
                 notes: `<strong>📌 Remarques :</strong><br>
                     • Chaque séance dure 1 heure.<br>
                     • La semaine commence le lundi.<br>
@@ -1162,6 +1256,9 @@
                 noSubjects: 'No subjects defined',
                 subjectsLabel: 'Subjects',
                 dayNames: { mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday', fri: 'Friday', sat: 'Saturday', sun: 'Sunday' },
+                attendanceCalendarTitle: 'Attendance Calendar',
+                monthNames: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+                weekdayNames: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
                 notes: `<strong>📌 Notes:</strong><br>
                     • Each session lasts 1 hour.<br>
                     • The week starts on Monday.<br>
@@ -1170,7 +1267,6 @@
                     • Test credentials: Ahmed/123, Sara/123 (group 1), Mohamed/123 (group 2), Laila/123.`
             }
         };
-
         // ==================== INITIALIZATION ====================
         function init() {
             applyLanguage('ar');
@@ -1180,7 +1276,6 @@
             userInfoDiv.style.display = 'none';
             rebuildScheduleTable();
         }
-
         init();
     </script>
 <script>
@@ -1196,46 +1291,25 @@
   // Install button logic
   let deferredPrompt = null;
   const installBtn = document.getElementById('install-btn');
-
-  // Capture the beforeinstallprompt event
   window.addEventListener('beforeinstallprompt', (event) => {
-    // Prevent the browser's default prompt
     event.preventDefault();
-    // Save the event for later use
     deferredPrompt = event;
-    // Show the install button
     if (installBtn) installBtn.style.display = 'block';
   });
-
-  // When the user clicks the install button
   if (installBtn) {
     installBtn.addEventListener('click', async () => {
       if (!deferredPrompt) return;
-
-      // Show the browser install prompt
       deferredPrompt.prompt();
       const choiceResult = await deferredPrompt.userChoice;
-
-      if (choiceResult.outcome === 'accepted') {
-        console.log('User accepted the install prompt');
-      } else {
-        console.log('User dismissed the install prompt');
-      }
-
-      // Clear the saved prompt (it can only be used once)
+      console.log(choiceResult.outcome);
       deferredPrompt = null;
-      // Hide the install button
       installBtn.style.display = 'none';
     });
   }
-
-  // Hide the button if the app is already installed
   window.addEventListener('appinstalled', () => {
     if (installBtn) installBtn.style.display = 'none';
     console.log('App was installed');
   });
-
-  // Optional: hide the button if display-mode is standalone (already installed)
   if (window.matchMedia('(display-mode: standalone)').matches) {
     if (installBtn) installBtn.style.display = 'none';
   }
