@@ -414,15 +414,16 @@
                 <button id="login-btn">دخول</button>
             </div>
             <div id="user-info" class="auth-form" style="display:none;">
-                <div class="welcome-user">
-                    <span id="user-avatar" class="avatar"></span>
-                    <span id="logged-name"></span>
-                </div>
-                <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
-                    <button id="student-card-btn" class="student-card-btn">بطاقة التلميذ</button>
-                    <button id="logout-btn" class="logout-btn">تسجيل الخروج</button>
-                </div>
-            </div>
+    <div class="welcome-user">
+        <span id="user-avatar" class="avatar"></span>
+        <span id="logged-name"></span>
+    </div>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
+        <button id="admin-btn" class="admin-btn" style="display:none;" onclick="window.location.href='admin.html'">🛠️ Admin Panel</button>
+        <button id="student-card-btn" class="student-card-btn">بطاقة التلميذ</button>
+        <button id="logout-btn" class="logout-btn">تسجيل الخروج</button>
+    </div>
+</div>
         </div>
         <!-- Controls -->
         <div class="controls">
@@ -576,10 +577,10 @@
                 subjects: 'all',
                 parentName: 'علي', parentPhone: '22123456',
                 attendance: [
-                    { date: '12/09/2025', status: 'paid' },
-                    { date: '15/09/2025', status: 'unpaid' },
-                    { date: '19/09/2025', status: 'overdue' },
-                    { date: '22/09/2025', status: 'paid' }
+                    { date: '12/09/2026', status: 'paid' },
+                    { date: '15/09/2026', status: 'unpaid' },
+                    { date: '19/09/2026', status: 'overdue' },
+                    { date: '22/09/2026', status: 'paid' }
                 ]
             },
             {
@@ -588,11 +589,11 @@
                 subjects: ['french','science'],
                 parentName: 'منى', parentPhone: '99887766',
                 attendance: [
-                    { date: '12/09/2025', status: 'unpaid' },
-                    { date: '15/09/2025', status: 'paid' },
-                    { date: '19/09/2025', status: 'paid' },
-                    { date: '22/09/2025', status: 'overdue' },
-                    { date: '26/09/2025', status: 'paid' }
+                    { date: '12/09/2026', status: 'unpaid' },
+                    { date: '15/09/2026', status: 'paid' },
+                    { date: '19/09/2026', status: 'paid' },
+                    { date: '22/09/2026', status: 'overdue' },
+                    { date: '26/09/2026', status: 'paid' }
                 ]
             },
             {
@@ -601,9 +602,9 @@
                 subjects: ['math','french'],
                 parentName: '', parentPhone: '',
                 attendance: [
-                    { date: '12/09/2025', status: 'overdue' },
-                    { date: '15/09/2025', status: 'overdue' },
-                    { date: '19/09/2025', status: 'paid' }
+                    { date: '12/09/2026', status: 'overdue' },
+                    { date: '15/09/2026', status: 'overdue' },
+                    { date: '19/09/2026', status: 'paid' }
                 ]
             },
             {
@@ -612,11 +613,11 @@
                 subjects: 'all',
                 parentName: 'فاطمة', parentPhone: '55443322',
                 attendance: [
-                    { date: '13/09/2025', status: 'paid' },
-                    { date: '16/09/2025', status: 'unpaid' },
-                    { date: '20/09/2025', status: 'overdue' },
-                    { date: '23/09/2025', status: 'paid' },
-                    { date: '27/09/2025', status: 'paid' }
+                    { date: '13/09/2026', status: 'paid' },
+                    { date: '16/09/2026', status: 'unpaid' },
+                    { date: '20/09/2026', status: 'overdue' },
+                    { date: '23/09/2026', status: 'paid' },
+                    { date: '27/09/2026', status: 'paid' }
                 ]
             },
             {
@@ -625,9 +626,9 @@
                 subjects: ['science','english'],
                 parentName: 'كريم', parentPhone: '66778899',
                 attendance: [
-                    { date: '13/09/2025', status: 'overdue' },
-                    { date: '16/09/2025', status: 'unpaid' },
-                    { date: '20/09/2025', status: 'paid' }
+                    { date: '13/09/2026', status: 'overdue' },
+                    { date: '16/09/2026', status: 'unpaid' },
+                    { date: '20/09/2026', status: 'paid' }
                 ]
             },
             {
@@ -636,11 +637,11 @@
                 subjects: 'all',
                 parentName: 'سليم', parentPhone: '55667788',
                 attendance: [
-                    { date: '14/09/2025', status: 'paid' },
-                    { date: '17/09/2025', status: 'unpaid' },
-                    { date: '21/09/2025', status: 'overdue' },
-                    { date: '24/09/2025', status: 'paid' },
-                    { date: '28/09/2025', status: 'paid' }
+                    { date: '14/09/2026', status: 'paid' },
+                    { date: '17/09/2026', status: 'unpaid' },
+                    { date: '21/09/2026', status: 'overdue' },
+                    { date: '24/09/2026', status: 'paid' },
+                    { date: '28/09/2026', status: 'paid' }
                 ]
             },
             {
@@ -649,13 +650,14 @@
                 subjects: ['arabic','math'],
                 parentName: '', parentPhone: '',
                 attendance: [
-                    { date: '14/09/2025', status: 'overdue' },
-                    { date: '17/09/2025', status: 'unpaid' },
-                    { date: '21/09/2025', status: 'paid' }
+                    { date: '14/09/2026', status: 'overdue' },
+                    { date: '17/09/2026', status: 'unpaid' },
+                    { date: '21/09/2026', status: 'paid' }
                 ]
             }
         ];
         const data = { days, timeSlots, sections, schedule, students };
+		const ADMIN_CREDENTIALS = { name: 'admin', password: 'admin123' };
         // ==================== STATE ====================
         let currentLanguage = 'ar';
         let currentTheme = 'light';
@@ -717,11 +719,12 @@
             return { section: key, group: null };
         }
         function isAssignmentForStudent(assignmentKey, student) {
-            const parsed = parseAssignmentKey(assignmentKey);
-            if (parsed.section !== student.section) return false;
-            if (parsed.group !== null) return student.group !== null && student.group === parsed.group;
-            return true;
-        }
+    if (student && student.isAdmin) return false;  // Admin: no personal highlighting
+    const parsed = parseAssignmentKey(assignmentKey);
+    if (parsed.section !== student.section) return false;
+    if (parsed.group !== null) return student.group !== null && student.group === parsed.group;
+    return true;
+}
         function getAssignmentDisplay(assignmentKey) {
             const parsed = parseAssignmentKey(assignmentKey);
             if (parsed.section === 'reserved') return getSectionName('reserved');
@@ -891,23 +894,48 @@
             loggedNameSpan.innerHTML = `${escapeHtml(t.welcome)}، ${escapeHtml(displayName)}`;
         }
         function updateAllPanels() {
-            if (currentUser) {
-                rebuildScheduleTable();
-                updatePersonalSchedule();
-                updateRoster();
-                updateAttendance();
-                updateWorkSystemPanel();
-                updateMaterialsPanel();
-                updateUserInfo();
-            } else {
-                rebuildScheduleTable();
-                personalScheduleDiv.classList.remove('visible');
-                rosterPanelDiv.classList.remove('visible');
-                attendancePanelDiv.classList.remove('visible');
-                workSystemPanelDiv.classList.remove('visible');
-                materialsPanelDiv.classList.remove('visible');
-            }
+    const adminBtn = document.getElementById('admin-btn');
+    if (currentUser) {
+        if (currentUser.isAdmin) {
+            // Admin: show full schedule, no personal panels
+            rebuildScheduleTable();
+            personalScheduleDiv.classList.remove('visible');
+            rosterPanelDiv.classList.remove('visible');
+            attendancePanelDiv.classList.remove('visible');
+            workSystemPanelDiv.classList.remove('visible');
+            materialsPanelDiv.classList.remove('visible');
+            // Show admin button, hide student card button
+            adminBtn.style.display = 'inline-block';
+            studentCardBtn.style.display = 'none';
+            // Set user info
+            const t = translations[currentLanguage];
+            userAvatarSpan.textContent = 'A';
+            loggedNameSpan.textContent = t.welcome + ', Admin';
+            return;
         }
+        // Student branch
+        rebuildScheduleTable();
+        updatePersonalSchedule();
+        updateRoster();
+        updateAttendance();
+        updateWorkSystemPanel();
+        updateMaterialsPanel();
+        updateUserInfo();
+        // Hide admin button, show student card button
+        adminBtn.style.display = 'none';
+        studentCardBtn.style.display = 'inline-block';
+    } else {
+        // Logged out
+        rebuildScheduleTable();
+        personalScheduleDiv.classList.remove('visible');
+        rosterPanelDiv.classList.remove('visible');
+        attendancePanelDiv.classList.remove('visible');
+        workSystemPanelDiv.classList.remove('visible');
+        materialsPanelDiv.classList.remove('visible');
+        adminBtn.style.display = 'none';
+        studentCardBtn.style.display = 'inline-block';
+    }
+}
         function applyLanguage(lang) {
             currentLanguage = lang;
             document.documentElement.lang = lang;
@@ -1081,26 +1109,41 @@
             }
         });
         function handleLogin() {
-            const name = loginNameInput.value.trim();
-            const password = loginPasswordInput.value.trim();
-            if (!name || !password) {
-                alert(translations[currentLanguage].emptyFields);
-                return;
-            }
-            const student = data.students.find(u => {
-                return (u.nameAr === name || u.nameEn === name || u.nameFr === name) && u.password === password;
-            });
-            if (!student) {
-                alert(translations[currentLanguage].invalidCredentials);
-                return;
-            }
-            currentUser = { ...student };
-            loginNameInput.value = '';
-            loginPasswordInput.value = '';
-            updateAllPanels();
-            loginForm.style.display = 'none';
-            userInfoDiv.style.display = 'flex';
-        }
+    const name = loginNameInput.value.trim();
+    const password = loginPasswordInput.value.trim();
+    if (!name || !password) {
+        alert(translations[currentLanguage].emptyFields);
+        return;
+    }
+
+    // Check admin credentials first
+    if (name.toLowerCase() === ADMIN_CREDENTIALS.name && password === ADMIN_CREDENTIALS.password) {
+        currentUser = { isAdmin: true, nameAr: 'Admin', nameEn: 'Admin', nameFr: 'Admin' };
+        loginNameInput.value = '';
+        loginPasswordInput.value = '';
+        // Set session flag for seamless admin.html access
+        sessionStorage.setItem('adminLoggedIn', 'true');
+        updateAllPanels();
+        loginForm.style.display = 'none';
+        userInfoDiv.style.display = 'flex';
+        return;
+    }
+
+    // Student login as before
+    const student = data.students.find(u => {
+        return (u.nameAr === name || u.nameEn === name || u.nameFr === name) && u.password === password;
+    });
+    if (!student) {
+        alert(translations[currentLanguage].invalidCredentials);
+        return;
+    }
+    currentUser = { ...student };
+    loginNameInput.value = '';
+    loginPasswordInput.value = '';
+    updateAllPanels();
+    loginForm.style.display = 'none';
+    userInfoDiv.style.display = 'flex';
+}
         function handleLogout() {
             currentUser = null;
             loginForm.style.display = 'flex';

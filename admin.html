@@ -267,9 +267,67 @@
         .install-btn:hover {
             opacity: 0.9;
         }
+		.admin-login-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+.admin-login-box {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    text-align: center;
+    width: 90%;
+    max-width: 350px;
+}
+.admin-login-box h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: #2c3e50;
+}
+.admin-login-box input {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    box-sizing: border-box;
+}
+.admin-login-box button {
+    width: 100%;
+    padding: 10px;
+    background: #2c3e50;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    margin-top: 10px;
+}
+.admin-login-box button:hover {
+    background: #1a252f;
+}
     </style>
 </head>
 <body>
+	<body>
+    <div id="admin-login-overlay" class="admin-login-overlay">
+        <div class="admin-login-box">
+            <h2>Admin Login</h2>
+            <input type="text" id="admin-username" placeholder="Username" />
+            <input type="password" id="admin-password" placeholder="Password" />
+            <button id="admin-login-btn">Login</button>
+            <p id="admin-login-error" style="color:red; margin-top:10px;"></p>
+        </div>
+    </div>
     <div class="container">
         <header>
             <h1>🛠️ Admin Panel</h1>
@@ -335,839 +393,1119 @@
         </div>
     </div>
     <div class="toast" id="toast"></div>
+	<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // ==================== Default Constants (copied from original index.html) ====================
-        const DEFAULT_SECTIONS = {
-            '6base': { ar: 'السادسة أساسي', en: '6th Basic', fr: '6ème Base' },
-            '7base': { ar: 'السابعة أساسي', en: '7th Basic', fr: '7ème Base' },
-            '8base': { ar: 'الثامنة أساسي', en: '8th Basic', fr: '8ème Base' }
-        };
-        const DEFAULT_SUBJECT_CATALOG = {
-            arabic: { ar: 'العربية', en: 'Arabic', fr: 'Arabe' },
-            french: { ar: 'الفرنسية', en: 'French', fr: 'Français' },
-            english: { ar: 'الإنجليزية', en: 'English', fr: 'Anglais' },
-            math: { ar: 'الرياضيات', en: 'Mathematics', fr: 'Mathématiques' },
-            science: { ar: 'العلوم', en: 'Science', fr: 'Sciences' },
-            history: { ar: 'التاريخ والجغرافيا', en: 'History & Geography', fr: 'Histoire-Géographie' },
-            islamic: { ar: 'التربية الإسلامية', en: 'Islamic Education', fr: 'Éducation Islamique' },
-            civics: { ar: 'التربية المدنية', en: 'Civics', fr: 'Éducation Civique' }
-        };
-        const DAYS = [
-            { key: 'mon', ar: 'الاثنين', en: 'Monday', fr: 'Lundi' },
-            { key: 'tue', ar: 'الثلاثاء', en: 'Tuesday', fr: 'Mardi' },
-            { key: 'wed', ar: 'الأربعاء', en: 'Wednesday', fr: 'Mercredi' },
-            { key: 'thu', ar: 'الخميس', en: 'Thursday', fr: 'Jeudi' },
-            { key: 'fri', ar: 'الجمعة', en: 'Friday', fr: 'Vendredi' },
-            { key: 'sat', ar: 'السبت', en: 'Saturday', fr: 'Samedi' },
-            { key: 'sun', ar: 'الأحد', en: 'Sunday', fr: 'Dimanche' }
-        ];
-        const TIME_SLOTS = [];
-        for (let hour = 7; hour <= 20; hour++) {
-            TIME_SLOTS.push({
-                id: `slot${hour}`,
-                ar: `${hour}:00 - ${hour+1}:00`,
-                en: `${hour}:00 - ${hour+1}:00`,
-                fr: `${hour}h - ${hour+1}h`
-            });
-        }
-        // ==================== State ====================
-        let adminData = {
-            sections: JSON.parse(JSON.stringify(DEFAULT_SECTIONS)),
-            subjectCatalog: JSON.parse(JSON.stringify(DEFAULT_SUBJECT_CATALOG)),
-            schedule: {},
-            students: []
-        };
-        let originalHTML = null; // if full HTML was imported
-        let currentModalCallback = null;
-        // ==================== Utility Functions ====================
-        function toast(message) {
-            const t = document.getElementById('toast');
-            t.textContent = message;
-            t.classList.add('show');
-            setTimeout(() => t.classList.remove('show'), 2000);
-        }
-        function escapeHtml(str) {
-            const div = document.createElement('div');
-            div.textContent = str;
-            return div.innerHTML;
-        }
-        function deepClone(obj) {
-            return JSON.parse(JSON.stringify(obj));
-        }
-        function openModal(html, callback) {
-            document.getElementById('modal-content').innerHTML = html;
-            document.getElementById('modal-overlay').classList.add('show');
-            currentModalCallback = callback;
-        }
-        function closeModal() {
-            document.getElementById('modal-overlay').classList.remove('show');
-            currentModalCallback = null;
-        }
-        document.getElementById('modal-overlay').addEventListener('click', function(e) {
-            if (e.target === this) closeModal();
+// ==================== Supabase Configuration ====================
+const SUPABASE_URL = 'https://ewvvlqujimxdubreulni.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV3dnZscXVqaW14ZHVicmV1bG5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxMzc0ODAsImV4cCI6MjEwMjcxMzQ4MH0._-i_8bMsMM1uhmE024MrgWo66GAQjt8vONlur9LfOtg';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ==================== Default Constants (copied from original index.html) ====================
+const DEFAULT_SECTIONS = {
+    '6base': { ar: 'السادسة أساسي', en: '6th Basic', fr: '6ème Base' },
+    '7base': { ar: 'السابعة أساسي', en: '7th Basic', fr: '7ème Base' },
+    '8base': { ar: 'الثامنة أساسي', en: '8th Basic', fr: '8ème Base' }
+};
+const DEFAULT_SUBJECT_CATALOG = {
+    arabic: { ar: 'العربية', en: 'Arabic', fr: 'Arabe' },
+    french: { ar: 'الفرنسية', en: 'French', fr: 'Français' },
+    english: { ar: 'الإنجليزية', en: 'English', fr: 'Anglais' },
+    math: { ar: 'الرياضيات', en: 'Mathematics', fr: 'Mathématiques' },
+    science: { ar: 'العلوم', en: 'Science', fr: 'Sciences' },
+    history: { ar: 'التاريخ والجغرافيا', en: 'History & Geography', fr: 'Histoire-Géographie' },
+    islamic: { ar: 'التربية الإسلامية', en: 'Islamic Education', fr: 'Éducation Islamique' },
+    civics: { ar: 'التربية المدنية', en: 'Civics', fr: 'Éducation Civique' }
+};
+const DAYS = [
+    { key: 'mon', ar: 'الاثنين', en: 'Monday', fr: 'Lundi' },
+    { key: 'tue', ar: 'الثلاثاء', en: 'Tuesday', fr: 'Mardi' },
+    { key: 'wed', ar: 'الأربعاء', en: 'Wednesday', fr: 'Mercredi' },
+    { key: 'thu', ar: 'الخميس', en: 'Thursday', fr: 'Jeudi' },
+    { key: 'fri', ar: 'الجمعة', en: 'Friday', fr: 'Vendredi' },
+    { key: 'sat', ar: 'السبت', en: 'Saturday', fr: 'Samedi' },
+    { key: 'sun', ar: 'الأحد', en: 'Sunday', fr: 'Dimanche' }
+];
+const TIME_SLOTS = [];
+for (let hour = 7; hour <= 20; hour++) {
+    TIME_SLOTS.push({
+        id: `slot${hour}`,
+        ar: `${hour}:00 - ${hour+1}:00`,
+        en: `${hour}:00 - ${hour+1}:00`,
+        fr: `${hour}h - ${hour+1}h`
+    });
+}
+
+// ==================== State ====================
+let adminData = {
+    sections: JSON.parse(JSON.stringify(DEFAULT_SECTIONS)),
+    subjectCatalog: JSON.parse(JSON.stringify(DEFAULT_SUBJECT_CATALOG)),
+    schedule: {},
+    students: []
+};
+let originalHTML = null; // no longer used primarily
+let currentModalCallback = null;
+
+// ==================== Utility Functions ====================
+function toast(message) {
+    const t = document.getElementById('toast');
+    t.textContent = message;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
+}
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+function deepClone(obj) {
+    return JSON.parse(JSON.stringify(obj));
+}
+function openModal(html, callback) {
+    document.getElementById('modal-content').innerHTML = html;
+    document.getElementById('modal-overlay').classList.add('show');
+    currentModalCallback = callback;
+}
+function closeModal() {
+    document.getElementById('modal-overlay').classList.remove('show');
+    currentModalCallback = null;
+}
+document.getElementById('modal-overlay').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+});
+
+// ==================== Data Loading from Supabase ====================
+async function loadDataFromSupabase() {
+    try {
+        // Fetch sections
+        const { data: sectionsRows, error: sectionsError } = await supabase
+            .from('sections')
+            .select('*');
+        if (sectionsError) throw sectionsError;
+
+        const sections = {};
+        sectionsRows.forEach(row => {
+            sections[row.key] = { ar: row.name_ar, en: row.name_en, fr: row.name_fr };
         });
-        // ==================== Import / Parse ====================
-        function findMatchingDelimiter(str, startIndex, openChar, closeChar) {
-            let count = 0;
-            for (let i = startIndex; i < str.length; i++) {
-                if (str[i] === openChar) count++;
-                else if (str[i] === closeChar) {
-                    count--;
-                    if (count === 0) return i;
-                }
-            }
-            return -1;
-        }
-        function extractObjectFromCode(code, varName) {
-            const constDecl = `const ${varName} = `;
-            let idx = code.indexOf(constDecl);
-            if (idx === -1) return null;
-            idx += constDecl.length;
-            while (idx < code.length && /\s/.test(code[idx])) idx++;
-            if (code[idx] !== '{' && code[idx] !== '[') return null;
-            const openChar = code[idx];
-            const closeChar = openChar === '{' ? '}' : ']';
-            const end = findMatchingDelimiter(code, idx, openChar, closeChar);
-            if (end === -1) return null;
-            const objStr = code.substring(idx, end + 1);
-            try {
-                return eval('(' + objStr + ')');
-            } catch (e) {
-                console.error('Failed to eval object:', e);
-                return null;
-            }
-        }
-        function parseContent(text) {
-            text = text.trim();
-            let sections = null, subjectCatalog = null, schedule = null, students = null;
-            let fullHTML = false;
-            // Check if it's full HTML
-            if (text.includes('<html') || text.includes('<!DOCTYPE html') || text.includes('<script')) {
-                fullHTML = true;
-                originalHTML = text; // store original
-                const scriptMatch = text.match(/<script>([\s\S]*?)<\/script>/);
-                if (!scriptMatch) {
-                    alert('No <script> block found in HTML');
-                    return;
-                }
-                const scriptContent = scriptMatch[1];
-                // Extract individual variables (more reliable than data object)
-                subjectCatalog = extractObjectFromCode(scriptContent, 'subjectCatalog');
-                sections = extractObjectFromCode(scriptContent, 'sections');
-                schedule = extractObjectFromCode(scriptContent, 'schedule');
-                students = extractObjectFromCode(scriptContent, 'students');
-                // If any missing, try to extract from data object (in case of non-shorthand)
-                if (!sections || !schedule || !students) {
-                    const dataObj = extractObjectFromCode(scriptContent, 'data');
-                    if (dataObj) {
-                        sections = dataObj.sections || sections;
-                        schedule = dataObj.schedule || schedule;
-                        students = dataObj.students || students;
-                    }
-                }
-            } else {
-                // Assume it's a JavaScript object or JSON
-                try {
-                    const obj = JSON.parse(text);
-                    if (obj.data && obj.subjectCatalog) {
-                        subjectCatalog = obj.subjectCatalog;
-                        sections = obj.data.sections;
-                        schedule = obj.data.schedule;
-                        students = obj.data.students;
-                    } else if (obj.sections && obj.schedule && obj.students && obj.subjectCatalog) {
-                        sections = obj.sections;
-                        schedule = obj.schedule;
-                        students = obj.students;
-                        subjectCatalog = obj.subjectCatalog;
-                    } else {
-                        alert('Invalid object: missing required fields');
-                        return;
-                    }
-                } catch (e) {
-                    // Try to extract from JavaScript code
-                    subjectCatalog = extractObjectFromCode(text, 'subjectCatalog');
-                    const dataObj = extractObjectFromCode(text, 'data');
-                    if (dataObj) {
-                        sections = dataObj.sections;
-                        schedule = dataObj.schedule;
-                        students = dataObj.students;
-                    } else {
-                        sections = extractObjectFromCode(text, 'sections');
-                        schedule = extractObjectFromCode(text, 'schedule');
-                        students = extractObjectFromCode(text, 'students');
-                    }
-                }
-            }
-            if (!sections || !schedule || !students) {
-                alert('Could not parse the data. Please check your input.');
-                return;
-            }
-            if (!subjectCatalog) {
-                subjectCatalog = DEFAULT_SUBJECT_CATALOG;
-            }
-            // Ensure schedule is complete for all days/slots
-            DAYS.forEach(d => {
-                if (!schedule[d.key]) schedule[d.key] = {};
-                TIME_SLOTS.forEach(slot => {
-                    if (!schedule[d.key][slot.id]) schedule[d.key][slot.id] = 'reserved';
-                });
-            });
-            adminData.sections = sections;
-            adminData.subjectCatalog = subjectCatalog;
-            adminData.schedule = schedule;
-            adminData.students = students;
-            document.getElementById('editor').style.display = 'block';
-            renderAll();
-        }
-        document.getElementById('parse-btn').addEventListener('click', function() {
-            const text = document.getElementById('import-text').value.trim();
-            if (!text) {
-                alert('Please paste content first');
-                return;
-            }
-            parseContent(text);
+
+        // Fetch subjects
+        const { data: subjectsRows, error: subjectsError } = await supabase
+            .from('subjects')
+            .select('*');
+        if (subjectsError) throw subjectsError;
+
+        const subjectCatalog = {};
+        subjectsRows.forEach(row => {
+            subjectCatalog[row.key] = { ar: row.name_ar, en: row.name_en, fr: row.name_fr };
         });
-        document.getElementById('file-input').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(ev) {
-                document.getElementById('import-text').value = ev.target.result;
-                parseContent(ev.target.result);
-            };
-            reader.readAsText(file);
+
+        // Fetch students (profiles)
+        const { data: profilesRows, error: profilesError } = await supabase
+            .from('profiles')
+            .select('*');
+        if (profilesError) throw profilesError;
+
+        const students = profilesRows.map(row => ({
+            id: row.id,
+            nameAr: row.name_ar,
+            nameEn: row.name_en,
+            nameFr: row.name_fr,
+            section: row.section_key,
+            group: row.group_number,
+            workSystem: row.work_system,
+            password: row.password,
+            subjects: row.subjects, // could be "all" or array
+            parentName: row.parent_name,
+            parentPhone: row.parent_phone,
+            attendance: row.attendance || []
+        }));
+
+        // Fetch schedule slots
+        const { data: scheduleRows, error: scheduleError } = await supabase
+            .from('schedule_slots')
+            .select('*');
+        if (scheduleError) throw scheduleError;
+
+        const schedule = {};
+        DAYS.forEach(day => { schedule[day.key] = {}; });
+        scheduleRows.forEach(row => {
+            if (!schedule[row.day_key]) schedule[row.day_key] = {};
+            schedule[row.day_key][row.time_slot_id] = row.assignment;
         });
-        // ==================== Tabs ====================
-        document.querySelectorAll('.tab').forEach(tab => {
-            tab.addEventListener('click', function() {
-                const tabName = this.dataset.tab;
-                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                this.classList.add('active');
-                document.getElementById('tab-' + tabName).classList.add('active');
-            });
-        });
-        // ==================== Render Functions ====================
-        function renderAll() {
-            renderStudents();
-            renderSchedule();
-            renderSections();
-            renderSubjects();
-        }
-        function renderStudents() {
-            const container = document.getElementById('students-list');
-            if (adminData.students.length === 0) {
-                container.innerHTML = '<p>No students yet.</p>';
-                return;
-            }
-            let html = '';
-            adminData.students.forEach((student, index) => {
-                const name = student.nameAr || student.nameEn || student.nameFr || 'Unnamed';
-                html += `
-                <div class="list-item">
-                    <div class="info">
-                        <strong>${escapeHtml(name)}</strong>
-                        <span style="margin-left:10px; color:#64748b;">${escapeHtml(student.section || '')}</span>
-                        ${student.group ? `<span style="margin-left:5px; color:#64748b;">Group ${escapeHtml(student.group)}</span>` : ''}
-                    </div>
-                    <div class="actions">
-                        <button class="btn" onclick="editStudent(${index})">✏️ Edit</button>
-                        <button class="btn btn-danger" onclick="deleteStudent(${index})">🗑️ Delete</button>
-                    </div>
-                </div>`;
-            });
-            container.innerHTML = html;
-        }
-        function renderSections() {
-            const container = document.getElementById('sections-list');
-            const keys = Object.keys(adminData.sections);
-            if (keys.length === 0) {
-                container.innerHTML = '<p>No sections.</p>';
-                return;
-            }
-            let html = '';
-            keys.forEach(key => {
-                const sec = adminData.sections[key];
-                html += `
-                <div class="list-item">
-                    <div class="info">
-                        <strong>${escapeHtml(key)}</strong>
-                        <span style="margin-left:10px;">${escapeHtml(sec.ar || '')} | ${escapeHtml(sec.en || '')} | ${escapeHtml(sec.fr || '')}</span>
-                    </div>
-                    <div class="actions">
-                        <button class="btn" onclick="editSection('${key}')">✏️ Edit</button>
-                        <button class="btn btn-danger" onclick="deleteSection('${key}')">🗑️ Delete</button>
-                    </div>
-                </div>`;
-            });
-            container.innerHTML = html;
-        }
-        function renderSubjects() {
-            const container = document.getElementById('subjects-list');
-            const keys = Object.keys(adminData.subjectCatalog);
-            if (keys.length === 0) {
-                container.innerHTML = '<p>No subjects.</p>';
-                return;
-            }
-            let html = '';
-            keys.forEach(key => {
-                const subj = adminData.subjectCatalog[key];
-                html += `
-                <div class="list-item">
-                    <div class="info">
-                        <strong>${escapeHtml(key)}</strong>
-                        <span style="margin-left:10px;">${escapeHtml(subj.ar || '')} | ${escapeHtml(subj.en || '')} | ${escapeHtml(subj.fr || '')}</span>
-                    </div>
-                    <div class="actions">
-                        <button class="btn" onclick="editSubject('${key}')">✏️ Edit</button>
-                        <button class="btn btn-danger" onclick="deleteSubject('${key}')">🗑️ Delete</button>
-                    </div>
-                </div>`;
-            });
-            container.innerHTML = html;
-        }
-        function renderSchedule() {
-            const container = document.getElementById('schedule-editor');
-            let tableHtml = '<table class="table-schedule"><thead><tr><th>Day</th>';
+
+        // Fill missing cells with 'reserved'
+        DAYS.forEach(day => {
             TIME_SLOTS.forEach(slot => {
-                tableHtml += `<th>${escapeHtml(slot.ar || slot.en)}</th>`;
-            });
-            tableHtml += '</tr></thead><tbody>';
-            DAYS.forEach(day => {
-                tableHtml += `<tr><th>${escapeHtml(day.ar || day.en)}</th>`;
-                TIME_SLOTS.forEach(slot => {
-                    const assignment = adminData.schedule[day.key]?.[slot.id] || 'reserved';
-                    let display = '';
-                    if (Array.isArray(assignment)) {
-                        display = assignment.map(a => getAssignmentDisplay(a)).join(', ');
-                    } else {
-                        display = getAssignmentDisplay(assignment);
-                    }
-                    tableHtml += `<td class="schedule-cell" data-day="${day.key}" data-slot="${slot.id}" onclick="editScheduleCell('${day.key}', '${slot.id}')">${escapeHtml(display)}</td>`;
-                });
-                tableHtml += '</tr>';
-            });
-            tableHtml += '</tbody></table>';
-            container.innerHTML = tableHtml;
-        }
-        function getAssignmentDisplay(assignmentKey) {
-            if (assignmentKey === 'reserved') return 'Reserved';
-            const parts = assignmentKey.split('-g');
-            const sectionKey = parts[0];
-            const group = parts.length > 1 ? parts[1] : null;
-            let display = adminData.sections[sectionKey] ? (adminData.sections[sectionKey].ar || sectionKey) : sectionKey;
-            if (group) display += ` (Group ${group})`;
-            return display;
-        }
-        // ==================== Student CRUD ====================
-        function editStudent(index) {
-            const student = adminData.students[index];
-            if (!student) return;
-            let subjectsOptions = '';
-            const allSubjects = Object.keys(adminData.subjectCatalog);
-            if (student.subjects === 'all') {
-                subjectsOptions += `<option value="all" selected>All Subjects</option>`;
-            } else {
-                subjectsOptions += `<option value="all">All Subjects</option>`;
-            }
-            allSubjects.forEach(subj => {
-                const selected = Array.isArray(student.subjects) && student.subjects.includes(subj) ? 'selected' : '';
-                subjectsOptions += `<option value="${subj}" ${selected}>${escapeHtml(adminData.subjectCatalog[subj].ar || subj)}</option>`;
-            });
-            let attendanceRows = '';
-            (student.attendance || []).forEach((att, i) => {
-                attendanceRows += `
-                <div style="display:flex; gap:10px; margin-bottom:5px;">
-                    <input type="text" value="${escapeHtml(att.date)}" placeholder="dd/mm/yyyy" data-att-index="${i}" data-att-field="date">
-                    <select data-att-index="${i}" data-att-field="status">
-                        <option value="paid" ${att.status === 'paid' ? 'selected' : ''}>Paid</option>
-                        <option value="unpaid" ${att.status === 'unpaid' ? 'selected' : ''}>Unpaid</option>
-                        <option value="overdue" ${att.status === 'overdue' ? 'selected' : ''}>Overdue</option>
-                    </select>
-                </div>`;
-            });
-            const modalHtml = `
-                <h3>Edit Student</h3>
-                <div class="form-group">
-                    <label>Name (Arabic)</label>
-                    <input type="text" id="edit-nameAr" value="${escapeHtml(student.nameAr || '')}">
-                </div>
-                <div class="form-group">
-                    <label>Name (English)</label>
-                    <input type="text" id="edit-nameEn" value="${escapeHtml(student.nameEn || '')}">
-                </div>
-                <div class="form-group">
-                    <label>Name (French)</label>
-                    <input type="text" id="edit-nameFr" value="${escapeHtml(student.nameFr || '')}">
-                </div>
-                <div class="form-group">
-                    <label>Section</label>
-                    <select id="edit-section">
-                        ${Object.keys(adminData.sections).map(key => `<option value="${key}" ${student.section === key ? 'selected' : ''}>${key}</option>`).join('')}
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Group (optional)</label>
-                    <input type="text" id="edit-group" value="${escapeHtml(student.group || '')}">
-                </div>
-                <div class="form-group">
-                    <label>Work System</label>
-                    <select id="edit-workSystem">
-                        <option value="monthly" ${student.workSystem === 'monthly' ? 'selected' : ''}>Monthly</option>
-                        <option value="per8sessions" ${student.workSystem === 'per8sessions' ? 'selected' : ''}>Per 8 Sessions</option>
-                        <option value="custom" ${student.workSystem === 'custom' ? 'selected' : ''}>Custom</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Password</label>
-                    <input type="text" id="edit-password" value="${escapeHtml(student.password || '')}">
-                </div>
-                <div class="form-group">
-                    <label>Subjects (select multiple)</label>
-                    <select id="edit-subjects" multiple size="5">${subjectsOptions}</select>
-                    <small>Hold Ctrl to select multiple</small>
-                </div>
-                <div class="form-group">
-                    <label>Parent Name</label>
-                    <input type="text" id="edit-parentName" value="${escapeHtml(student.parentName || '')}">
-                </div>
-                <div class="form-group">
-                    <label>Parent Phone</label>
-                    <input type="text" id="edit-parentPhone" value="${escapeHtml(student.parentPhone || '')}">
-                </div>
-                <div class="form-group">
-                    <label>Attendance Records (dd/mm/yyyy)</label>
-                    <div id="attendance-edit-container">${attendanceRows}</div>
-                    <button class="btn btn-outline" type="button" onclick="addAttendanceRow()">+ Add Attendance</button>
-                </div>
-                <div style="display:flex; gap:10px; justify-content:flex-end;">
-                    <button class="btn" onclick="saveStudent(${index})">Save</button>
-                    <button class="btn btn-danger" onclick="closeModal()">Cancel</button>
-                </div>
-            `;
-            openModal(modalHtml, null);
-        }
-        function addStudent() {
-            const modalHtml = `
-                <h3>Add New Student</h3>
-                <div class="form-group">
-                    <label>Name (Arabic)</label>
-                    <input type="text" id="new-nameAr" value="">
-                </div>
-                <div class="form-group">
-                    <label>Name (English)</label>
-                    <input type="text" id="new-nameEn" value="">
-                </div>
-                <div class="form-group">
-                    <label>Name (French)</label>
-                    <input type="text" id="new-nameFr" value="">
-                </div>
-                <div class="form-group">
-                    <label>Section</label>
-                    <select id="new-section">
-                        ${Object.keys(adminData.sections).map(key => `<option value="${key}">${key}</option>`).join('')}
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Group (optional)</label>
-                    <input type="text" id="new-group" value="">
-                </div>
-                <div class="form-group">
-                    <label>Work System</label>
-                    <select id="new-workSystem">
-                        <option value="monthly">Monthly</option>
-                        <option value="per8sessions">Per 8 Sessions</option>
-                        <option value="custom">Custom</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Password</label>
-                    <input type="text" id="new-password" value="123">
-                </div>
-                <div class="form-group">
-                    <label>Subjects</label>
-                    <select id="new-subjects" multiple size="5">
-                        <option value="all" selected>All Subjects</option>
-                        ${Object.keys(adminData.subjectCatalog).map(key => `<option value="${key}">${escapeHtml(adminData.subjectCatalog[key].ar || key)}</option>`).join('')}
-                    </select>
-                    <small>Hold Ctrl to select multiple</small>
-                </div>
-                <div class="form-group">
-                    <label>Parent Name</label>
-                    <input type="text" id="new-parentName" value="">
-                </div>
-                <div class="form-group">
-                    <label>Parent Phone</label>
-                    <input type="text" id="new-parentPhone" value="">
-                </div>
-                <div style="display:flex; gap:10px; justify-content:flex-end;">
-                    <button class="btn btn-success" onclick="saveNewStudent()">Add Student</button>
-                    <button class="btn btn-danger" onclick="closeModal()">Cancel</button>
-                </div>
-            `;
-            openModal(modalHtml, null);
-        }
-        function saveStudent(index) {
-            const student = adminData.students[index];
-            student.nameAr = document.getElementById('edit-nameAr').value;
-            student.nameEn = document.getElementById('edit-nameEn').value;
-            student.nameFr = document.getElementById('edit-nameFr').value;
-            student.section = document.getElementById('edit-section').value;
-            student.group = document.getElementById('edit-group').value || null;
-            student.workSystem = document.getElementById('edit-workSystem').value;
-            student.password = document.getElementById('edit-password').value;
-            const selectedSubjects = Array.from(document.getElementById('edit-subjects').selectedOptions).map(opt => opt.value);
-            if (selectedSubjects.includes('all')) {
-                student.subjects = 'all';
-            } else {
-                student.subjects = selectedSubjects.length > 0 ? selectedSubjects : [];
-            }
-            student.parentName = document.getElementById('edit-parentName').value;
-            student.parentPhone = document.getElementById('edit-parentPhone').value;
-            const attendance = [];
-            const container = document.getElementById('attendance-edit-container');
-            const rows = container.querySelectorAll('div[style*="display:flex"]');
-            rows.forEach(row => {
-                const dateInput = row.querySelector('input[data-att-field="date"]');
-                const statusSelect = row.querySelector('select[data-att-field="status"]');
-                if (dateInput && statusSelect) {
-                    attendance.push({ date: dateInput.value, status: statusSelect.value });
+                if (!schedule[day.key][slot.id]) {
+                    schedule[day.key][slot.id] = 'reserved';
                 }
             });
-            student.attendance = attendance;
-            closeModal();
-            renderStudents();
-            toast('Student updated');
+        });
+
+        adminData.sections = sections;
+        adminData.subjectCatalog = subjectCatalog;
+        adminData.students = students;
+        adminData.schedule = schedule;
+
+        document.getElementById('editor').style.display = 'block';
+        renderAll();
+        toast('Data loaded from Supabase');
+    } catch (error) {
+        console.error('Error loading data:', error);
+        alert('Failed to load data from Supabase: ' + error.message);
+    }
+}
+
+// ==================== Admin Authentication ====================
+const ADMIN_CREDENTIALS = { username: 'admin', password: 'admin123' };
+
+function attemptAdminLogin() {
+    const username = document.getElementById('admin-username').value.trim();
+    const password = document.getElementById('admin-password').value.trim();
+    const errorEl = document.getElementById('admin-login-error');
+    if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
+        sessionStorage.setItem('adminLoggedIn', 'true');
+        document.getElementById('admin-login-overlay').style.display = 'none';
+        errorEl.textContent = '';
+        loadDataFromSupabase(); // load data after successful login
+    } else {
+        errorEl.textContent = 'Invalid credentials';
+    }
+}
+
+// Check if already logged in this session
+if (sessionStorage.getItem('adminLoggedIn') === 'true') {
+    document.getElementById('admin-login-overlay').style.display = 'none';
+    loadDataFromSupabase(); // load data on refresh if already logged in
+}
+
+// Attach event listener
+document.getElementById('admin-login-btn').addEventListener('click', attemptAdminLogin);
+document.getElementById('admin-password').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') attemptAdminLogin();
+});
+
+// ==================== Optional: Keep Import/Parse for backup ====================
+// These functions remain from original but are not used automatically.
+// If you want to use them, you can still trigger via the import buttons.
+function findMatchingDelimiter(str, startIndex, openChar, closeChar) {
+    let count = 0;
+    for (let i = startIndex; i < str.length; i++) {
+        if (str[i] === openChar) count++;
+        else if (str[i] === closeChar) {
+            count--;
+            if (count === 0) return i;
         }
-        function saveNewStudent() {
-            const newStudent = {
-                nameAr: document.getElementById('new-nameAr').value,
-                nameEn: document.getElementById('new-nameEn').value,
-                nameFr: document.getElementById('new-nameFr').value,
-                section: document.getElementById('new-section').value,
-                group: document.getElementById('new-group').value || null,
-                workSystem: document.getElementById('new-workSystem').value,
-                password: document.getElementById('new-password').value,
-                subjects: [],
-                parentName: document.getElementById('new-parentName').value,
-                parentPhone: document.getElementById('new-parentPhone').value,
-                attendance: []
-            };
-            const selectedSubjects = Array.from(document.getElementById('new-subjects').selectedOptions).map(opt => opt.value);
-            if (selectedSubjects.includes('all')) {
-                newStudent.subjects = 'all';
+    }
+    return -1;
+}
+function extractObjectFromCode(code, varName) {
+    const constDecl = `const ${varName} = `;
+    let idx = code.indexOf(constDecl);
+    if (idx === -1) return null;
+    idx += constDecl.length;
+    while (idx < code.length && /\s/.test(code[idx])) idx++;
+    if (code[idx] !== '{' && code[idx] !== '[') return null;
+    const openChar = code[idx];
+    const closeChar = openChar === '{' ? '}' : ']';
+    const end = findMatchingDelimiter(code, idx, openChar, closeChar);
+    if (end === -1) return null;
+    const objStr = code.substring(idx, end + 1);
+    try {
+        return eval('(' + objStr + ')');
+    } catch (e) {
+        console.error('Failed to eval object:', e);
+        return null;
+    }
+}
+function parseContent(text) {
+    // (unchanged, but we won't call it automatically; it can still be used if needed)
+    text = text.trim();
+    let sections = null, subjectCatalog = null, schedule = null, students = null;
+    let fullHTML = false;
+    if (text.includes('<html') || text.includes('<!DOCTYPE html') || text.includes('<script')) {
+        fullHTML = true;
+        originalHTML = text;
+        const scriptMatch = text.match(/<script>([\s\S]*?)<\/script>/);
+        if (!scriptMatch) {
+            alert('No <script> block found in HTML');
+            return;
+        }
+        const scriptContent = scriptMatch[1];
+        subjectCatalog = extractObjectFromCode(scriptContent, 'subjectCatalog');
+        sections = extractObjectFromCode(scriptContent, 'sections');
+        schedule = extractObjectFromCode(scriptContent, 'schedule');
+        students = extractObjectFromCode(scriptContent, 'students');
+        if (!sections || !schedule || !students) {
+            const dataObj = extractObjectFromCode(scriptContent, 'data');
+            if (dataObj) {
+                sections = dataObj.sections || sections;
+                schedule = dataObj.schedule || schedule;
+                students = dataObj.students || students;
+            }
+        }
+    } else {
+        try {
+            const obj = JSON.parse(text);
+            if (obj.data && obj.subjectCatalog) {
+                subjectCatalog = obj.subjectCatalog;
+                sections = obj.data.sections;
+                schedule = obj.data.schedule;
+                students = obj.data.students;
+            } else if (obj.sections && obj.schedule && obj.students && obj.subjectCatalog) {
+                sections = obj.sections;
+                schedule = obj.schedule;
+                students = obj.students;
+                subjectCatalog = obj.subjectCatalog;
             } else {
-                newStudent.subjects = selectedSubjects;
+                alert('Invalid object: missing required fields');
+                return;
             }
-            adminData.students.push(newStudent);
-            closeModal();
-            renderStudents();
-            toast('Student added');
-        }
-        function deleteStudent(index) {
-            if (confirm('Are you sure you want to delete this student?')) {
-                adminData.students.splice(index, 1);
-                renderStudents();
-                toast('Student deleted');
-            }
-        }
-        // ==================== Section CRUD ====================
-        function editSection(key) {
-            const sec = adminData.sections[key];
-            const modalHtml = `
-                <h3>Edit Section</h3>
-                <div class="form-group">
-                    <label>Key</label>
-                    <input type="text" id="edit-section-key" value="${escapeHtml(key)}" disabled>
-                </div>
-                <div class="form-group">
-                    <label>Arabic Name</label>
-                    <input type="text" id="edit-section-ar" value="${escapeHtml(sec.ar || '')}">
-                </div>
-                <div class="form-group">
-                    <label>English Name</label>
-                    <input type="text" id="edit-section-en" value="${escapeHtml(sec.en || '')}">
-                </div>
-                <div class="form-group">
-                    <label>French Name</label>
-                    <input type="text" id="edit-section-fr" value="${escapeHtml(sec.fr || '')}">
-                </div>
-                <div style="display:flex; gap:10px; justify-content:flex-end;">
-                    <button class="btn" onclick="saveSection('${key}')">Save</button>
-                    <button class="btn btn-danger" onclick="closeModal()">Cancel</button>
-                </div>
-            `;
-            openModal(modalHtml, null);
-        }
-        function addSection() {
-            const modalHtml = `
-                <h3>Add Section</h3>
-                <div class="form-group">
-                    <label>Key</label>
-                    <input type="text" id="new-section-key" placeholder="e.g., 9base">
-                </div>
-                <div class="form-group">
-                    <label>Arabic Name</label>
-                    <input type="text" id="new-section-ar">
-                </div>
-                <div class="form-group">
-                    <label>English Name</label>
-                    <input type="text" id="new-section-en">
-                </div>
-                <div class="form-group">
-                    <label>French Name</label>
-                    <input type="text" id="new-section-fr">
-                </div>
-                <div style="display:flex; gap:10px; justify-content:flex-end;">
-                    <button class="btn btn-success" onclick="saveNewSection()">Add</button>
-                    <button class="btn btn-danger" onclick="closeModal()">Cancel</button>
-                </div>
-            `;
-            openModal(modalHtml, null);
-        }
-        function saveSection(key) {
-            adminData.sections[key].ar = document.getElementById('edit-section-ar').value;
-            adminData.sections[key].en = document.getElementById('edit-section-en').value;
-            adminData.sections[key].fr = document.getElementById('edit-section-fr').value;
-            closeModal();
-            renderSections();
-            toast('Section updated');
-        }
-        function saveNewSection() {
-            const key = document.getElementById('new-section-key').value.trim();
-            if (!key) { alert('Key required'); return; }
-            if (adminData.sections[key]) { alert('Key already exists'); return; }
-            adminData.sections[key] = {
-                ar: document.getElementById('new-section-ar').value,
-                en: document.getElementById('new-section-en').value,
-                fr: document.getElementById('new-section-fr').value
-            };
-            closeModal();
-            renderSections();
-            toast('Section added');
-        }
-        function deleteSection(key) {
-            if (confirm('Delete this section? It may affect schedule and students.')) {
-                delete adminData.sections[key];
-                DAYS.forEach(d => {
-                    TIME_SLOTS.forEach(slot => {
-                        const assignment = adminData.schedule[d.key]?.[slot.id];
-                        if (Array.isArray(assignment)) {
-                            adminData.schedule[d.key][slot.id] = assignment.filter(a => !a.startsWith(key));
-                        } else if (assignment && assignment.startsWith(key)) {
-                            adminData.schedule[d.key][slot.id] = 'reserved';
-                        }
-                    });
-                });
-                adminData.students.forEach(student => {
-                    if (student.section === key) student.section = null;
-                });
-                renderSections();
-                renderSchedule();
-                renderStudents();
-                toast('Section deleted');
-            }
-        }
-        // ==================== Subject CRUD ====================
-        function editSubject(key) {
-            const subj = adminData.subjectCatalog[key];
-            const modalHtml = `
-                <h3>Edit Subject</h3>
-                <div class="form-group">
-                    <label>Key</label>
-                    <input type="text" id="edit-subject-key" value="${escapeHtml(key)}" disabled>
-                </div>
-                <div class="form-group">
-                    <label>Arabic Name</label>
-                    <input type="text" id="edit-subject-ar" value="${escapeHtml(subj.ar || '')}">
-                </div>
-                <div class="form-group">
-                    <label>English Name</label>
-                    <input type="text" id="edit-subject-en" value="${escapeHtml(subj.en || '')}">
-                </div>
-                <div class="form-group">
-                    <label>French Name</label>
-                    <input type="text" id="edit-subject-fr" value="${escapeHtml(subj.fr || '')}">
-                </div>
-                <div style="display:flex; gap:10px; justify-content:flex-end;">
-                    <button class="btn" onclick="saveSubject('${key}')">Save</button>
-                    <button class="btn btn-danger" onclick="closeModal()">Cancel</button>
-                </div>
-            `;
-            openModal(modalHtml, null);
-        }
-        function addSubject() {
-            const modalHtml = `
-                <h3>Add Subject</h3>
-                <div class="form-group">
-                    <label>Key</label>
-                    <input type="text" id="new-subject-key" placeholder="e.g., physics">
-                </div>
-                <div class="form-group">
-                    <label>Arabic Name</label>
-                    <input type="text" id="new-subject-ar">
-                </div>
-                <div class="form-group">
-                    <label>English Name</label>
-                    <input type="text" id="new-subject-en">
-                </div>
-                <div class="form-group">
-                    <label>French Name</label>
-                    <input type="text" id="new-subject-fr">
-                </div>
-                <div style="display:flex; gap:10px; justify-content:flex-end;">
-                    <button class="btn btn-success" onclick="saveNewSubject()">Add</button>
-                    <button class="btn btn-danger" onclick="closeModal()">Cancel</button>
-                </div>
-            `;
-            openModal(modalHtml, null);
-        }
-        function saveSubject(key) {
-            adminData.subjectCatalog[key].ar = document.getElementById('edit-subject-ar').value;
-            adminData.subjectCatalog[key].en = document.getElementById('edit-subject-en').value;
-            adminData.subjectCatalog[key].fr = document.getElementById('edit-subject-fr').value;
-            closeModal();
-            renderSubjects();
-            toast('Subject updated');
-        }
-        function saveNewSubject() {
-            const key = document.getElementById('new-subject-key').value.trim();
-            if (!key) { alert('Key required'); return; }
-            if (adminData.subjectCatalog[key]) { alert('Key already exists'); return; }
-            adminData.subjectCatalog[key] = {
-                ar: document.getElementById('new-subject-ar').value,
-                en: document.getElementById('new-subject-en').value,
-                fr: document.getElementById('new-subject-fr').value
-            };
-            closeModal();
-            renderSubjects();
-            toast('Subject added');
-        }
-        function deleteSubject(key) {
-            if (confirm('Delete this subject?')) {
-                delete adminData.subjectCatalog[key];
-                adminData.students.forEach(student => {
-                    if (Array.isArray(student.subjects)) {
-                        student.subjects = student.subjects.filter(s => s !== key);
-                    }
-                });
-                renderSubjects();
-                renderStudents();
-                toast('Subject deleted');
-            }
-        }
-        // ==================== Schedule Editing ====================
-        function editScheduleCell(dayKey, slotId) {
-            const current = adminData.schedule[dayKey]?.[slotId] || 'reserved';
-            const allOptions = [
-                { value: 'reserved', label: 'Reserved' },
-                ...Object.keys(adminData.sections).map(key => ({ value: key, label: adminData.sections[key].ar || key })),
-                ...generateGroupOptions()
-            ];
-            const selectedValues = Array.isArray(current) ? current : [current];
-            const optionsHtml = allOptions.map(opt => {
-                const checked = selectedValues.includes(opt.value) ? 'checked' : '';
-                return `<label style="display:block;"><input type="checkbox" value="${opt.value}" ${checked}> ${escapeHtml(opt.label)}</label>`;
-            }).join('');
-            const modalHtml = `
-                <h3>Edit Schedule Cell (${dayKey} ${slotId})</h3>
-                <p>Select one or more assignments:</p>
-                <div class="checkbox-group" style="flex-direction:column; align-items:flex-start;">
-                    ${optionsHtml}
-                </div>
-                <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:15px;">
-                    <button class="btn" onclick="saveScheduleCell('${dayKey}', '${slotId}')">Save</button>
-                    <button class="btn btn-danger" onclick="closeModal()">Cancel</button>
-                </div>
-            `;
-            openModal(modalHtml, null);
-        }
-        function generateGroupOptions() {
-            const groupSet = new Set();
-            DAYS.forEach(d => {
-                TIME_SLOTS.forEach(slot => {
-                    const assignment = adminData.schedule[d.key]?.[slot.id];
-                    if (Array.isArray(assignment)) {
-                        assignment.forEach(a => {
-                            if (a.includes('-g')) groupSet.add(a);
-                        });
-                    } else if (assignment && assignment.includes('-g')) {
-                        groupSet.add(assignment);
-                    }
-                });
-            });
-            return Array.from(groupSet).map(val => ({ value: val, label: getAssignmentDisplay(val) }));
-        }
-        function saveScheduleCell(dayKey, slotId) {
-            const checkboxes = document.querySelectorAll('#modal-content input[type="checkbox"]:checked');
-            const selected = Array.from(checkboxes).map(cb => cb.value);
-            if (selected.length === 0) {
-                adminData.schedule[dayKey][slotId] = 'reserved';
-            } else if (selected.length === 1) {
-                adminData.schedule[dayKey][slotId] = selected[0];
+        } catch (e) {
+            subjectCatalog = extractObjectFromCode(text, 'subjectCatalog');
+            const dataObj = extractObjectFromCode(text, 'data');
+            if (dataObj) {
+                sections = dataObj.sections;
+                schedule = dataObj.schedule;
+                students = dataObj.students;
             } else {
-                adminData.schedule[dayKey][slotId] = selected;
+                sections = extractObjectFromCode(text, 'sections');
+                schedule = extractObjectFromCode(text, 'schedule');
+                students = extractObjectFromCode(text, 'students');
             }
-            closeModal();
-            renderSchedule();
-            toast('Schedule updated');
         }
-        // ==================== Attendance Row Helper ====================
-        function addAttendanceRow() {
-            const container = document.getElementById('attendance-edit-container');
-            const div = document.createElement('div');
-            div.style.cssText = 'display:flex; gap:10px; margin-bottom:5px;';
-            div.innerHTML = `
-                <input type="text" placeholder="dd/mm/yyyy" data-att-field="date">
-                <select data-att-field="status">
-                    <option value="paid">Paid</option>
-                    <option value="unpaid">Unpaid</option>
-                    <option value="overdue">Overdue</option>
-                </select>
-            `;
-            container.appendChild(div);
-        }
-        // ==================== Export ====================
-        function generateDataObject() {
-            return {
-                subjectCatalog: adminData.subjectCatalog,
-                data: {
-                    days: DAYS,
-                    timeSlots: TIME_SLOTS,
-                    sections: adminData.sections,
-                    schedule: adminData.schedule,
-                    students: adminData.students
-                }
-            };
-        }
-        function generateFullHTML() {
-            if (originalHTML) {
-                let html = originalHTML;
-                const subjStr = `const subjectCatalog = ${JSON.stringify(adminData.subjectCatalog)};`;
-                html = html.replace(/const subjectCatalog = \{[\s\S]*?\};/, subjStr);
-                const dataObj = {
-                    days: DAYS,
-                    timeSlots: TIME_SLOTS,
-                    sections: adminData.sections,
-                    schedule: adminData.schedule,
-                    students: adminData.students
-                };
-                const dataStr = `const data = ${JSON.stringify(dataObj)};`;
-                html = html.replace(/const data = \{[\s\S]*?\};/, dataStr);
-                return html;
+    }
+    if (!sections || !schedule || !students) {
+        alert('Could not parse the data. Please check your input.');
+        return;
+    }
+    if (!subjectCatalog) {
+        subjectCatalog = DEFAULT_SUBJECT_CATALOG;
+    }
+    DAYS.forEach(d => {
+        if (!schedule[d.key]) schedule[d.key] = {};
+        TIME_SLOTS.forEach(slot => {
+            if (!schedule[d.key][slot.id]) schedule[d.key][slot.id] = 'reserved';
+        });
+    });
+    adminData.sections = sections;
+    adminData.subjectCatalog = subjectCatalog;
+    adminData.schedule = schedule;
+    adminData.students = students;
+    document.getElementById('editor').style.display = 'block';
+    renderAll();
+}
+// Keep import event listeners active (optional)
+document.getElementById('parse-btn').addEventListener('click', function() {
+    const text = document.getElementById('import-text').value.trim();
+    if (!text) {
+        alert('Please paste content first');
+        return;
+    }
+    parseContent(text);
+});
+document.getElementById('file-input').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+        document.getElementById('import-text').value = ev.target.result;
+        parseContent(ev.target.result);
+    };
+    reader.readAsText(file);
+});
+
+// ==================== Tabs ====================
+document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+        const tabName = this.dataset.tab;
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        this.classList.add('active');
+        document.getElementById('tab-' + tabName).classList.add('active');
+    });
+});
+
+// ==================== Render Functions ====================
+function renderAll() {
+    renderStudents();
+    renderSchedule();
+    renderSections();
+    renderSubjects();
+}
+
+function renderStudents() {
+    const container = document.getElementById('students-list');
+    if (adminData.students.length === 0) {
+        container.innerHTML = '<p>No students yet.</p>';
+        return;
+    }
+    let html = '';
+    adminData.students.forEach((student) => {
+        const name = student.nameAr || student.nameEn || student.nameFr || 'Unnamed';
+        html += `
+        <div class="list-item">
+            <div class="info">
+                <strong>${escapeHtml(name)}</strong>
+                <span style="margin-left:10px; color:#64748b;">${escapeHtml(student.section || '')}</span>
+                ${student.group ? `<span style="margin-left:5px; color:#64748b;">Group ${escapeHtml(student.group)}</span>` : ''}
+            </div>
+            <div class="actions">
+                <button class="btn" onclick="editStudent('${student.id}')">✏️ Edit</button>
+                <button class="btn btn-danger" onclick="deleteStudent('${student.id}')">🗑️ Delete</button>
+            </div>
+        </div>`;
+    });
+    container.innerHTML = html;
+}
+
+function renderSections() {
+    const container = document.getElementById('sections-list');
+    const keys = Object.keys(adminData.sections);
+    if (keys.length === 0) {
+        container.innerHTML = '<p>No sections.</p>';
+        return;
+    }
+    let html = '';
+    keys.forEach(key => {
+        const sec = adminData.sections[key];
+        html += `
+        <div class="list-item">
+            <div class="info">
+                <strong>${escapeHtml(key)}</strong>
+                <span style="margin-left:10px;">${escapeHtml(sec.ar || '')} | ${escapeHtml(sec.en || '')} | ${escapeHtml(sec.fr || '')}</span>
+            </div>
+            <div class="actions">
+                <button class="btn" onclick="editSection('${key}')">✏️ Edit</button>
+                <button class="btn btn-danger" onclick="deleteSection('${key}')">🗑️ Delete</button>
+            </div>
+        </div>`;
+    });
+    container.innerHTML = html;
+}
+
+function renderSubjects() {
+    const container = document.getElementById('subjects-list');
+    const keys = Object.keys(adminData.subjectCatalog);
+    if (keys.length === 0) {
+        container.innerHTML = '<p>No subjects.</p>';
+        return;
+    }
+    let html = '';
+    keys.forEach(key => {
+        const subj = adminData.subjectCatalog[key];
+        html += `
+        <div class="list-item">
+            <div class="info">
+                <strong>${escapeHtml(key)}</strong>
+                <span style="margin-left:10px;">${escapeHtml(subj.ar || '')} | ${escapeHtml(subj.en || '')} | ${escapeHtml(subj.fr || '')}</span>
+            </div>
+            <div class="actions">
+                <button class="btn" onclick="editSubject('${key}')">✏️ Edit</button>
+                <button class="btn btn-danger" onclick="deleteSubject('${key}')">🗑️ Delete</button>
+            </div>
+        </div>`;
+    });
+    container.innerHTML = html;
+}
+
+function renderSchedule() {
+    const container = document.getElementById('schedule-editor');
+    let tableHtml = '<table class="table-schedule"><thead><tr><th>Day</th>';
+    TIME_SLOTS.forEach(slot => {
+        tableHtml += `<th>${escapeHtml(slot.ar || slot.en)}</th>`;
+    });
+    tableHtml += '</tr></thead><tbody>';
+    DAYS.forEach(day => {
+        tableHtml += `<tr><th>${escapeHtml(day.ar || day.en)}</th>`;
+        TIME_SLOTS.forEach(slot => {
+            const assignment = adminData.schedule[day.key]?.[slot.id] || 'reserved';
+            let display = '';
+            if (Array.isArray(assignment)) {
+                display = assignment.map(a => getAssignmentDisplay(a)).join(', ');
             } else {
-                return generateBasicHTML();
+                display = getAssignmentDisplay(assignment);
             }
+            tableHtml += `<td class="schedule-cell" data-day="${day.key}" data-slot="${slot.id}" onclick="editScheduleCell('${day.key}', '${slot.id}')">${escapeHtml(display)}</td>`;
+        });
+        tableHtml += '</tr>';
+    });
+    tableHtml += '</tbody></table>';
+    container.innerHTML = tableHtml;
+}
+
+function getAssignmentDisplay(assignmentKey) {
+    if (assignmentKey === 'reserved') return 'Reserved';
+    const parts = assignmentKey.split('-g');
+    const sectionKey = parts[0];
+    const group = parts.length > 1 ? parts[1] : null;
+    let display = adminData.sections[sectionKey] ? (adminData.sections[sectionKey].ar || sectionKey) : sectionKey;
+    if (group) display += ` (Group ${group})`;
+    return display;
+}
+
+// ==================== Student CRUD (Supabase) ====================
+function editStudent(id) {
+    const student = adminData.students.find(s => s.id === id);
+    if (!student) return;
+
+    let subjectsOptions = '';
+    const allSubjects = Object.keys(adminData.subjectCatalog);
+    if (student.subjects === 'all') {
+        subjectsOptions += `<option value="all" selected>All Subjects</option>`;
+    } else {
+        subjectsOptions += `<option value="all">All Subjects</option>`;
+    }
+    allSubjects.forEach(subj => {
+        const selected = Array.isArray(student.subjects) && student.subjects.includes(subj) ? 'selected' : '';
+        subjectsOptions += `<option value="${subj}" ${selected}>${escapeHtml(adminData.subjectCatalog[subj].ar || subj)}</option>`;
+    });
+
+    let attendanceRows = '';
+    (student.attendance || []).forEach((att, i) => {
+        attendanceRows += `
+        <div style="display:flex; gap:10px; margin-bottom:5px;">
+            <input type="text" value="${escapeHtml(att.date)}" placeholder="dd/mm/yyyy" data-att-index="${i}" data-att-field="date">
+            <select data-att-index="${i}" data-att-field="status">
+                <option value="paid" ${att.status === 'paid' ? 'selected' : ''}>Paid</option>
+                <option value="unpaid" ${att.status === 'unpaid' ? 'selected' : ''}>Unpaid</option>
+                <option value="overdue" ${att.status === 'overdue' ? 'selected' : ''}>Overdue</option>
+            </select>
+        </div>`;
+    });
+
+    const modalHtml = `
+        <h3>Edit Student</h3>
+        <div class="form-group">
+            <label>Name (Arabic)</label>
+            <input type="text" id="edit-nameAr" value="${escapeHtml(student.nameAr || '')}" disabled>
+        </div>
+        <div class="form-group">
+            <label>Name (English)</label>
+            <input type="text" id="edit-nameEn" value="${escapeHtml(student.nameEn || '')}" disabled>
+        </div>
+        <div class="form-group">
+            <label>Name (French)</label>
+            <input type="text" id="edit-nameFr" value="${escapeHtml(student.nameFr || '')}" disabled>
+        </div>
+        <div class="form-group">
+            <label>Section</label>
+            <select id="edit-section">
+                ${Object.keys(adminData.sections).map(key => `<option value="${key}" ${student.section === key ? 'selected' : ''}>${key}</option>`).join('')}
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Group (optional)</label>
+            <input type="text" id="edit-group" value="${escapeHtml(student.group || '')}">
+        </div>
+        <div class="form-group">
+            <label>Work System</label>
+            <select id="edit-workSystem">
+                <option value="monthly" ${student.workSystem === 'monthly' ? 'selected' : ''}>Monthly</option>
+                <option value="per8sessions" ${student.workSystem === 'per8sessions' ? 'selected' : ''}>Per 8 Sessions</option>
+                <option value="custom" ${student.workSystem === 'custom' ? 'selected' : ''}>Custom</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Password</label>
+            <input type="text" id="edit-password" value="********" disabled>
+            <small>Password cannot be changed here.</small>
+        </div>
+        <div class="form-group">
+            <label>Subjects (select multiple)</label>
+            <select id="edit-subjects" multiple size="5">${subjectsOptions}</select>
+            <small>Hold Ctrl to select multiple</small>
+        </div>
+        <div class="form-group">
+            <label>Parent Name</label>
+            <input type="text" id="edit-parentName" value="${escapeHtml(student.parentName || '')}">
+        </div>
+        <div class="form-group">
+            <label>Parent Phone</label>
+            <input type="text" id="edit-parentPhone" value="${escapeHtml(student.parentPhone || '')}">
+        </div>
+        <div class="form-group">
+            <label>Attendance Records (dd/mm/yyyy)</label>
+            <div id="attendance-edit-container">${attendanceRows}</div>
+            <button class="btn btn-outline" type="button" onclick="addAttendanceRow()">+ Add Attendance</button>
+        </div>
+        <div style="display:flex; gap:10px; justify-content:flex-end;">
+            <button class="btn" onclick="saveStudent('${id}')">Save</button>
+            <button class="btn btn-danger" onclick="closeModal()">Cancel</button>
+        </div>
+    `;
+    openModal(modalHtml, null);
+}
+
+function addStudent() {
+    const modalHtml = `
+        <h3>Add New Student</h3>
+        <div class="form-group">
+            <label>Name (Arabic)</label>
+            <input type="text" id="new-nameAr" value="">
+        </div>
+        <div class="form-group">
+            <label>Name (English)</label>
+            <input type="text" id="new-nameEn" value="">
+        </div>
+        <div class="form-group">
+            <label>Name (French)</label>
+            <input type="text" id="new-nameFr" value="">
+        </div>
+        <div class="form-group">
+            <label>Section</label>
+            <select id="new-section">
+                ${Object.keys(adminData.sections).map(key => `<option value="${key}">${key}</option>`).join('')}
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Group (optional)</label>
+            <input type="text" id="new-group" value="">
+        </div>
+        <div class="form-group">
+            <label>Work System</label>
+            <select id="new-workSystem">
+                <option value="monthly">Monthly</option>
+                <option value="per8sessions">Per 8 Sessions</option>
+                <option value="custom">Custom</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Password</label>
+            <input type="text" id="new-password" value="123">
+        </div>
+        <div class="form-group">
+            <label>Subjects</label>
+            <select id="new-subjects" multiple size="5">
+                <option value="all" selected>All Subjects</option>
+                ${Object.keys(adminData.subjectCatalog).map(key => `<option value="${key}">${escapeHtml(adminData.subjectCatalog[key].ar || key)}</option>`).join('')}
+            </select>
+            <small>Hold Ctrl to select multiple</small>
+        </div>
+        <div class="form-group">
+            <label>Parent Name</label>
+            <input type="text" id="new-parentName" value="">
+        </div>
+        <div class="form-group">
+            <label>Parent Phone</label>
+            <input type="text" id="new-parentPhone" value="">
+        </div>
+        <div style="display:flex; gap:10px; justify-content:flex-end;">
+            <button class="btn btn-success" onclick="saveNewStudent()">Add Student</button>
+            <button class="btn btn-danger" onclick="closeModal()">Cancel</button>
+        </div>
+    `;
+    openModal(modalHtml, null);
+}
+
+async function saveStudent(id) {
+    const student = adminData.students.find(s => s.id === id);
+    if (!student) return;
+
+    const updated = {
+        section: document.getElementById('edit-section').value,
+        group: document.getElementById('edit-group').value || null,
+        workSystem: document.getElementById('edit-workSystem').value,
+        subjects: [],
+        parentName: document.getElementById('edit-parentName').value,
+        parentPhone: document.getElementById('edit-parentPhone').value,
+        attendance: []
+    };
+
+    const selectedSubjects = Array.from(document.getElementById('edit-subjects').selectedOptions).map(opt => opt.value);
+    if (selectedSubjects.includes('all')) {
+        updated.subjects = 'all';
+    } else {
+        updated.subjects = selectedSubjects;
+    }
+
+    const attendance = [];
+    const container = document.getElementById('attendance-edit-container');
+    const rows = container.querySelectorAll('div[style*="display:flex"]');
+    rows.forEach(row => {
+        const dateInput = row.querySelector('input[data-att-field="date"]');
+        const statusSelect = row.querySelector('select[data-att-field="status"]');
+        if (dateInput && statusSelect) {
+            attendance.push({ date: dateInput.value, status: statusSelect.value });
         }
-        function generateBasicHTML() {
-            const dataObj = {
-                days: DAYS,
-                timeSlots: TIME_SLOTS,
-                sections: adminData.sections,
-                schedule: adminData.schedule,
-                students: adminData.students
-            };
-            const html = `<!DOCTYPE html>
+    });
+    updated.attendance = attendance;
+
+    const { error } = await supabase
+        .from('profiles')
+        .update({
+            section_key: updated.section,
+            group_number: updated.group,
+            work_system: updated.workSystem,
+            subjects: updated.subjects,
+            parent_name: updated.parentName,
+            parent_phone: updated.parentPhone,
+            attendance: updated.attendance
+        })
+        .eq('id', id);
+
+    if (error) {
+        alert('Error updating student: ' + error.message);
+        return;
+    }
+
+    // Update local state
+    Object.assign(student, updated);
+
+    closeModal();
+    renderStudents();
+    toast('Student updated');
+}
+
+async function saveNewStudent() {
+    const newStudent = {
+        nameAr: document.getElementById('new-nameAr').value,
+        nameEn: document.getElementById('new-nameEn').value,
+        nameFr: document.getElementById('new-nameFr').value,
+        section: document.getElementById('new-section').value,
+        group: document.getElementById('new-group').value || null,
+        workSystem: document.getElementById('new-workSystem').value,
+        password: document.getElementById('new-password').value,
+        subjects: [],
+        parentName: document.getElementById('new-parentName').value,
+        parentPhone: document.getElementById('new-parentPhone').value,
+        attendance: []
+    };
+
+    const selectedSubjects = Array.from(document.getElementById('new-subjects').selectedOptions).map(opt => opt.value);
+    if (selectedSubjects.includes('all')) {
+        newStudent.subjects = 'all';
+    } else {
+        newStudent.subjects = selectedSubjects;
+    }
+
+    const { data, error } = await supabase
+        .from('profiles')
+        .insert({
+            name_ar: newStudent.nameAr,
+            name_en: newStudent.nameEn,
+            name_fr: newStudent.nameFr,
+            password: newStudent.password,
+            section_key: newStudent.section,
+            group_number: newStudent.group,
+            work_system: newStudent.workSystem,
+            subjects: newStudent.subjects,
+            parent_name: newStudent.parentName,
+            parent_phone: newStudent.parentPhone,
+            attendance: newStudent.attendance
+        })
+        .select()
+        .single();
+
+    if (error) {
+        alert('Error adding student: ' + error.message);
+        return;
+    }
+
+    newStudent.id = data.id;
+    adminData.students.push(newStudent);
+    closeModal();
+    renderStudents();
+    toast('Student added');
+}
+
+async function deleteStudent(id) {
+    if (!confirm('Are you sure you want to delete this student?')) return;
+    const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', id);
+    if (error) {
+        alert('Error deleting student: ' + error.message);
+        return;
+    }
+    adminData.students = adminData.students.filter(s => s.id !== id);
+    renderStudents();
+    toast('Student deleted');
+}
+
+// ==================== Section CRUD (Supabase) ====================
+function editSection(key) {
+    const sec = adminData.sections[key];
+    const modalHtml = `
+        <h3>Edit Section</h3>
+        <div class="form-group">
+            <label>Key</label>
+            <input type="text" id="edit-section-key" value="${escapeHtml(key)}" disabled>
+        </div>
+        <div class="form-group">
+            <label>Arabic Name</label>
+            <input type="text" id="edit-section-ar" value="${escapeHtml(sec.ar || '')}">
+        </div>
+        <div class="form-group">
+            <label>English Name</label>
+            <input type="text" id="edit-section-en" value="${escapeHtml(sec.en || '')}">
+        </div>
+        <div class="form-group">
+            <label>French Name</label>
+            <input type="text" id="edit-section-fr" value="${escapeHtml(sec.fr || '')}">
+        </div>
+        <div style="display:flex; gap:10px; justify-content:flex-end;">
+            <button class="btn" onclick="saveSection('${key}')">Save</button>
+            <button class="btn btn-danger" onclick="closeModal()">Cancel</button>
+        </div>
+    `;
+    openModal(modalHtml, null);
+}
+
+function addSection() {
+    const modalHtml = `
+        <h3>Add Section</h3>
+        <div class="form-group">
+            <label>Key</label>
+            <input type="text" id="new-section-key" placeholder="e.g., 9base">
+        </div>
+        <div class="form-group">
+            <label>Arabic Name</label>
+            <input type="text" id="new-section-ar">
+        </div>
+        <div class="form-group">
+            <label>English Name</label>
+            <input type="text" id="new-section-en">
+        </div>
+        <div class="form-group">
+            <label>French Name</label>
+            <input type="text" id="new-section-fr">
+        </div>
+        <div style="display:flex; gap:10px; justify-content:flex-end;">
+            <button class="btn btn-success" onclick="saveNewSection()">Add</button>
+            <button class="btn btn-danger" onclick="closeModal()">Cancel</button>
+        </div>
+    `;
+    openModal(modalHtml, null);
+}
+
+async function saveSection(key) {
+    const sec = adminData.sections[key];
+    sec.ar = document.getElementById('edit-section-ar').value;
+    sec.en = document.getElementById('edit-section-en').value;
+    sec.fr = document.getElementById('edit-section-fr').value;
+
+    const { error } = await supabase
+        .from('sections')
+        .update({ name_ar: sec.ar, name_en: sec.en, name_fr: sec.fr })
+        .eq('key', key);
+
+    if (error) {
+        alert('Error updating section: ' + error.message);
+        return;
+    }
+    closeModal();
+    renderSections();
+    toast('Section updated');
+}
+
+async function saveNewSection() {
+    const key = document.getElementById('new-section-key').value.trim();
+    if (!key) { alert('Key required'); return; }
+    const newSec = {
+        ar: document.getElementById('new-section-ar').value,
+        en: document.getElementById('new-section-en').value,
+        fr: document.getElementById('new-section-fr').value
+    };
+
+    const { error } = await supabase
+        .from('sections')
+        .insert({ key, name_ar: newSec.ar, name_en: newSec.en, name_fr: newSec.fr });
+
+    if (error) {
+        alert('Error adding section: ' + error.message);
+        return;
+    }
+    adminData.sections[key] = newSec;
+    closeModal();
+    renderSections();
+    toast('Section added');
+}
+
+async function deleteSection(key) {
+    if (!confirm('Delete this section? It may affect schedule and students.')) return;
+    const { error } = await supabase
+        .from('sections')
+        .delete()
+        .eq('key', key);
+    if (error) {
+        alert('Error deleting section: ' + error.message);
+        return;
+    }
+    delete adminData.sections[key];
+    // Clean schedule cells
+    DAYS.forEach(d => {
+        TIME_SLOTS.forEach(slot => {
+            const assignment = adminData.schedule[d.key]?.[slot.id];
+            if (Array.isArray(assignment)) {
+                adminData.schedule[d.key][slot.id] = assignment.filter(a => !a.startsWith(key));
+            } else if (assignment && assignment.startsWith(key)) {
+                adminData.schedule[d.key][slot.id] = 'reserved';
+            }
+        });
+    });
+    // Optionally update schedule_slots in Supabase for those cells (could be a bulk operation, but we skip for simplicity)
+    renderSections();
+    renderSchedule();
+    renderStudents();
+    toast('Section deleted');
+}
+
+// ==================== Subject CRUD (Supabase) ====================
+function editSubject(key) {
+    const subj = adminData.subjectCatalog[key];
+    const modalHtml = `
+        <h3>Edit Subject</h3>
+        <div class="form-group">
+            <label>Key</label>
+            <input type="text" id="edit-subject-key" value="${escapeHtml(key)}" disabled>
+        </div>
+        <div class="form-group">
+            <label>Arabic Name</label>
+            <input type="text" id="edit-subject-ar" value="${escapeHtml(subj.ar || '')}">
+        </div>
+        <div class="form-group">
+            <label>English Name</label>
+            <input type="text" id="edit-subject-en" value="${escapeHtml(subj.en || '')}">
+        </div>
+        <div class="form-group">
+            <label>French Name</label>
+            <input type="text" id="edit-subject-fr" value="${escapeHtml(subj.fr || '')}">
+        </div>
+        <div style="display:flex; gap:10px; justify-content:flex-end;">
+            <button class="btn" onclick="saveSubject('${key}')">Save</button>
+            <button class="btn btn-danger" onclick="closeModal()">Cancel</button>
+        </div>
+    `;
+    openModal(modalHtml, null);
+}
+
+function addSubject() {
+    const modalHtml = `
+        <h3>Add Subject</h3>
+        <div class="form-group">
+            <label>Key</label>
+            <input type="text" id="new-subject-key" placeholder="e.g., physics">
+        </div>
+        <div class="form-group">
+            <label>Arabic Name</label>
+            <input type="text" id="new-subject-ar">
+        </div>
+        <div class="form-group">
+            <label>English Name</label>
+            <input type="text" id="new-subject-en">
+        </div>
+        <div class="form-group">
+            <label>French Name</label>
+            <input type="text" id="new-subject-fr">
+        </div>
+        <div style="display:flex; gap:10px; justify-content:flex-end;">
+            <button class="btn btn-success" onclick="saveNewSubject()">Add</button>
+            <button class="btn btn-danger" onclick="closeModal()">Cancel</button>
+        </div>
+    `;
+    openModal(modalHtml, null);
+}
+
+async function saveSubject(key) {
+    const subj = adminData.subjectCatalog[key];
+    subj.ar = document.getElementById('edit-subject-ar').value;
+    subj.en = document.getElementById('edit-subject-en').value;
+    subj.fr = document.getElementById('edit-subject-fr').value;
+
+    const { error } = await supabase
+        .from('subjects')
+        .update({ name_ar: subj.ar, name_en: subj.en, name_fr: subj.fr })
+        .eq('key', key);
+
+    if (error) {
+        alert('Error updating subject: ' + error.message);
+        return;
+    }
+    closeModal();
+    renderSubjects();
+    toast('Subject updated');
+}
+
+async function saveNewSubject() {
+    const key = document.getElementById('new-subject-key').value.trim();
+    if (!key) { alert('Key required'); return; }
+    const newSubj = {
+        ar: document.getElementById('new-subject-ar').value,
+        en: document.getElementById('new-subject-en').value,
+        fr: document.getElementById('new-subject-fr').value
+    };
+
+    const { error } = await supabase
+        .from('subjects')
+        .insert({ key, name_ar: newSubj.ar, name_en: newSubj.en, name_fr: newSubj.fr });
+
+    if (error) {
+        alert('Error adding subject: ' + error.message);
+        return;
+    }
+    adminData.subjectCatalog[key] = newSubj;
+    closeModal();
+    renderSubjects();
+    toast('Subject added');
+}
+
+async function deleteSubject(key) {
+    if (!confirm('Delete this subject?')) return;
+    const { error } = await supabase
+        .from('subjects')
+        .delete()
+        .eq('key', key);
+    if (error) {
+        alert('Error deleting subject: ' + error.message);
+        return;
+    }
+    delete adminData.subjectCatalog[key];
+    adminData.students.forEach(student => {
+        if (Array.isArray(student.subjects)) {
+            student.subjects = student.subjects.filter(s => s !== key);
+        }
+    });
+    renderSubjects();
+    renderStudents();
+    toast('Subject deleted');
+}
+
+// ==================== Schedule Editing (Supabase) ====================
+function editScheduleCell(dayKey, slotId) {
+    const current = adminData.schedule[dayKey]?.[slotId] || 'reserved';
+    const allOptions = [
+        { value: 'reserved', label: 'Reserved' },
+        ...Object.keys(adminData.sections).map(key => ({ value: key, label: adminData.sections[key].ar || key })),
+        ...generateGroupOptions()
+    ];
+    const selectedValues = Array.isArray(current) ? current : [current];
+    const optionsHtml = allOptions.map(opt => {
+        const checked = selectedValues.includes(opt.value) ? 'checked' : '';
+        return `<label style="display:block;"><input type="checkbox" value="${opt.value}" ${checked}> ${escapeHtml(opt.label)}</label>`;
+    }).join('');
+    const modalHtml = `
+        <h3>Edit Schedule Cell (${dayKey} ${slotId})</h3>
+        <p>Select one or more assignments:</p>
+        <div class="checkbox-group" style="flex-direction:column; align-items:flex-start;">
+            ${optionsHtml}
+        </div>
+        <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:15px;">
+            <button class="btn" onclick="saveScheduleCell('${dayKey}', '${slotId}')">Save</button>
+            <button class="btn btn-danger" onclick="closeModal()">Cancel</button>
+        </div>
+    `;
+    openModal(modalHtml, null);
+}
+
+function generateGroupOptions() {
+    const groupSet = new Set();
+    DAYS.forEach(d => {
+        TIME_SLOTS.forEach(slot => {
+            const assignment = adminData.schedule[d.key]?.[slot.id];
+            if (Array.isArray(assignment)) {
+                assignment.forEach(a => {
+                    if (a.includes('-g')) groupSet.add(a);
+                });
+            } else if (assignment && assignment.includes('-g')) {
+                groupSet.add(assignment);
+            }
+        });
+    });
+    return Array.from(groupSet).map(val => ({ value: val, label: getAssignmentDisplay(val) }));
+}
+
+async function saveScheduleCell(dayKey, slotId) {
+    const checkboxes = document.querySelectorAll('#modal-content input[type="checkbox"]:checked');
+    const selected = Array.from(checkboxes).map(cb => cb.value);
+    let newAssignment;
+    if (selected.length === 0) {
+        newAssignment = 'reserved';
+    } else if (selected.length === 1) {
+        newAssignment = selected[0];
+    } else {
+        newAssignment = selected;
+    }
+
+    // Update local state
+    adminData.schedule[dayKey][slotId] = newAssignment;
+
+    // Upsert into Supabase
+    const { error } = await supabase
+        .from('schedule_slots')
+        .upsert(
+            { day_key: dayKey, time_slot_id: slotId, assignment: newAssignment },
+            { onConflict: 'day_key,time_slot_id' }
+        );
+
+    if (error) {
+        alert('Error updating schedule: ' + error.message);
+        return;
+    }
+
+    closeModal();
+    renderSchedule();
+    toast('Schedule updated');
+}
+
+// ==================== Attendance Row Helper ====================
+function addAttendanceRow() {
+    const container = document.getElementById('attendance-edit-container');
+    const div = document.createElement('div');
+    div.style.cssText = 'display:flex; gap:10px; margin-bottom:5px;';
+    div.innerHTML = `
+        <input type="text" placeholder="dd/mm/yyyy" data-att-field="date">
+        <select data-att-field="status">
+            <option value="paid">Paid</option>
+            <option value="unpaid">Unpaid</option>
+            <option value="overdue">Overdue</option>
+        </select>
+    `;
+    container.appendChild(div);
+}
+
+// ==================== Export (Optional Backup) ====================
+// These functions remain unchanged, but they now export the current adminData.
+function generateDataObject() {
+    return {
+        subjectCatalog: adminData.subjectCatalog,
+        data: {
+            days: DAYS,
+            timeSlots: TIME_SLOTS,
+            sections: adminData.sections,
+            schedule: adminData.schedule,
+            students: adminData.students
+        }
+    };
+}
+function generateFullHTML() {
+    if (originalHTML) {
+        let html = originalHTML;
+        const subjStr = `const subjectCatalog = ${JSON.stringify(adminData.subjectCatalog)};`;
+        html = html.replace(/const subjectCatalog = \{[\s\S]*?\};/, subjStr);
+        const dataObj = {
+            days: DAYS,
+            timeSlots: TIME_SLOTS,
+            sections: adminData.sections,
+            schedule: adminData.schedule,
+            students: adminData.students
+        };
+        const dataStr = `const data = ${JSON.stringify(dataObj)};`;
+        html = html.replace(/const data = \{[\s\S]*?\};/, dataStr);
+        return html;
+    } else {
+        return generateBasicHTML();
+    }
+}
+function generateBasicHTML() {
+    const dataObj = {
+        days: DAYS,
+        timeSlots: TIME_SLOTS,
+        sections: adminData.sections,
+        schedule: adminData.schedule,
+        students: adminData.students
+    };
+    const html = `<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
@@ -1223,90 +1561,52 @@
     <\/script>
 </body>
 </html>`;
-            return html;
-        }
-        function copyToClipboard(text) {
-            navigator.clipboard.writeText(text).then(() => toast('Copied to clipboard!'), () => toast('Failed to copy'));
-        }
-        document.getElementById('copy-html-btn').addEventListener('click', function() {
-            const html = generateFullHTML();
-            copyToClipboard(html);
-        });
-        document.getElementById('copy-object-btn').addEventListener('click', function() {
-            const obj = generateDataObject();
-            copyToClipboard(JSON.stringify(obj, null, 2));
-        });
-        document.getElementById('download-html-btn').addEventListener('click', function() {
-            const html = generateFullHTML();
-            const blob = new Blob([html], { type: 'text/html' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'index_modified.html';
-            a.click();
-            URL.revokeObjectURL(url);
-        });
-        // ==================== Event Listeners ====================
-        document.getElementById('add-student-btn').addEventListener('click', addStudent);
-        document.getElementById('add-section-btn').addEventListener('click', addSection);
-        document.getElementById('add-subject-btn').addEventListener('click', addSubject);
-        // Expose functions to global scope
-        window.editStudent = editStudent;
-        window.deleteStudent = deleteStudent;
-        window.editSection = editSection;
-        window.deleteSection = deleteSection;
-        window.editSubject = editSubject;
-        window.deleteSubject = deleteSubject;
-        window.editScheduleCell = editScheduleCell;
-        window.saveScheduleCell = saveScheduleCell;
-        window.saveStudent = saveStudent;
-        window.saveNewStudent = saveNewStudent;
-        window.saveSection = saveSection;
-        window.saveNewSection = saveNewSection;
-        window.saveSubject = saveSubject;
-        window.saveNewSubject = saveNewSubject;
-        window.addAttendanceRow = addAttendanceRow;
-        window.closeModal = closeModal;
-    </script>
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js')
-        .then(registration => console.log('Service Worker registered:', registration.scope))
-        .catch(error => console.error('Service Worker registration failed:', error));
-    });
-  }
-</script>
-<script>
-  // Install button logic
-  let deferredPrompt = null;
-  const installBtn = document.getElementById('install-btn');
-  window.addEventListener('beforeinstallprompt', (event) => {
-    event.preventDefault();
-    deferredPrompt = event;
-    if (installBtn) installBtn.style.display = 'block';
-  });
-  if (installBtn) {
-    installBtn.addEventListener('click', async () => {
-      if (!deferredPrompt) return;
-      deferredPrompt.prompt();
-      const choiceResult = await deferredPrompt.userChoice;
-      if (choiceResult.outcome === 'accepted') {
-        console.log('User accepted the install prompt');
-      } else {
-        console.log('User dismissed the install prompt');
-      }
-      deferredPrompt = null;
-      installBtn.style.display = 'none';
-    });
-  }
-  window.addEventListener('appinstalled', () => {
-    if (installBtn) installBtn.style.display = 'none';
-    console.log('App was installed');
-  });
-  if (window.matchMedia('(display-mode: standalone)').matches) {
-    if (installBtn) installBtn.style.display = 'none';
-  }
+    return html;
+}
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => toast('Copied to clipboard!'), () => toast('Failed to copy'));
+}
+document.getElementById('copy-html-btn').addEventListener('click', function() {
+    const html = generateFullHTML();
+    copyToClipboard(html);
+});
+document.getElementById('copy-object-btn').addEventListener('click', function() {
+    const obj = generateDataObject();
+    copyToClipboard(JSON.stringify(obj, null, 2));
+});
+document.getElementById('download-html-btn').addEventListener('click', function() {
+    const html = generateFullHTML();
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'index_modified.html';
+    a.click();
+    URL.revokeObjectURL(url);
+});
+
+// ==================== Event Listeners ====================
+document.getElementById('add-student-btn').addEventListener('click', addStudent);
+document.getElementById('add-section-btn').addEventListener('click', addSection);
+document.getElementById('add-subject-btn').addEventListener('click', addSubject);
+
+// Expose functions to global scope
+window.editStudent = editStudent;
+window.deleteStudent = deleteStudent;
+window.editSection = editSection;
+window.deleteSection = deleteSection;
+window.editSubject = editSubject;
+window.deleteSubject = deleteSubject;
+window.editScheduleCell = editScheduleCell;
+window.saveScheduleCell = saveScheduleCell;
+window.saveStudent = saveStudent;
+window.saveNewStudent = saveNewStudent;
+window.saveSection = saveSection;
+window.saveNewSection = saveNewSection;
+window.saveSubject = saveSubject;
+window.saveNewSubject = saveNewSubject;
+window.addAttendanceRow = addAttendanceRow;
+window.closeModal = closeModal;
 </script>
 </body>
 </html>

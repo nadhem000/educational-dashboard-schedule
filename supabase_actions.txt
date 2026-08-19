@@ -1,0 +1,182 @@
+Supabase Actions Plan for EDSchedule
+====================================
+
+Goal:
+- Central source of truth: Supabase PostgreSQL.
+- Student login: uses Supabase Auth (email/password) – no plaintext passwords in tables.
+- Admin login: uses Supabase Auth (separate admin account).
+- Admin GUI: can edit schedule, sections, subjects, and student profile fields (section, group, work system, subjects, parent info, attendance), but cannot edit student names, emails, or passwords.
+- Student view (index.html): reads schedule from Supabase and personalizes it after login.
+- Fallback demo data: kept temporarily until Supabase is fully working, then removed.
+
+Step 1 – Create Supabase Project and Enable Auth
+1. Create a new Supabase project.
+2. In Authentication → Settings, enable email/password sign-in (disable email confirmation for testing if desired).
+3. Create at least two users in the Auth dashboard:
+   - Admin user: e.g., admin@edschedule.local with a strong password.
+   - Student users: for each existing student, create an Auth user with email like ahmed@edschedule.local, sara@edschedule.local, etc., using the same initial password (e.g., 123). The email prefix can be the student’s username.
+
+Step 2 – Create Normalized Database Tables
+Using the Supabase SQL Editor or Table Editor, create the following tables.
+
+2.1 profiles – stores student profile data
+| Column       | Type      | Description                          |
+|--------------|-----------|--------------------------------------|
+| id           | uuid PK   | References auth.users.id             |
+| username     | text unique| Short login identifier (optional)    |
+| name_ar      | text      | Arabic name                          |
+| name_en      | text      | English name                         |
+| name_fr      | text      | French name                          |
+| section_key  | text      | References sections.key              |
+| group_number | text/null | Group within section, if any         |
+| work_system  | text      | monthly, per8sessions, or custom     |
+| subjects     | jsonb     | List of subject keys, or "all"       |
+| parent_name  | text      | Parent/guardian name                 |
+| parent_phone | text      | Parent phone number                  |
+| attendance   | jsonb     | Array of {date, status}              |
+
+Passwords are not stored here; they are managed entirely by Supabase Auth.
+
+2.2 sections
+| Column  | Type    | Description        |
+|---------|---------|--------------------|
+| key     | text PK | e.g., 6base        |
+| name_ar | text    | Arabic name        |
+| name_en | text    | English name       |
+| name_fr | text    | French name        |
+
+2.3 subjects
+| Column  | Type    | Description        |
+|---------|---------|--------------------|
+| key     | text PK | e.g., arabic       |
+| name_ar | text    | Arabic name        |
+| name_en | text    | English name       |
+| name_fr | text    | French name        |
+
+2.4 schedule_slots
+| Column        | Type       | Description                                |
+|---------------|------------|--------------------------------------------|
+| id            | bigserial PK |                                          |
+| day_key       | text       | mon, tue, etc.                             |
+| time_slot_id  | text       | slot7, slot8, etc.                         |
+| assignment    | jsonb      | String or array of strings, e.g., "6base" or ["6base","7base"] |
+
+Add a unique constraint on (day_key, time_slot_id).
+
+Step 3 – Configure Row Level Security (RLS)
+Enable RLS on all four tables and create policies that enforce the following rules.
+
+profiles:
+- Students can SELECT only their own row: id = auth.uid().
+- No direct INSERT, UPDATE, or DELETE for anyone via the public API.
+- Admin access to all profiles will be provided through a SECURITY DEFINER function (see Step 4).
+
+sections, subjects, schedule_slots:
+- Public SELECT allowed (students and visitors need to see the schedule).
+- No direct INSERT, UPDATE, or DELETE via the public API.
+- All write operations will go through SECURITY DEFINER functions that check if the current user is an admin.
+
+Step 4 – Create Database Functions (SECURITY DEFINER)
+Create the following functions in the Supabase SQL Editor. They run with elevated privileges but include internal checks.
+
+4.1 get_public_schedule()
+- Returns sections, subjects, and schedule_slots.
+- Can be called by anon (anyone).
+- Used by index.html to load the full schedule.
+
+4.2 get_students_for_admin()
+- Returns all student profiles without passwords (they are not in the table anyway).
+- Only allowed if auth.uid() is an admin (check against an admins table or a hardcoded admin email).
+- Used by admin.html to populate the student list.
+
+4.3 save_schedule(p_sections jsonb, p_subjects jsonb, p_schedule jsonb)
+- Replaces the contents of sections, subjects, and schedule_slots.
+- Only allowed if auth.uid() is an admin.
+- Runs in a transaction so all tables are updated together.
+
+4.4 update_student_profile(p_id uuid, p_section_key text, p_group text, p_work_system text, p_subjects jsonb, p_parent_name text, p_parent_phone text, p_attendance jsonb)
+- Updates the allowed profile fields for a student.
+- Does not modify name_ar, name_en, name_fr, or username.
+- Only allowed if auth.uid() is an admin.
+
+4.5 (Optional) is_admin()
+- Returns true if the current user is in the admins table or has a specific email.
+
+Step 5 – Populate Initial Data
+1. Create Auth users for every student (as described in Step 1).
+2. Insert rows into profiles linking each Auth user ID to the corresponding student data. Do this manually in the Table Editor or via SQL.
+3. Insert rows into sections, subjects, and schedule_slots using the existing demo schedule from the current index.html. You can export the JSON from the admin page and transform it, or insert manually.
+
+Step 6 – Modify admin.html
+6.1 Replace Static Login with Supabase Auth
+- Remove the hardcoded admin username/password and the login overlay.
+- Add Supabase JS client and use signInWithPassword with the admin email/password.
+- Show the editor only after a valid admin session is established.
+
+6.2 Load Data from Supabase
+- On successful admin login, call get_students_for_admin() and get_public_schedule() to populate the editor.
+- The editor tabs show the fetched data.
+
+6.3 Lock Student Name & Password Fields
+- In the student edit modal, disable or hide fields for name_ar, name_en, name_fr, and password.
+- Password is not present in the profile table, so it cannot be edited.
+- When saving a student, call update_student_profile() with only the allowed fields.
+
+6.4 Save Schedule Changes
+- Replace the existing “Save to Supabase” button with a new handler that calls save_schedule() with the current local state.
+- After save, show a toast confirmation.
+
+6.5 Remove or Disable Local Export/Import
+- You may keep export features for backup, but the primary persistence is Supabase.
+- The import/export of full HTML can remain for offline backup, but it must not interfere with Supabase data.
+
+Step 7 – Modify index.html
+7.1 Replace Local Demo Data with Supabase Fetch
+- On page load, call get_public_schedule() and store the result in the app’s data object.
+- Use that data to render the schedule, sections, and subjects.
+- Keep the existing demo data as fallback only if Supabase is unreachable (show a warning).
+
+7.2 Replace Student Login with Supabase Auth
+- The login form now collects email (or username that maps to email) and password.
+- Call supabase.auth.signInWithPassword().
+- On success, fetch the student’s profile from profiles using the authenticated user’s ID.
+- Use that profile (not the demo data) to personalize the schedule, roster, attendance, etc.
+
+7.3 Update User Info Display
+- The displayed name comes from the fetched profile (name_ar, etc.).
+- The avatar and welcome message work as before.
+
+7.4 Remove or Disable Admin Button in index.html
+- Since admin access is now via a separate URL with Supabase Auth, you can remove the admin button that appeared after hardcoded admin login.
+- Admin users should go directly to admin.html and log in there.
+
+Step 8 – Secure the Service Worker
+- Modify sw.js to not cache any Supabase API or Auth endpoints.
+- Add a rule: if the request URL contains supabase.co, do not use cache.
+- This ensures students always get the latest schedule and authentication responses.
+
+Step 9 – Testing
+1. Admin login: Open admin.html, log in with the admin Supabase email/password.
+2. Schedule edit: Change a cell, save, then reload admin.html – the change should persist.
+3. Student view: Open index.html, verify the schedule reflects the admin’s changes.
+4. Student login: Log in with a student email/password (e.g., ahmed@edschedule.local / 123). Confirm personalized schedule and panels work.
+5. Profile update: In admin.html, edit a student’s section/group/attendance, save, then log in as that student to see the changes.
+6. Name/password lock: Confirm the admin edit modal does not allow changing names or passwords. Attempt to change a password via Supabase Auth dashboard, then log in with the new password.
+7. RLS enforcement: Try to access profiles or update schedule_slots directly through the browser console using the anon key – it should be blocked.
+
+Step 10 – Remove Demo Data
+Once everything works with Supabase:
+- Delete the large embedded students, schedule, sections, and subjects arrays from index.html.
+- Remove the fallback demo data entirely (or keep a minimal “offline” message).
+- Update the README to document the Supabase dependency and new login system.
+
+Summary of Changes from Previous Plan
+| Area              | Previous Plan                          | Revised Plan                                        |
+|-------------------|----------------------------------------|-----------------------------------------------------|
+| Admin auth        | Hardcoded credentials in HTML          | Supabase Auth (admin@edschedule.local)              |
+| Student auth      | Custom table with plaintext passwords  | Supabase Auth (email/password)                      |
+| Schedule storage  | Single JSON blob in app_data           | Normalized tables (sections, subjects, schedule_slots) |
+| Data access       | Direct anon reads/writes               | RLS + SECURITY DEFINER functions                    |
+| Admin GUI         | Can edit all fields except names/passwords | Can edit only allowed profile fields; names/passwords managed in Supabase dashboard |
+| Fallback demo     | Kept indefinitely                      | Temporary, then removed                             |
+| Service worker    | May cache API responses                | Explicitly excludes Supabase endpoints              |
