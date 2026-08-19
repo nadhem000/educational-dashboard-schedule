@@ -1,5 +1,5 @@
 // EDSchedule Service Worker – development-friendly caching
-const CACHE_NAME = 'edschedule-cache-v5';
+const CACHE_NAME = 'edschedule-cache-v6';
 
 // Core assets to pre-cache on install
 const CORE_ASSETS = [
