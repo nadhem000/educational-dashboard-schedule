@@ -500,11 +500,11 @@
         </div>
     </div>
 	<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
+   <script>
 // ==================== Supabase Configuration ====================
 const SUPABASE_URL = 'https://ewvvlqujimxdubreulni.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV3dnZscXVqaW14ZHVicmV1bG5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxMzc0ODAsImV4cCI6MjEwMjcxMzQ4MH0._-i_8bMsMM1uhmE024MrgWo66GAQjt8vONlur9LfOtg';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ==================== DEFAULT CONSTANTS ====================
 const days = [
@@ -541,7 +541,7 @@ let data = {
 async function loadDataFromSupabase() {
     try {
         // Fetch sections
-        const { data: sectionsRows, error: sectionsError } = await supabase
+        const { data: sectionsRows, error: sectionsError } = await supabaseClient
             .from('sections')
             .select('*');
         if (sectionsError) throw sectionsError;
@@ -552,7 +552,7 @@ async function loadDataFromSupabase() {
         });
 
         // Fetch subjects
-        const { data: subjectsRows, error: subjectsError } = await supabase
+        const { data: subjectsRows, error: subjectsError } = await supabaseClient
             .from('subjects')
             .select('*');
         if (subjectsError) throw subjectsError;
@@ -563,7 +563,7 @@ async function loadDataFromSupabase() {
         });
 
         // Fetch students (profiles)
-        const { data: profilesRows, error: profilesError } = await supabase
+        const { data: profilesRows, error: profilesError } = await supabaseClient
             .from('profiles')
             .select('*');
         if (profilesError) throw profilesError;
@@ -584,7 +584,7 @@ async function loadDataFromSupabase() {
         }));
 
         // Fetch schedule slots
-        const { data: scheduleRows, error: scheduleError } = await supabase
+        const { data: scheduleRows, error: scheduleError } = await supabaseClient
             .from('schedule_slots')
             .select('*');
         if (scheduleError) throw scheduleError;

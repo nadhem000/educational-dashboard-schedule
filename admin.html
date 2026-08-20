@@ -398,7 +398,7 @@
 // ==================== Supabase Configuration ====================
 const SUPABASE_URL = 'https://ewvvlqujimxdubreulni.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV3dnZscXVqaW14ZHVicmV1bG5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxMzc0ODAsImV4cCI6MjEwMjcxMzQ4MH0._-i_8bMsMM1uhmE024MrgWo66GAQjt8vONlur9LfOtg';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ==================== Default Constants (copied from original index.html) ====================
 const DEFAULT_SECTIONS = {
@@ -442,7 +442,7 @@ let adminData = {
     schedule: {},
     students: []
 };
-let originalHTML = null; // no longer used primarily
+let originalHTML = null;
 let currentModalCallback = null;
 
 // ==================== Utility Functions ====================
@@ -476,8 +476,7 @@ document.getElementById('modal-overlay').addEventListener('click', function(e) {
 // ==================== Data Loading from Supabase ====================
 async function loadDataFromSupabase() {
     try {
-        // Fetch sections
-        const { data: sectionsRows, error: sectionsError } = await supabase
+        const { data: sectionsRows, error: sectionsError } = await supabaseClient
             .from('sections')
             .select('*');
         if (sectionsError) throw sectionsError;
@@ -487,8 +486,7 @@ async function loadDataFromSupabase() {
             sections[row.key] = { ar: row.name_ar, en: row.name_en, fr: row.name_fr };
         });
 
-        // Fetch subjects
-        const { data: subjectsRows, error: subjectsError } = await supabase
+        const { data: subjectsRows, error: subjectsError } = await supabaseClient
             .from('subjects')
             .select('*');
         if (subjectsError) throw subjectsError;
@@ -498,8 +496,7 @@ async function loadDataFromSupabase() {
             subjectCatalog[row.key] = { ar: row.name_ar, en: row.name_en, fr: row.name_fr };
         });
 
-        // Fetch students (profiles)
-        const { data: profilesRows, error: profilesError } = await supabase
+        const { data: profilesRows, error: profilesError } = await supabaseClient
             .from('profiles')
             .select('*');
         if (profilesError) throw profilesError;
@@ -513,14 +510,13 @@ async function loadDataFromSupabase() {
             group: row.group_number,
             workSystem: row.work_system,
             password: row.password,
-            subjects: row.subjects, // could be "all" or array
+            subjects: row.subjects,
             parentName: row.parent_name,
             parentPhone: row.parent_phone,
             attendance: row.attendance || []
         }));
 
-        // Fetch schedule slots
-        const { data: scheduleRows, error: scheduleError } = await supabase
+        const { data: scheduleRows, error: scheduleError } = await supabaseClient
             .from('schedule_slots')
             .select('*');
         if (scheduleError) throw scheduleError;
@@ -532,7 +528,6 @@ async function loadDataFromSupabase() {
             schedule[row.day_key][row.time_slot_id] = row.assignment;
         });
 
-        // Fill missing cells with 'reserved'
         DAYS.forEach(day => {
             TIME_SLOTS.forEach(slot => {
                 if (!schedule[day.key][slot.id]) {
@@ -566,27 +561,23 @@ function attemptAdminLogin() {
         sessionStorage.setItem('adminLoggedIn', 'true');
         document.getElementById('admin-login-overlay').style.display = 'none';
         errorEl.textContent = '';
-        loadDataFromSupabase(); // load data after successful login
+        loadDataFromSupabase();
     } else {
         errorEl.textContent = 'Invalid credentials';
     }
 }
 
-// Check if already logged in this session
 if (sessionStorage.getItem('adminLoggedIn') === 'true') {
     document.getElementById('admin-login-overlay').style.display = 'none';
-    loadDataFromSupabase(); // load data on refresh if already logged in
+    loadDataFromSupabase();
 }
 
-// Attach event listener
 document.getElementById('admin-login-btn').addEventListener('click', attemptAdminLogin);
 document.getElementById('admin-password').addEventListener('keypress', function(e) {
     if (e.key === 'Enter') attemptAdminLogin();
 });
 
-// ==================== Optional: Keep Import/Parse for backup ====================
-// These functions remain from original but are not used automatically.
-// If you want to use them, you can still trigger via the import buttons.
+// ==================== Optional: Import/Parse (unchanged) ====================
 function findMatchingDelimiter(str, startIndex, openChar, closeChar) {
     let count = 0;
     for (let i = startIndex; i < str.length; i++) {
@@ -618,7 +609,6 @@ function extractObjectFromCode(code, varName) {
     }
 }
 function parseContent(text) {
-    // (unchanged, but we won't call it automatically; it can still be used if needed)
     text = text.trim();
     let sections = null, subjectCatalog = null, schedule = null, students = null;
     let fullHTML = false;
@@ -694,7 +684,6 @@ function parseContent(text) {
     document.getElementById('editor').style.display = 'block';
     renderAll();
 }
-// Keep import event listeners active (optional)
 document.getElementById('parse-btn').addEventListener('click', function() {
     const text = document.getElementById('import-text').value.trim();
     if (!text) {
@@ -1030,7 +1019,7 @@ async function saveStudent(id) {
     });
     updated.attendance = attendance;
 
-    const { error } = await supabase
+    const { error } = await supabaseClient
         .from('profiles')
         .update({
             section_key: updated.section,
@@ -1048,7 +1037,6 @@ async function saveStudent(id) {
         return;
     }
 
-    // Update local state
     Object.assign(student, updated);
 
     closeModal();
@@ -1078,7 +1066,7 @@ async function saveNewStudent() {
         newStudent.subjects = selectedSubjects;
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
         .from('profiles')
         .insert({
             name_ar: newStudent.nameAr,
@@ -1110,7 +1098,7 @@ async function saveNewStudent() {
 
 async function deleteStudent(id) {
     if (!confirm('Are you sure you want to delete this student?')) return;
-    const { error } = await supabase
+    const { error } = await supabaseClient
         .from('profiles')
         .delete()
         .eq('id', id);
@@ -1185,7 +1173,7 @@ async function saveSection(key) {
     sec.en = document.getElementById('edit-section-en').value;
     sec.fr = document.getElementById('edit-section-fr').value;
 
-    const { error } = await supabase
+    const { error } = await supabaseClient
         .from('sections')
         .update({ name_ar: sec.ar, name_en: sec.en, name_fr: sec.fr })
         .eq('key', key);
@@ -1208,7 +1196,7 @@ async function saveNewSection() {
         fr: document.getElementById('new-section-fr').value
     };
 
-    const { error } = await supabase
+    const { error } = await supabaseClient
         .from('sections')
         .insert({ key, name_ar: newSec.ar, name_en: newSec.en, name_fr: newSec.fr });
 
@@ -1224,7 +1212,7 @@ async function saveNewSection() {
 
 async function deleteSection(key) {
     if (!confirm('Delete this section? It may affect schedule and students.')) return;
-    const { error } = await supabase
+    const { error } = await supabaseClient
         .from('sections')
         .delete()
         .eq('key', key);
@@ -1233,7 +1221,6 @@ async function deleteSection(key) {
         return;
     }
     delete adminData.sections[key];
-    // Clean schedule cells
     DAYS.forEach(d => {
         TIME_SLOTS.forEach(slot => {
             const assignment = adminData.schedule[d.key]?.[slot.id];
@@ -1244,7 +1231,6 @@ async function deleteSection(key) {
             }
         });
     });
-    // Optionally update schedule_slots in Supabase for those cells (could be a bulk operation, but we skip for simplicity)
     renderSections();
     renderSchedule();
     renderStudents();
@@ -1313,7 +1299,7 @@ async function saveSubject(key) {
     subj.en = document.getElementById('edit-subject-en').value;
     subj.fr = document.getElementById('edit-subject-fr').value;
 
-    const { error } = await supabase
+    const { error } = await supabaseClient
         .from('subjects')
         .update({ name_ar: subj.ar, name_en: subj.en, name_fr: subj.fr })
         .eq('key', key);
@@ -1336,7 +1322,7 @@ async function saveNewSubject() {
         fr: document.getElementById('new-subject-fr').value
     };
 
-    const { error } = await supabase
+    const { error } = await supabaseClient
         .from('subjects')
         .insert({ key, name_ar: newSubj.ar, name_en: newSubj.en, name_fr: newSubj.fr });
 
@@ -1352,7 +1338,7 @@ async function saveNewSubject() {
 
 async function deleteSubject(key) {
     if (!confirm('Delete this subject?')) return;
-    const { error } = await supabase
+    const { error } = await supabaseClient
         .from('subjects')
         .delete()
         .eq('key', key);
@@ -1427,11 +1413,9 @@ async function saveScheduleCell(dayKey, slotId) {
         newAssignment = selected;
     }
 
-    // Update local state
     adminData.schedule[dayKey][slotId] = newAssignment;
 
-    // Upsert into Supabase
-    const { error } = await supabase
+    const { error } = await supabaseClient
         .from('schedule_slots')
         .upsert(
             { day_key: dayKey, time_slot_id: slotId, assignment: newAssignment },
@@ -1465,7 +1449,6 @@ function addAttendanceRow() {
 }
 
 // ==================== Export (Optional Backup) ====================
-// These functions remain unchanged, but they now export the current adminData.
 function generateDataObject() {
     return {
         subjectCatalog: adminData.subjectCatalog,
