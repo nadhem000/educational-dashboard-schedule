@@ -227,7 +227,6 @@
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV3dnZscXVqaW14ZHVicmV1bG5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxMzc0ODAsImV4cCI6MjEwMjcxMzQ4MH0._-i_8bMsMM1uhmE024MrgWo66GAQjt8vONlur9LfOtg';
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Translations
         const translations = {
             ar: {
                 loginTitle: 'تسجيل الدخول',
@@ -237,10 +236,10 @@
                 loginBtn: 'دخول',
                 logoutBtn: 'تسجيل الخروج',
                 photoLabel: 'الصورة الشخصية',
-				chooseFolder: 'اختر مجلد الصور',
-filesSelected: '{count} صورة مختارة',
-noImages: 'لا توجد صور في المجلد',
-                photoHint: 'اختر صورة جديدة لتغيير الصورة الحالية.',
+                chooseFolder: 'اختر مجلد الصور',
+                filesSelected: '{count} صورة مختارة',
+                noImages: 'لا توجد صور في المجلد',
+                photoHint: 'اختر مجلدًا يحتوي على الصور لعرضها واختيار صورة.',
                 savePhoto: 'حفظ الصورة',
                 errorLogin: 'الاسم أو الرقم السري غير صحيح',
                 errorMissing: 'يرجى إدخال الاسم والرقم السري',
@@ -254,10 +253,10 @@ noImages: 'لا توجد صور في المجلد',
                 loginBtn: 'Entrer',
                 logoutBtn: 'Déconnexion',
                 photoLabel: 'Photo de profil',
-chooseFolder: 'Choisir un dossier',
-filesSelected: '{count} images sélectionnées',
-noImages: 'Aucune image dans le dossier',
-                photoHint: 'Choisissez une nouvelle photo pour changer l\'image actuelle.',
+                chooseFolder: 'Choisir un dossier',
+                filesSelected: '{count} images sélectionnées',
+                noImages: 'Aucune image dans le dossier',
+                photoHint: 'Choisissez un dossier contenant des images pour les afficher et en choisir une.',
                 savePhoto: 'Enregistrer la photo',
                 errorLogin: 'Nom ou mot de passe incorrect',
                 errorMissing: 'Veuillez saisir le nom et le mot de passe',
@@ -271,10 +270,10 @@ noImages: 'Aucune image dans le dossier',
                 loginBtn: 'Sign In',
                 logoutBtn: 'Logout',
                 photoLabel: 'Profile Photo',
-chooseFolder: 'Choose Folder',
-filesSelected: '{count} images selected',
-noImages: 'No images in folder'
-                photoHint: 'Choose a new photo to change the current image.',
+                chooseFolder: 'Choose Folder',
+                filesSelected: '{count} images selected',
+                noImages: 'No images in folder',
+                photoHint: 'Choose a folder containing images to preview and select one.',
                 savePhoto: 'Save Photo',
                 errorLogin: 'Incorrect name or password',
                 errorMissing: 'Please enter name and password',
@@ -284,6 +283,7 @@ noImages: 'No images in folder'
 
         let currentLanguage = 'ar';
         let currentUser = null;
+        let selectedPhotoDataUrl = null;
 
         const langSelect = document.getElementById('language-select');
         const loginSection = document.getElementById('login-section');
@@ -294,10 +294,7 @@ noImages: 'No images in folder'
         const loginBtn = document.getElementById('login-btn');
         const logoutBtn = document.getElementById('logout-btn');
         const avatarContainer = document.getElementById('avatar-container');
-        const avatarInitial = document.getElementById('avatar-initial');
         const photoInput = document.getElementById('photo-input');
-        const photoPreviewContainer = document.getElementById('photo-preview-container');
-        const photoPreview = document.getElementById('photo-preview');
         const savePhotoBtn = document.getElementById('save-photo-btn');
         const toast = document.getElementById('toast');
 
@@ -314,9 +311,8 @@ noImages: 'No images in folder'
             logoutBtn.textContent = t.logoutBtn;
             document.getElementById('photo-label').textContent = t.photoLabel;
             document.getElementById('photo-hint').textContent = t.photoHint;
+            document.getElementById('choose-folder-btn').textContent = t.chooseFolder;
             savePhotoBtn.textContent = t.savePhoto;
-			document.getElementById('choose-folder-btn').textContent = t.chooseFolder;
-document.getElementById('photo-hint').textContent = t.photoHint;
             if (currentUser) {
                 updateAvatar();
             }
@@ -328,7 +324,7 @@ document.getElementById('photo-hint').textContent = t.photoHint;
             if (currentUser.photo_url) {
                 avatarContainer.innerHTML = `<img src="${currentUser.photo_url}" alt="${displayName}">`;
             } else {
-                avatarContainer.innerHTML = `<span id="avatar-initial">${displayName.charAt(0).toUpperCase()}</span>`;
+                avatarContainer.innerHTML = `<span>${displayName.charAt(0).toUpperCase()}</span>`;
             }
         }
 
@@ -338,7 +334,6 @@ document.getElementById('photo-hint').textContent = t.photoHint;
             setTimeout(() => toast.classList.remove('show'), 2000);
         }
 
-        // Login handler
         async function handleLogin() {
             const name = loginName.value.trim();
             const password = loginPassword.value.trim();
@@ -346,7 +341,6 @@ document.getElementById('photo-hint').textContent = t.photoHint;
                 loginError.textContent = translations[currentLanguage].errorMissing;
                 return;
             }
-            // Fetch profiles and find match
             const { data: profiles, error } = await supabaseClient
                 .from('profiles')
                 .select('*');
@@ -368,7 +362,6 @@ document.getElementById('photo-hint').textContent = t.photoHint;
                 nameEn: user.name_en,
                 nameFr: user.name_fr,
                 photo_url: user.photo_url || null,
-                // we don't need other fields here
             };
             loginSection.classList.add('hidden');
             profileSection.classList.add('visible');
@@ -376,86 +369,86 @@ document.getElementById('photo-hint').textContent = t.photoHint;
             updateAvatar();
         }
 
-        // Logout handler
         function handleLogout() {
             currentUser = null;
             loginName.value = '';
             loginPassword.value = '';
             photoInput.value = '';
-            photoPreviewContainer.style.display = 'none';
+            document.getElementById('thumbnails-container').innerHTML = '';
+            document.getElementById('files-info').textContent = '';
+            selectedPhotoDataUrl = null;
             profileSection.classList.remove('visible');
             loginSection.classList.remove('hidden');
         }
 
-       let selectedPhotoDataUrl = null; // currently selected image (from folder)
-photoInput.addEventListener('change', function(e) {
-    const files = Array.from(e.target.files);
-    const container = document.getElementById('thumbnails-container');
-    container.innerHTML = '';
-    selectedPhotoDataUrl = null;
-    const filesInfo = document.getElementById('files-info');
-    filesInfo.textContent = '';
+        photoInput.addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            const container = document.getElementById('thumbnails-container');
+            container.innerHTML = '';
+            selectedPhotoDataUrl = null;
+            const filesInfo = document.getElementById('files-info');
+            filesInfo.textContent = '';
 
-    if (files.length === 0) return;
+            if (files.length === 0) return;
 
-    const imageFiles = files.filter(file => file.type.startsWith('image/'));
-    if (imageFiles.length === 0) {
-        filesInfo.textContent = translations[currentLanguage].noImages;
-        return;
-    }
+            const imageFiles = files.filter(file => file.type.startsWith('image/'));
+            if (imageFiles.length === 0) {
+                filesInfo.textContent = translations[currentLanguage].noImages;
+                return;
+            }
 
-    filesInfo.textContent = translations[currentLanguage].filesSelected.replace('{count}', imageFiles.length);
+            filesInfo.textContent = translations[currentLanguage].filesSelected.replace('{count}', imageFiles.length);
 
-    imageFiles.forEach(file => {
-        const reader = new FileReader();
-        reader.onload = function(ev) {
-            const img = document.createElement('img');
-            img.src = ev.target.result;
-            img.className = 'thumbnail';
-            img.addEventListener('click', function() {
-                container.querySelectorAll('.thumbnail').forEach(t => t.classList.remove('selected'));
-                img.classList.add('selected');
-                selectedPhotoDataUrl = ev.target.result;
+            imageFiles.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    const img = document.createElement('img');
+                    img.src = ev.target.result;
+                    img.className = 'thumbnail';
+                    img.addEventListener('click', function() {
+                        container.querySelectorAll('.thumbnail').forEach(t => t.classList.remove('selected'));
+                        img.classList.add('selected');
+                        selectedPhotoDataUrl = ev.target.result;
+                    });
+                    container.appendChild(img);
+                };
+                reader.readAsDataURL(file);
             });
-            container.appendChild(img);
-        };
-        reader.readAsDataURL(file);
-    });
-});
+        });
 
-savePhotoBtn.addEventListener('click', async function() {
-    if (!currentUser) return;
-    if (!selectedPhotoDataUrl) {
-        showToast('Please select an image first');
-        return;
-    }
+        savePhotoBtn.addEventListener('click', async function() {
+            if (!currentUser) return;
+            if (!selectedPhotoDataUrl) {
+                showToast('Please select an image first');
+                return;
+            }
 
-    const { error } = await supabaseClient
-        .from('profiles')
-        .update({ photo_url: selectedPhotoDataUrl })
-        .eq('id', currentUser.id);
+            const { error } = await supabaseClient
+                .from('profiles')
+                .update({ photo_url: selectedPhotoDataUrl })
+                .eq('id', currentUser.id);
 
-    if (error) {
-        showToast('Error saving photo: ' + error.message);
-    } else {
-        currentUser.photo_url = selectedPhotoDataUrl;
-        updateAvatar();
-        photoInput.value = '';
-        document.getElementById('thumbnails-container').innerHTML = '';
-        document.getElementById('files-info').textContent = '';
-        selectedPhotoDataUrl = null;
-        showToast(translations[currentLanguage].toastSaved);
-    }
-});
-document.getElementById('choose-folder-btn').addEventListener('click', function() {
-    document.getElementById('photo-input').click();
-});
+            if (error) {
+                showToast('Error saving photo: ' + error.message);
+            } else {
+                currentUser.photo_url = selectedPhotoDataUrl;
+                updateAvatar();
+                photoInput.value = '';
+                document.getElementById('thumbnails-container').innerHTML = '';
+                document.getElementById('files-info').textContent = '';
+                selectedPhotoDataUrl = null;
+                showToast(translations[currentLanguage].toastSaved);
+            }
+        });
 
-        // Event listeners
+        document.getElementById('choose-folder-btn').addEventListener('click', function() {
+            document.getElementById('photo-input').click();
+        });
+
         loginBtn.addEventListener('click', handleLogin);
         logoutBtn.addEventListener('click', handleLogout);
         langSelect.addEventListener('change', e => applyLanguage(e.target.value));
-        // Initial language
+
         applyLanguage('ar');
     </script>
 </body>
