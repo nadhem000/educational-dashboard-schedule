@@ -505,7 +505,7 @@
 const SUPABASE_URL = 'https://ewvvlqujimxdubreulni.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV3dnZscXVqaW14ZHVicmV1bG5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxMzc0ODAsImV4cCI6MjEwMjcxMzQ4MH0._-i_8bMsMM1uhmE024MrgWo66GAQjt8vONlur9LfOtg';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
+const ADMIN_CREDENTIALS = { name: 'admin', password: 'admin123' };
 // ==================== DEFAULT CONSTANTS ====================
 const days = [
     { key: 'mon', ar: 'الاثنين', en: 'Monday', fr: 'Lundi' },
@@ -867,8 +867,25 @@ function updateUserInfo() {
 }
 
 function updateAllPanels() {
-    // Always hide admin button on student page
-    if (adminBtn) adminBtn.style.display = 'none';
+    // Show admin button only if admin is logged in
+    if (adminBtn) {
+        adminBtn.style.display = (currentUser && currentUser.isAdmin) ? 'inline-block' : 'none';
+    }
+
+    if (currentUser && currentUser.isAdmin) {
+        // Admin: show full schedule only, hide student personal panels
+        rebuildScheduleTable();
+        personalScheduleDiv.classList.remove('visible');
+        rosterPanelDiv.classList.remove('visible');
+        attendancePanelDiv.classList.remove('visible');
+        workSystemPanelDiv.classList.remove('visible');
+        materialsPanelDiv.classList.remove('visible');
+        studentCardBtn.style.display = 'none';
+        const t = translations[currentLanguage];
+        userAvatarSpan.textContent = 'A';
+        loggedNameSpan.innerHTML = `${escapeHtml(t.welcome)}، Admin`;
+        return;
+    }
 
     if (currentUser) {
         rebuildScheduleTable();
@@ -1063,7 +1080,19 @@ function handleLogin() {
         return;
     }
 
-    // Find student in the loaded profiles (data.students)
+    // Admin login (from student page, gives access to admin panel)
+    if (name.toLowerCase() === ADMIN_CREDENTIALS.name && password === ADMIN_CREDENTIALS.password) {
+        currentUser = { isAdmin: true, nameAr: 'Admin', nameEn: 'Admin', nameFr: 'Admin' };
+        loginNameInput.value = '';
+        loginPasswordInput.value = '';
+        sessionStorage.setItem('adminLoggedIn', 'true');
+        updateAllPanels();
+        loginForm.style.display = 'none';
+        userInfoDiv.style.display = 'flex';
+        return;
+    }
+
+    // Student login
     const student = data.students.find(u => {
         return (u.nameAr === name || u.nameEn === name || u.nameFr === name) && u.password === password;
     });
