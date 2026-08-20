@@ -192,11 +192,10 @@
             </div>
             <div class="form-group">
     <label id="photo-label">الصورة الشخصية</label>
-    <input type="file" id="photo-input" accept="image/*" multiple>
+    <input type="file" id="photo-input" accept="image/*" webkitdirectory directory multiple>
     <small id="photo-hint">اختر صورة جديدة لتغيير الصورة الحالية.</small>
 </div>
-<div id="thumbnails-container" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin:15px 0;"></div>
-            
+<div id="thumbnails-container" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin:15px 0;"></div>            
             <div style="display:flex; gap:10px;">
                 <button id="save-photo-btn">حفظ الصورة</button>
                 <button id="logout-btn" class="btn-danger">تسجيل الخروج</button>
@@ -362,10 +361,8 @@
             loginSection.classList.remove('hidden');
         }
 
-        // Preview selected image
-       let selectedPhotoDataUrl = null; // hold the currently selected image data URL
+       let selectedPhotoDataUrl = null; // currently selected image (from folder)
 
-// Preview multiple selected images as circular thumbnails
 photoInput.addEventListener('change', function(e) {
     const files = Array.from(e.target.files);
     const container = document.getElementById('thumbnails-container');
@@ -374,14 +371,16 @@ photoInput.addEventListener('change', function(e) {
 
     if (files.length === 0) return;
 
-    files.forEach(file => {
+    // Filter only image files (in case folder contains non‑images)
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+
+    imageFiles.forEach(file => {
         const reader = new FileReader();
         reader.onload = function(ev) {
             const img = document.createElement('img');
             img.src = ev.target.result;
             img.className = 'thumbnail';
             img.addEventListener('click', function() {
-                // Remove selected class from all thumbnails
                 container.querySelectorAll('.thumbnail').forEach(t => t.classList.remove('selected'));
                 img.classList.add('selected');
                 selectedPhotoDataUrl = ev.target.result;
@@ -392,7 +391,6 @@ photoInput.addEventListener('change', function(e) {
     });
 });
 
-// Save selected photo
 savePhotoBtn.addEventListener('click', async function() {
     if (!currentUser) return;
     if (!selectedPhotoDataUrl) {
