@@ -201,3 +201,8 @@ Expected counts:
 - subjects: 8
 - profiles: 7
 - schedule_slots: 98
+Add a new column to the profiles table to store the photo as a base64 data URL (or a URL).
+
+
+ALTER TABLE public.profiles
+ADD COLUMN photo_url text;

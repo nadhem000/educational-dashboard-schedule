@@ -141,6 +141,22 @@
             padding: 5px 10px;
             border-radius: 6px;
         }
+		.thumbnail {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    object-fit: cover;
+    cursor: pointer;
+    border: 3px solid transparent;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.thumbnail:hover {
+    border-color: var(--primary);
+}
+.thumbnail.selected {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.5);
+}
     </style>
 </head>
 <body>
@@ -175,13 +191,12 @@
                 <span id="avatar-initial"></span>
             </div>
             <div class="form-group">
-                <label id="photo-label">الصورة الشخصية</label>
-                <input type="file" id="photo-input" accept="image/*">
-                <small id="photo-hint">اختر صورة جديدة لتغيير الصورة الحالية.</small>
-            </div>
-            <div id="photo-preview-container" style="display:none; text-align:center; margin:15px 0;">
-                <img id="photo-preview" src="" alt="Preview" style="max-width:150px; max-height:150px; border-radius:50%;">
-            </div>
+    <label id="photo-label">الصورة الشخصية</label>
+    <input type="file" id="photo-input" accept="image/*" multiple>
+    <small id="photo-hint">اختر صورة جديدة لتغيير الصورة الحالية.</small>
+</div>
+<div id="thumbnails-container" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin:15px 0;"></div>
+            
             <div style="display:flex; gap:10px;">
                 <button id="save-photo-btn">حفظ الصورة</button>
                 <button id="logout-btn" class="btn-danger">تسجيل الخروج</button>
@@ -348,45 +363,60 @@
         }
 
         // Preview selected image
-        photoInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(ev) {
-                photoPreview.src = ev.target.result;
-                photoPreviewContainer.style.display = 'block';
-            };
-            reader.readAsDataURL(file);
-        });
+       let selectedPhotoDataUrl = null; // hold the currently selected image data URL
 
-        // Save photo
-        savePhotoBtn.addEventListener('click', async function() {
-            if (!currentUser) return;
-            const file = photoInput.files[0];
-            if (!file) {
-                showToast('No file selected');
-                return;
-            }
-            // Convert to base64 data URL
-            const reader = new FileReader();
-            reader.onload = async function(ev) {
-                const base64 = ev.target.result;
-                const { error } = await supabaseClient
-                    .from('profiles')
-                    .update({ photo_url: base64 })
-                    .eq('id', currentUser.id);
-                if (error) {
-                    showToast('Error saving photo: ' + error.message);
-                } else {
-                    currentUser.photo_url = base64;
-                    updateAvatar();
-                    photoInput.value = '';
-                    photoPreviewContainer.style.display = 'none';
-                    showToast(translations[currentLanguage].toastSaved);
-                }
-            };
-            reader.readAsDataURL(file);
-        });
+// Preview multiple selected images as circular thumbnails
+photoInput.addEventListener('change', function(e) {
+    const files = Array.from(e.target.files);
+    const container = document.getElementById('thumbnails-container');
+    container.innerHTML = '';
+    selectedPhotoDataUrl = null;
+
+    if (files.length === 0) return;
+
+    files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+            const img = document.createElement('img');
+            img.src = ev.target.result;
+            img.className = 'thumbnail';
+            img.addEventListener('click', function() {
+                // Remove selected class from all thumbnails
+                container.querySelectorAll('.thumbnail').forEach(t => t.classList.remove('selected'));
+                img.classList.add('selected');
+                selectedPhotoDataUrl = ev.target.result;
+            });
+            container.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+    });
+});
+
+// Save selected photo
+savePhotoBtn.addEventListener('click', async function() {
+    if (!currentUser) return;
+    if (!selectedPhotoDataUrl) {
+        showToast('Please select an image first');
+        return;
+    }
+
+    const { error } = await supabaseClient
+        .from('profiles')
+        .update({ photo_url: selectedPhotoDataUrl })
+        .eq('id', currentUser.id);
+
+    if (error) {
+        showToast('Error saving photo: ' + error.message);
+    } else {
+        currentUser.photo_url = selectedPhotoDataUrl;
+        updateAvatar();
+        // Clear input and thumbnails
+        photoInput.value = '';
+        document.getElementById('thumbnails-container').innerHTML = '';
+        selectedPhotoDataUrl = null;
+        showToast(translations[currentLanguage].toastSaved);
+    }
+});
 
         // Event listeners
         loginBtn.addEventListener('click', handleLogin);
