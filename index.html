@@ -400,6 +400,19 @@
         .install-btn:hover {
             opacity: 0.9;
         }
+		.edit-profile-link {
+    display: inline-block;
+    background: var(--table-header-bg);
+    color: var(--table-header-text);
+    padding: 10px 20px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: opacity 0.2s;
+}
+.edit-profile-link:hover {
+    opacity: 0.9;
+}
     </style>
 </head>
 <body>
@@ -569,19 +582,20 @@ async function loadDataFromSupabase() {
         if (profilesError) throw profilesError;
 
         const students = profilesRows.map(row => ({
-            id: row.id,
-            nameAr: row.name_ar,
-            nameEn: row.name_en,
-            nameFr: row.name_fr,
-            section: row.section_key,
-            group: row.group_number,
-            workSystem: row.work_system,
-            password: row.password,
-            subjects: row.subjects,
-            parentName: row.parent_name,
-            parentPhone: row.parent_phone,
-            attendance: row.attendance || []
-        }));
+    id: row.id,
+    nameAr: row.name_ar,
+    nameEn: row.name_en,
+    nameFr: row.name_fr,
+    section: row.section_key,
+    group: row.group_number,
+    workSystem: row.work_system,
+    password: row.password,
+    subjects: row.subjects,
+    parentName: row.parent_name,
+    parentPhone: row.parent_phone,
+    attendance: row.attendance || [],
+    photo_url: row.photo_url || null   // <-- add this line
+}));
 
         // Fetch schedule slots
         const { data: scheduleRows, error: scheduleError } = await supabaseClient
@@ -862,7 +876,9 @@ function updateUserInfo() {
     if (!currentUser) return;
     const t = translations[currentLanguage];
     const displayName = getText(currentUser) || currentUser.nameAr;
-    userAvatarSpan.textContent = displayName.charAt(0).toUpperCase();
+    userAvatarSpan.innerHTML = currentUser.photo_url 
+        ? `<img src="${currentUser.photo_url}" alt="${escapeHtml(displayName)}" style="width:100%; height:100%; object-fit:cover; border-radius:10px;">` 
+        : displayName.charAt(0).toUpperCase();
     loggedNameSpan.innerHTML = `${escapeHtml(t.welcome)}، ${escapeHtml(displayName)}`;
 }
 
@@ -1032,7 +1048,11 @@ function populateStudentCardModal() {
         : `<div class="detail-item"><strong>${t.parentName}</strong><span class="value">${escapeHtml(t.noParentInfo)}</span></div>`;
     const cardHtml = `
         <div class="student-card-profile">
-            <div class="student-card-avatar">${escapeHtml(displayName.charAt(0).toUpperCase())}</div>
+            <div class="student-card-avatar">
+    ${currentUser.photo_url 
+        ? `<img src="${currentUser.photo_url}" alt="${escapeHtml(displayName)}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">` 
+        : escapeHtml(displayName.charAt(0).toUpperCase())}
+</div>
             <div>
                 <div class="student-card-name">${escapeHtml(displayName)}</div>
                 <div class="student-card-section">${escapeHtml(sectionName)}${currentUser.group ? ' - ' + escapeHtml(group) : ''}</div>
@@ -1061,6 +1081,8 @@ function populateStudentCardModal() {
         attendanceCalendarMonth = new Date();
     }
     renderAttendanceCalendar();
+	document.getElementById('modal-footer').innerHTML = 
+    `<a href="profile.html" class="edit-profile-link">${escapeHtml(translations[currentLanguage].editProfile)}</a>`;
 }
 
 function openStudentCardModal() {
@@ -1137,6 +1159,7 @@ const translations = {
         logoutBtn: 'تسجيل الخروج',
         studentCardBtn: 'بطاقة التلميذ',
         modalTitle: 'بطاقة التلميذ',
+		editProfile: 'تعديل ملفي الشخصي',
         welcome: 'مرحبا',
         workSystemLabel: 'نظام العمل',
         workMonthly: 'شهري',
@@ -1189,6 +1212,7 @@ const translations = {
         logoutBtn: 'Déconnexion',
         studentCardBtn: 'Carte étudiant',
         modalTitle: 'Carte étudiant',
+        editProfile: 'Modifier mon profil',
         welcome: 'Bienvenue',
         workSystemLabel: 'Système de travail',
         workMonthly: 'Mensuel',
@@ -1241,6 +1265,7 @@ const translations = {
         logoutBtn: 'Logout',
         studentCardBtn: 'Student Card',
         modalTitle: 'Student Card',
+        editProfile: 'Edit my profile',
         welcome: 'Welcome',
         workSystemLabel: 'Work System',
         workMonthly: 'Monthly',
@@ -1556,3 +1581,231 @@ To move toward production, you would need:
 - Possibly a framework (React, Vue, etc.) for better state management and component reuse.
 
 If the goal is a quick, shareable prototype, these files are more than adequate. Just be mindful of the security and maintainability caveats. -->
+<!-- ============================================================
+     SUPABASE INTEGRATION CHANGELOG
+     (All changes made since the start of the Supabase conversation)
+     ============================================================
+
+     Changes in index.html:
+     - Added Supabase CDN script:
+         <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+     - Added Supabase config constants:
+         * SUPABASE_URL
+         * SUPABASE_ANON_KEY
+     - Added local client variable:
+         const supabaseClient = window.supabase.createClient(...)
+     - Added ADMIN_CREDENTIALS = { name: 'admin', password: 'admin123' }
+     - Removed original embedded demo data:
+         * const sections
+         * const subjectCatalog
+         * const schedule
+         * const students
+         * const data = { days, timeSlots, sections, schedule, students }
+     - Replaced them with an empty `data` object populated from Supabase.
+     - Added loadDataFromSupabase() function.
+         Fetches sections, subjects, profiles, schedule_slots from Supabase.
+         Converts rows into the existing JavaScript data structure.
+         Fills missing schedule cells with 'reserved'.
+     - Changed init() from synchronous to async.
+         init() now waits for loadDataFromSupabase() before rendering.
+         If Supabase fails, shows error in the notes area.
+     - Added `adminBtn` DOM reference.
+     - Updated updateAllPanels():
+         Shows admin button only when currentUser.isAdmin.
+         Hides student personal panels for admin.
+         Hides student card button for admin.
+     - Updated handleLogin():
+         Admin login checked first, then student login from data.students.
+     - Updated all references from global `subjectCatalog` to data.subjectCatalog.
+     - Updated all references from global `students` to data.students.
+     - Restored admin login experience in the student page.
+         Admin can now log in from index.html and see Admin Panel button.
+
+     Changes in admin.html:
+     - Added Supabase CDN script.
+     - Added supabaseClient configuration.
+     - Added loadDataFromSupabase() to load data after admin login.
+     - Converted student CRUD to Supabase:
+         saveStudent / saveNewStudent / deleteStudent now use profiles table.
+         Student name and password fields are disabled in edit modal.
+     - Converted section CRUD to Supabase:
+         saveSection / saveNewSection / deleteSection now use sections table.
+     - Converted subject CRUD to Supabase:
+         saveSubject / saveNewSubject / deleteSubject now use subjects table.
+     - Converted schedule cell editing to Supabase:
+         saveScheduleCell now upserts into schedule_slots table.
+     - Kept import/parse as optional backup.
+
+     Changes in sw.js:
+     - Bumped cache version from v3 to v9.
+     - Added isSupabaseRequest() helper.
+     - Added bypass-cache rule for any request to supabase.co.
+     - Supabase requests always use network and are never cached.
+
+     ============================================================ -->
+<!-- 
+## `admin.html`
+
+### Added
+- Supabase CDN script:
+  ```html
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  ```
+- Supabase configuration:
+  ```javascript
+  const SUPABASE_URL = '...';
+  const SUPABASE_ANON_KEY = '...';
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  ```
+- `loadDataFromSupabase()` function that fetches:
+  - `sections`
+  - `subjects`
+  - `profiles`
+  - `schedule_slots`
+
+  Then converts the rows into `adminData` and renders the editor.
+
+- Admin login now calls `loadDataFromSupabase()` after successful authentication.
+- Supabase-based CRUD operations:
+  - Students: insert/update/delete in `profiles`
+  - Sections: insert/update/delete in `sections`
+  - Subjects: insert/update/delete in `subjects`
+  - Schedule: upsert `schedule_slots`
+
+- Student edit modal:
+  - Name fields are now `disabled`
+  - Password field is `disabled` and shows `"********"`
+  - Edit/delete buttons use `student.id` instead of array index
+
+### Removed
+- The original local-only student CRUD:
+  - `saveStudent(index)` modified the local array directly; now replaced by Supabase `update`
+  - `saveNewStudent()` pushed to `adminData.students`; now inserts into Supabase
+  - `deleteStudent(index)` used `splice`; now deletes from Supabase
+
+- The original local-only section CRUD:
+  - `saveSection(key)` modified `adminData.sections` directly; now updates Supabase
+  - `saveNewSection()` added to local object; now inserts into Supabase
+  - `deleteSection(key)` deleted local key only; now deletes from Supabase
+
+- The original local-only subject CRUD:
+  - `saveSubject(key)` modified local object; now updates Supabase
+  - `saveNewSubject()` added to local object; now inserts into Supabase
+  - `deleteSubject(key)` deleted local key only; now deletes from Supabase
+
+- The original local-only schedule editing:
+  - `saveScheduleCell()` only updated `adminData.schedule`; now upserts to Supabase
+
+- The original behavior where admin login **did not load any data** after hiding the overlay; now it loads from Supabase automatically.
+
+- The original editable **name** and **password** fields in the student edit modal; now disabled.
+
+---
+
+## `index.html`
+
+### Added
+- Supabase CDN script:
+  ```html
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  ```
+- Supabase configuration:
+  ```javascript
+  const SUPABASE_URL = '...';
+  const SUPABASE_ANON_KEY = '...';
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const ADMIN_CREDENTIALS = { name: 'admin', password: 'admin123' };
+  ```
+
+- `loadDataFromSupabase()` function that fetches and populates:
+  - `data.sections`
+  - `data.subjectCatalog`
+  - `data.students`
+  - `data.schedule`
+
+- Async `init()` that waits for `loadDataFromSupabase()` before rendering.
+
+- `adminBtn` DOM reference:
+  ```javascript
+  const adminBtn = document.getElementById('admin-btn');
+  ```
+
+- Explicit admin handling in `updateAllPanels()`:
+  - Shows the admin button when `currentUser.isAdmin`
+  - Hides student personal panels for admin
+  - Hides the student card button for admin
+  - Displays `"Admin"` as the logged-in name
+
+### Removed
+- Hardcoded embedded demo data:
+  - `sections`
+  - `subjectCatalog`
+  - `schedule`
+  - `students`
+  - The original `const data = { days, timeSlots, sections, schedule, students };`
+
+  These were replaced with an empty `data` object populated from Supabase.
+
+- Global references to the old hardcoded `subjectCatalog`:
+  - `updateMaterialsPanel()` previously used `subjectCatalog[key]`
+  - `populateStudentCardModal()` previously used `subjectCatalog[key]`
+  - Now both use `data.subjectCatalog[key]`
+
+- Global references to the old hardcoded `students`:
+  - `handleLogin()` previously used the local `students` array directly
+  - Now uses `data.students`
+
+- The original synchronous `init()`:
+  ```javascript
+  function init() {
+    applyLanguage('ar');
+    applyTheme('light');
+    currentUser = null;
+    loginForm.style.display = 'flex';
+    userInfoDiv.style.display = 'none';
+    rebuildScheduleTable();
+  }
+  init();
+  ```
+  Replaced by an async version that loads Supabase first.
+
+- The old fallback demo data behaviour:
+  - If Supabase fails now, the page shows an error instead of using the embedded demo arrays.
+
+---
+
+## `sw.js`
+
+### Added
+- Supabase request detection:
+  ```javascript
+  function isSupabaseRequest(request) {
+    const url = new URL(request.url);
+    return url.hostname.includes('supabase.co');
+  }
+  ```
+
+- New fetch-event rule:
+  - If `isSupabaseRequest(request)` is `true`, always use network, never cache.
+  - If network fails, return a `503` response.
+
+- Cache version bumped from `v3` to `v9`.
+
+### Removed
+- The old cache name `'edschedule-cache-v3'` and its associated cached assets are cleared on activation when the new `v9` service worker installs.
+
+- The previous unconditional caching behaviour for all non-image requests is now changed:
+  - Supabase API calls are **excluded** from caching.
+  - This was not present in the original `sw.js`.
+
+---
+
+## Summary of Removed Items
+
+| File | Removed |
+|------|---------|
+| `admin.html` | Local-only CRUD for students, sections, subjects, schedule; editable name/password fields; reliance on manual import after login |
+| `index.html` | Embedded demo `sections`, `subjectCatalog`, `schedule`, `students`, `data`; synchronous init; global `subjectCatalog`/`students` references |
+| `sw.js` | Old cache version `v3`; unconditional caching of API requests |
+
+ -->

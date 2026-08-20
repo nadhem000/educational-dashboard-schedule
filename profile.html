@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ملفي الشخصي</title>
+    <style>
+        :root {
+            --bg: #f4f7fc;
+            --surface: #ffffff;
+            --text: #2c3e50;
+            --border: #d0d7de;
+            --primary: #2c3e50;
+            --primary-hover: #1a252f;
+            --danger: #e74c3c;
+            --success: #10b981;
+        }
+        body.dark {
+            --bg: #1a1a2e;
+            --surface: #16213e;
+            --text: #e0e0e0;
+            --border: #444;
+            --primary: #0f3460;
+            --primary-hover: #0a2647;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; transition: background-color 0.3s, color 0.3s, border-color 0.3s; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background: var(--surface);
+            max-width: 500px;
+            width: 100%;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 5px;
+        }
+        .subtitle {
+            text-align: center;
+            margin-bottom: 25px;
+            opacity: 0.8;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg);
+            color: var(--text);
+        }
+        button {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            width: 100%;
+        }
+        button:hover {
+            background: var(--primary-hover);
+        }
+        .btn-danger {
+            background: var(--danger);
+        }
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+        .avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin: 0 auto 20px;
+            overflow: hidden;
+        }
+        .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .profile-section {
+            display: none;
+        }
+        .profile-section.visible {
+            display: block;
+        }
+        .login-section {
+            display: block;
+        }
+        .login-section.hidden {
+            display: none;
+        }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #333;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 6px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: 2000;
+        }
+        .toast.show {
+            opacity: 1;
+        }
+        .language-selector {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .language-selector select {
+            padding: 5px 10px;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="language-selector">
+            <select id="language-select">
+                <option value="ar" selected>العربية</option>
+                <option value="fr">Français</option>
+                <option value="en">English</option>
+            </select>
+        </div>
+
+        <!-- Login Section -->
+        <div id="login-section" class="login-section">
+            <h1 id="login-title">تسجيل الدخول</h1>
+            <div class="form-group">
+                <label id="login-name-label">الاسم الكامل</label>
+                <input type="text" id="login-name" placeholder="الاسم الكامل">
+            </div>
+            <div class="form-group">
+                <label id="login-password-label">الرقم السري</label>
+                <input type="password" id="login-password" placeholder="الرقم السري">
+            </div>
+            <button id="login-btn">دخول</button>
+            <p id="login-error" style="color:red; margin-top:10px; text-align:center;"></p>
+        </div>
+
+        <!-- Profile Edit Section -->
+        <div id="profile-section" class="profile-section">
+            <h1 id="profile-title">ملفي الشخصي</h1>
+            <div class="avatar" id="avatar-container">
+                <span id="avatar-initial"></span>
+            </div>
+            <div class="form-group">
+                <label id="photo-label">الصورة الشخصية</label>
+                <input type="file" id="photo-input" accept="image/*">
+                <small id="photo-hint">اختر صورة جديدة لتغيير الصورة الحالية.</small>
+            </div>
+            <div id="photo-preview-container" style="display:none; text-align:center; margin:15px 0;">
+                <img id="photo-preview" src="" alt="Preview" style="max-width:150px; max-height:150px; border-radius:50%;">
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button id="save-photo-btn">حفظ الصورة</button>
+                <button id="logout-btn" class="btn-danger">تسجيل الخروج</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // Supabase config (same as index.html)
+        const SUPABASE_URL = 'https://ewvvlqujimxdubreulni.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV3dnZscXVqaW14ZHVicmV1bG5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxMzc0ODAsImV4cCI6MjEwMjcxMzQ4MH0._-i_8bMsMM1uhmE024MrgWo66GAQjt8vONlur9LfOtg';
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Translations
+        const translations = {
+            ar: {
+                loginTitle: 'تسجيل الدخول',
+                profileTitle: 'ملفي الشخصي',
+                nameLabel: 'الاسم الكامل',
+                passwordLabel: 'الرقم السري',
+                loginBtn: 'دخول',
+                logoutBtn: 'تسجيل الخروج',
+                photoLabel: 'الصورة الشخصية',
+                photoHint: 'اختر صورة جديدة لتغيير الصورة الحالية.',
+                savePhoto: 'حفظ الصورة',
+                errorLogin: 'الاسم أو الرقم السري غير صحيح',
+                errorMissing: 'يرجى إدخال الاسم والرقم السري',
+                toastSaved: 'تم حفظ الصورة بنجاح'
+            },
+            fr: {
+                loginTitle: 'Connexion',
+                profileTitle: 'Mon profil',
+                nameLabel: 'Nom complet',
+                passwordLabel: 'Mot de passe',
+                loginBtn: 'Entrer',
+                logoutBtn: 'Déconnexion',
+                photoLabel: 'Photo de profil',
+                photoHint: 'Choisissez une nouvelle photo pour changer l\'image actuelle.',
+                savePhoto: 'Enregistrer la photo',
+                errorLogin: 'Nom ou mot de passe incorrect',
+                errorMissing: 'Veuillez saisir le nom et le mot de passe',
+                toastSaved: 'Photo enregistrée avec succès'
+            },
+            en: {
+                loginTitle: 'Login',
+                profileTitle: 'My Profile',
+                nameLabel: 'Full Name',
+                passwordLabel: 'Password',
+                loginBtn: 'Sign In',
+                logoutBtn: 'Logout',
+                photoLabel: 'Profile Photo',
+                photoHint: 'Choose a new photo to change the current image.',
+                savePhoto: 'Save Photo',
+                errorLogin: 'Incorrect name or password',
+                errorMissing: 'Please enter name and password',
+                toastSaved: 'Photo saved successfully'
+            }
+        };
+
+        let currentLanguage = 'ar';
+        let currentUser = null;
+
+        const langSelect = document.getElementById('language-select');
+        const loginSection = document.getElementById('login-section');
+        const profileSection = document.getElementById('profile-section');
+        const loginName = document.getElementById('login-name');
+        const loginPassword = document.getElementById('login-password');
+        const loginError = document.getElementById('login-error');
+        const loginBtn = document.getElementById('login-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        const avatarContainer = document.getElementById('avatar-container');
+        const avatarInitial = document.getElementById('avatar-initial');
+        const photoInput = document.getElementById('photo-input');
+        const photoPreviewContainer = document.getElementById('photo-preview-container');
+        const photoPreview = document.getElementById('photo-preview');
+        const savePhotoBtn = document.getElementById('save-photo-btn');
+        const toast = document.getElementById('toast');
+
+        function applyLanguage(lang) {
+            currentLanguage = lang;
+            document.documentElement.lang = lang;
+            document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+            const t = translations[lang];
+            document.getElementById('login-title').textContent = t.loginTitle;
+            document.getElementById('profile-title').textContent = t.profileTitle;
+            document.querySelector('label[for="login-name"]').textContent = t.nameLabel;
+            document.querySelector('label[for="login-password"]').textContent = t.passwordLabel;
+            loginBtn.textContent = t.loginBtn;
+            logoutBtn.textContent = t.logoutBtn;
+            document.getElementById('photo-label').textContent = t.photoLabel;
+            document.getElementById('photo-hint').textContent = t.photoHint;
+            savePhotoBtn.textContent = t.savePhoto;
+            if (currentUser) {
+                updateAvatar();
+            }
+        }
+
+        function updateAvatar() {
+            if (!currentUser) return;
+            const displayName = currentUser.nameAr || currentUser.nameEn || currentUser.nameFr || 'User';
+            if (currentUser.photo_url) {
+                avatarContainer.innerHTML = `<img src="${currentUser.photo_url}" alt="${displayName}">`;
+            } else {
+                avatarContainer.innerHTML = `<span id="avatar-initial">${displayName.charAt(0).toUpperCase()}</span>`;
+            }
+        }
+
+        function showToast(msg) {
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+
+        // Login handler
+        async function handleLogin() {
+            const name = loginName.value.trim();
+            const password = loginPassword.value.trim();
+            if (!name || !password) {
+                loginError.textContent = translations[currentLanguage].errorMissing;
+                return;
+            }
+            // Fetch profiles and find match
+            const { data: profiles, error } = await supabaseClient
+                .from('profiles')
+                .select('*');
+            if (error) {
+                loginError.textContent = 'Error loading data: ' + error.message;
+                return;
+            }
+            const user = profiles.find(p => 
+                (p.name_ar === name || p.name_en === name || p.name_fr === name) && 
+                p.password === password
+            );
+            if (!user) {
+                loginError.textContent = translations[currentLanguage].errorLogin;
+                return;
+            }
+            currentUser = {
+                id: user.id,
+                nameAr: user.name_ar,
+                nameEn: user.name_en,
+                nameFr: user.name_fr,
+                photo_url: user.photo_url || null,
+                // we don't need other fields here
+            };
+            loginSection.classList.add('hidden');
+            profileSection.classList.add('visible');
+            loginError.textContent = '';
+            updateAvatar();
+        }
+
+        // Logout handler
+        function handleLogout() {
+            currentUser = null;
+            loginName.value = '';
+            loginPassword.value = '';
+            photoInput.value = '';
+            photoPreviewContainer.style.display = 'none';
+            profileSection.classList.remove('visible');
+            loginSection.classList.remove('hidden');
+        }
+
+        // Preview selected image
+        photoInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                photoPreview.src = ev.target.result;
+                photoPreviewContainer.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // Save photo
+        savePhotoBtn.addEventListener('click', async function() {
+            if (!currentUser) return;
+            const file = photoInput.files[0];
+            if (!file) {
+                showToast('No file selected');
+                return;
+            }
+            // Convert to base64 data URL
+            const reader = new FileReader();
+            reader.onload = async function(ev) {
+                const base64 = ev.target.result;
+                const { error } = await supabaseClient
+                    .from('profiles')
+                    .update({ photo_url: base64 })
+                    .eq('id', currentUser.id);
+                if (error) {
+                    showToast('Error saving photo: ' + error.message);
+                } else {
+                    currentUser.photo_url = base64;
+                    updateAvatar();
+                    photoInput.value = '';
+                    photoPreviewContainer.style.display = 'none';
+                    showToast(translations[currentLanguage].toastSaved);
+                }
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // Event listeners
+        loginBtn.addEventListener('click', handleLogin);
+        logoutBtn.addEventListener('click', handleLogout);
+        langSelect.addEventListener('change', e => applyLanguage(e.target.value));
+
+        // Initial language
+        applyLanguage('ar');
+    </script>
+</body>
+</html>
