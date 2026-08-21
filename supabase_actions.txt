@@ -202,7 +202,38 @@ Expected counts:
 - profiles: 7
 - schedule_slots: 98
 Add a new column to the profiles table to store the photo as a base64 data URL (or a URL).
-
-
 ALTER TABLE public.profiles
 ADD COLUMN photo_url text;
+
+## Interactions Counting Table and Function
+------------------------------------------------------------
+Run in Supabase SQL Editor:
+------------------------------------------------------------
+-- Create the interaction counts table
+create table if not exists public."EDSschedule_interactions_counts" (
+  event_type text primary key,
+  count bigint not null default 1,
+  created_at timestamptz not null default now(),
+  last_updated timestamptz not null default now()
+);
+
+-- Function to increment a counter atomically
+create or replace function public.increment_interaction_count(p_event_type text)
+returns void
+language sql
+as $$
+  insert into public."EDSschedule_interactions_counts" (event_type, count)
+  values (p_event_type, 1)
+  on conflict (event_type)
+  do update set
+    count = "EDSschedule_interactions_counts".count + 1,
+    last_updated = now();
+$$;
+
+-- Allow anon/authenticated clients to call the function
+grant execute on function public.increment_interaction_count(text) to anon, authenticated;
+Purpose:
+
+EDSschedule_interactions_counts stores atomic counters for different events (e.g., app_open, student_login, pwa_install, photo_update).
+
+The RPC function increment_interaction_count is called from the frontend using supabaseClient.rpc('increment_interaction_count', { p_event_type: '...' }) and is safe for anonymous use.

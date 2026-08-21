@@ -413,6 +413,33 @@
 .edit-profile-link:hover {
     opacity: 0.9;
 }
+.footer {
+    max-width: 1400px;
+    margin: 20px auto;
+    background: var(--container-bg);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    padding: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    color: var(--text-color);
+}
+.footer-column {
+    flex: 1;
+    min-width: 200px;
+}
+.footer-column p {
+    margin: 5px 0;
+    line-height: 1.6;
+}
+.footer a {
+    color: var(--text-color);
+    text-decoration: none;
+}
+.footer a:hover {
+    text-decoration: underline;
+}
     </style>
 </head>
 <body>
@@ -497,6 +524,17 @@
             • في سجل الحضور: الأخضر = مدفوع، الأصفر = غير مدفوع، الأحمر = متأخر عن الدفع.
         </div>
     </div>
+	<footer class="footer">
+    <div class="footer-column">
+        <p><span id="footer-developed-by"></span><br><span id="footer-hosted-on"></span></p>
+    </div>
+    <div class="footer-column">
+        <p><span id="footer-version"></span><br><span id="footer-last-update"></span></p>
+    </div>
+    <div class="footer-column">
+        <p><a href="#" id="footer-contact"></a><br><a href="#" id="footer-privacy-policy"></a></p>
+    </div>
+</footer>
     <!-- Student Card Modal -->
     <div class="modal-overlay" id="student-card-modal">
         <div class="modal-content">
@@ -519,6 +557,20 @@ const SUPABASE_URL = 'https://ewvvlqujimxdubreulni.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV3dnZscXVqaW14ZHVicmV1bG5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxMzc0ODAsImV4cCI6MjEwMjcxMzQ4MH0._-i_8bMsMM1uhmE024MrgWo66GAQjt8vONlur9LfOtg';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const ADMIN_CREDENTIALS = { name: 'admin', password: 'admin123' };
+/**
+ * Fire-and-forget interaction counter.
+ * Never throws, never interrupts the app.
+ */
+function trackInteraction(eventType) {
+    try {
+        if (!window.supabase || !supabaseClient) return;
+        supabaseClient.rpc('increment_interaction_count', { p_event_type: eventType })
+            .then(() => {})
+            .catch(err => console.warn('[Tracking]', eventType, err.message));
+    } catch (err) {
+        console.warn('[Tracking] init error', err.message);
+    }
+}
 // ==================== DEFAULT CONSTANTS ====================
 const days = [
     { key: 'mon', ar: 'الاثنين', en: 'Monday', fr: 'Lundi' },
@@ -942,6 +994,12 @@ function applyLanguage(lang) {
     document.getElementById('materials-title').textContent = t.materialsTitle;
     document.getElementById('notes').innerHTML = t.notes;
     document.getElementById('student-card-btn').textContent = t.studentCardBtn;
+	document.getElementById('footer-developed-by').textContent = t.footerDevelopedBy;
+document.getElementById('footer-hosted-on').textContent = t.footerHostedOn;
+document.getElementById('footer-version').textContent = t.footerVersion;
+document.getElementById('footer-last-update').textContent = t.footerLastUpdate;
+document.getElementById('footer-contact').textContent = t.footerContact;
+document.getElementById('footer-privacy-policy').textContent = t.footerPrivacyPolicy;
     modalTitle.textContent = t.modalTitle;
     loginNameInput.placeholder = t.loginNamePlaceholder;
     loginPasswordInput.placeholder = t.loginPasswordPlaceholder;
@@ -1105,6 +1163,7 @@ function handleLogin() {
     // Admin login (from student page, gives access to admin panel)
     if (name.toLowerCase() === ADMIN_CREDENTIALS.name && password === ADMIN_CREDENTIALS.password) {
         currentUser = { isAdmin: true, nameAr: 'Admin', nameEn: 'Admin', nameFr: 'Admin' };
+trackInteraction('admin_login');
         loginNameInput.value = '';
         loginPasswordInput.value = '';
         sessionStorage.setItem('adminLoggedIn', 'true');
@@ -1123,6 +1182,7 @@ function handleLogin() {
         return;
     }
     currentUser = { ...student };
+trackInteraction('student_login');
     loginNameInput.value = '';
     loginPasswordInput.value = '';
     updateAllPanels();
@@ -1131,6 +1191,9 @@ function handleLogin() {
 }
 
 function handleLogout() {
+    if (currentUser) {
+        trackInteraction(currentUser.isAdmin ? 'admin_logout' : 'student_logout');
+    }
     currentUser = null;
     loginForm.style.display = 'flex';
     userInfoDiv.style.display = 'none';
@@ -1182,6 +1245,12 @@ const translations = {
         allSubjects: 'كل المواد',
         noSubjects: 'لا توجد مواد محددة',
         subjectsLabel: 'المواد',
+		footerDevelopedBy: 'تم التطوير بواسطة ماجري زياد',
+footerHostedOn: 'مستضاف على Netlify و Github و Supabase',
+footerVersion: 'الإصدار: 0.0.3',
+footerLastUpdate: 'آخر تحديث: 07/08/2026',
+footerContact: 'اتصل بنا',
+footerPrivacyPolicy: 'سياسة الخصوصية',
         dayNames: { mon: 'الاثنين', tue: 'الثلاثاء', wed: 'الأربعاء', thu: 'الخميس', fri: 'الجمعة', sat: 'السبت', sun: 'الأحد' },
         attendanceCalendarTitle: 'تقويم الحضور',
         monthNames: ['جانفي', 'فيفري', 'مارس', 'أفريل', 'ماي', 'جوان', 'جويلية', 'أوت', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'],
@@ -1235,6 +1304,12 @@ const translations = {
         allSubjects: 'Toutes les matières',
         noSubjects: 'Aucune matière définie',
         subjectsLabel: 'Matières',
+		footerDevelopedBy: 'Développé par Mejri Ziad',
+footerHostedOn: 'Hébergé sur Netlify, Github et Supabase',
+footerVersion: 'Version : 0.0.3',
+footerLastUpdate: 'Dernière mise à jour : 07/08/2026',
+footerContact: 'Contact',
+footerPrivacyPolicy: 'Politique de confidentialité',
         dayNames: { mon: 'Lundi', tue: 'Mardi', wed: 'Mercredi', thu: 'Jeudi', fri: 'Vendredi', sat: 'Samedi', sun: 'Dimanche' },
         attendanceCalendarTitle: 'Calendrier de présence',
         monthNames: ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'],
@@ -1288,6 +1363,12 @@ const translations = {
         allSubjects: 'All Subjects',
         noSubjects: 'No subjects defined',
         subjectsLabel: 'Subjects',
+		footerDevelopedBy: 'Developed by Mejri Ziad',
+footerHostedOn: 'Hosted on Netlify, Github and Supabase',
+footerVersion: 'Version : 0.0.3',
+footerLastUpdate: 'Last update : 07/08/2026',
+footerContact: 'Contact',
+footerPrivacyPolicy: 'Privacy Policy',
         dayNames: { mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday', fri: 'Friday', sat: 'Saturday', sun: 'Sunday' },
         attendanceCalendarTitle: 'Attendance Calendar',
         monthNames: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
@@ -1319,6 +1400,7 @@ document.addEventListener('keydown', (e) => {
 
 // ==================== INITIALIZATION ====================
 async function init() {
+    trackInteraction('app_open');
     const loaded = await loadDataFromSupabase();
     if (loaded) {
         applyLanguage('ar');
@@ -1333,6 +1415,9 @@ async function init() {
     }
 }
 init();
+window.addEventListener('appinstalled', () => {
+    trackInteraction('pwa_install');
+});
 </script>
 </body>
 </html>

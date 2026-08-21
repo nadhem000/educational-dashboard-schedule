@@ -174,6 +174,33 @@
         .back-home-link:hover {
             background: var(--primary-hover);
         }
+		.footer {
+    max-width: 500px;
+    margin: 20px auto;
+    background: var(--surface);
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    padding: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    color: var(--text);
+}
+.footer-column {
+    flex: 1;
+    min-width: 150px;
+}
+.footer-column p {
+    margin: 5px 0;
+    line-height: 1.6;
+}
+.footer a {
+    color: var(--text);
+    text-decoration: none;
+}
+.footer a:hover {
+    text-decoration: underline;
+}
     </style>
 </head>
 <body>
@@ -226,7 +253,17 @@
             </div>
         </div>
     </div>
-
+<footer class="footer">
+    <div class="footer-column">
+        <p><span id="footer-developed-by"></span><br><span id="footer-hosted-on"></span></p>
+    </div>
+    <div class="footer-column">
+        <p><span id="footer-version"></span><br><span id="footer-last-update"></span></p>
+    </div>
+    <div class="footer-column">
+        <p><a href="#" id="footer-contact"></a><br><a href="#" id="footer-privacy-policy"></a></p>
+    </div>
+</footer>
     <div class="toast" id="toast"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -234,7 +271,20 @@
         const SUPABASE_URL = 'https://ewvvlqujimxdubreulni.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV3dnZscXVqaW14ZHVicmV1bG5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxMzc0ODAsImV4cCI6MjEwMjcxMzQ4MH0._-i_8bMsMM1uhmE024MrgWo66GAQjt8vONlur9LfOtg';
         const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
+/**
+ * Fire-and-forget interaction counter.
+ * Never throws, never interrupts the app.
+ */
+function trackInteraction(eventType) {
+    try {
+        if (!window.supabase || !supabaseClient) return;
+        supabaseClient.rpc('increment_interaction_count', { p_event_type: eventType })
+            .then(() => {})
+            .catch(err => console.warn('[Tracking]', eventType, err.message));
+    } catch (err) {
+        console.warn('[Tracking] init error', err.message);
+    }
+}
         const translations = {
             ar: {
                 loginTitle: 'تسجيل الدخول',
@@ -252,7 +302,13 @@
                 errorLogin: 'الاسم أو الرقم السري غير صحيح',
                 errorMissing: 'يرجى إدخال الاسم والرقم السري',
                 toastSaved: 'تم حفظ الصورة بنجاح',
-                backToHome: 'العودة للرئيسية'
+                backToHome: 'العودة للرئيسية',
+				footerDevelopedBy: 'تم التطوير بواسطة ماجري زياد',
+footerHostedOn: 'مستضاف على Netlify و Github و Supabase',
+footerVersion: 'الإصدار: 0.0.3',
+footerLastUpdate: 'آخر تحديث: 07/08/2026',
+footerContact: 'اتصل بنا',
+footerPrivacyPolicy: 'سياسة الخصوصية'
             },
             fr: {
                 loginTitle: 'Connexion',
@@ -270,7 +326,12 @@
                 errorLogin: 'Nom ou mot de passe incorrect',
                 errorMissing: 'Veuillez saisir le nom et le mot de passe',
                 toastSaved: 'Photo enregistrée avec succès',
-                backToHome: 'Retour à l\'accueil'
+                backToHome: 'Retour à l\'accueil',
+		footerDevelopedBy: 'Développé par Mejri Ziad',
+footerHostedOn: 'Hébergé sur Netlify, Github et Supabase',
+footerVersion: 'Version : 0.0.3',
+footerLastUpdate: 'Dernière mise à jour : 07/08/2026',
+footerContact: 'Contact'
             },
             en: {
                 loginTitle: 'Login',
@@ -288,7 +349,13 @@
                 errorLogin: 'Incorrect name or password',
                 errorMissing: 'Please enter name and password',
                 toastSaved: 'Photo saved successfully',
-                backToHome: 'Back to Home'
+                backToHome: 'Back to Home',
+		footerDevelopedBy: 'Developed by Mejri Ziad',
+footerHostedOn: 'Hosted on Netlify, Github and Supabase',
+footerVersion: 'Version : 0.0.3',
+footerLastUpdate: 'Last update : 07/08/2026',
+footerContact: 'Contact',
+footerPrivacyPolicy: 'Privacy Policy'
             }
         };
 
@@ -326,7 +393,12 @@
             document.getElementById('choose-folder-btn').textContent = t.chooseFolder;
             document.getElementById('back-home-link').textContent = t.backToHome;
             savePhotoBtn.textContent = t.savePhoto;
-
+document.getElementById('footer-developed-by').textContent = t.footerDevelopedBy;
+document.getElementById('footer-hosted-on').textContent = t.footerHostedOn;
+document.getElementById('footer-version').textContent = t.footerVersion;
+document.getElementById('footer-last-update').textContent = t.footerLastUpdate;
+document.getElementById('footer-contact').textContent = t.footerContact;
+document.getElementById('footer-privacy-policy').textContent = t.footerPrivacyPolicy;
             if (currentUser) {
                 updateAvatar();
             }
@@ -380,7 +452,7 @@
                 nameFr: user.name_fr,
                 photo_url: user.photo_url || null,
             };
-
+trackInteraction('profile_login');
             loginSection.classList.add('hidden');
             profileSection.classList.add('visible');
             loginError.textContent = '';
@@ -388,7 +460,10 @@
         }
 
         function handleLogout() {
-            currentUser = null;
+    if (currentUser) {
+        trackInteraction('profile_logout');
+    }
+    currentUser = null;
             loginName.value = '';
             loginPassword.value = '';
             photoInput.value = '';
@@ -455,6 +530,7 @@
                 document.getElementById('thumbnails-container').innerHTML = '';
                 document.getElementById('files-info').textContent = '';
                 selectedPhotoDataUrl = null;
+				trackInteraction('photo_update');
                 showToast(translations[currentLanguage].toastSaved);
             }
         });
@@ -464,10 +540,13 @@
         });
 
         loginBtn.addEventListener('click', handleLogin);
-        logoutBtn.addEventListener('click', handleLogout);
-        langSelect.addEventListener('change', e => applyLanguage(e.target.value));
-
-        applyLanguage('ar');
+logoutBtn.addEventListener('click', handleLogout);
+langSelect.addEventListener('change', e => applyLanguage(e.target.value));
+trackInteraction('profile_open');
+applyLanguage('ar');
+window.addEventListener('appinstalled', () => {
+    trackInteraction('pwa_install');
+});
     </script>
 </body>
 </html>
