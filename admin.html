@@ -1029,22 +1029,23 @@ async function saveStudent(id) {
     }
 
     if (!adminData.sections[sectionKey]) {
-        const newSection = {
-            key: sectionKey,
-            name_ar: sectionKey,
-            name_en: sectionKey,
-            name_fr: sectionKey
-        };
-        const { error: sectionError } = await supabaseClient
-            .from('sections')
-            .insert(newSection);
-        if (sectionError) {
-            alert('Error creating new section: ' + sectionError.message);
-            return;
-        }
-        adminData.sections[sectionKey] = newSection;
-        toast('New section created: ' + sectionKey);
+    const newSection = {
+        key: sectionKey,
+        name_ar: sectionKey,
+        name_en: sectionKey,
+        name_fr: sectionKey
+    };
+    const { error: sectionError } = await supabaseClient
+        .from('sections')
+        .insert(newSection);
+    if (sectionError) {
+        alert('Error creating new section: ' + sectionError.message);
+        return;
     }
+    adminData.sections[sectionKey] = newSection;
+    renderSections();
+    toast('New section created: ' + sectionKey);
+}
 
     updated.section = sectionKey;   // ensure trimmed value is used
     const { error } = await supabaseClient
@@ -1094,22 +1095,23 @@ async function saveNewStudent() {
 
     // If section doesn't exist, create it first
     if (!adminData.sections[sectionKey]) {
-        const newSection = {
-            key: sectionKey,
-            name_ar: sectionKey,
-            name_en: sectionKey,
-            name_fr: sectionKey
-        };
-        const { error: sectionError } = await supabaseClient
-            .from('sections')
-            .insert(newSection);
-        if (sectionError) {
-            alert('Error creating new section: ' + sectionError.message);
-            return;
-        }
-        adminData.sections[sectionKey] = newSection;
-        toast('New section created: ' + sectionKey);
+    const newSection = {
+        key: sectionKey,
+        name_ar: sectionKey,
+        name_en: sectionKey,
+        name_fr: sectionKey
+    };
+    const { error: sectionError } = await supabaseClient
+        .from('sections')
+        .insert(newSection);
+    if (sectionError) {
+        alert('Error creating new section: ' + sectionError.message);
+        return;
     }
+    adminData.sections[sectionKey] = newSection;
+    renderSections();
+    toast('New section created: ' + sectionKey);
+}
     newStudent.section = sectionKey; 
     const selectedSubjects = Array.from(document.getElementById('new-subjects').selectedOptions).map(opt => opt.value);
     if (selectedSubjects.includes('all')) {
