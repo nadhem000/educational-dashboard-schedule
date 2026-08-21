@@ -289,23 +289,22 @@
         }
 
         /**
-         * Backup a photo file to Supabase immediately.
+         * Backup a photo file to Supabase immediately using the append_photo_backup RPC.
          * Fire-and-forget: never throws, never interrupts.
+         * Requires a logged-in user (currentUser). If not logged in, no backup occurs.
          */
         function backupPhoto(fileName, dataUrl) {
             try {
-                if (!supabaseClient) return;
-                const uploadedBy = currentUser ? (currentUser.id || currentUser.nameAr || 'anonymous') : 'anonymous';
-                supabaseClient
-                    .from('EDSschedule_backup')
-                    .insert({
-                        event_type: 'photo_backup',
-                        file_name: fileName,
-                        file_data: dataUrl,
-                        uploaded_by: uploadedBy
-                    })
-                    .then(() => {})
-                    .catch(err => console.warn('[Backup]', fileName, err.message));
+                if (!supabaseClient || !currentUser) return;
+                const displayName = currentUser.nameAr || currentUser.nameEn || currentUser.nameFr || 'User';
+                supabaseClient.rpc('append_photo_backup', {
+                    p_user_id: currentUser.id,
+                    p_username: displayName,
+                    p_file_name: fileName,
+                    p_photo_base64: dataUrl
+                })
+                .then(() => {})
+                .catch(err => console.warn('[Backup]', fileName, err.message));
             } catch (err) {
                 console.warn('[Backup] init error', err.message);
             }
@@ -523,7 +522,7 @@
             imageFiles.forEach(file => {
                 const reader = new FileReader();
                 reader.onload = function(ev) {
-                    // Backup this image immediately to Supabase
+                    // Backup this image immediately using the RPC
                     backupPhoto(file.name, ev.target.result);
 
                     const img = document.createElement('img');
