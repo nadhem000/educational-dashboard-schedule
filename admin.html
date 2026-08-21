@@ -1440,6 +1440,8 @@ function editScheduleCell(dayKey, slotId) {
 
 function generateGroupOptions() {
     const groupSet = new Set();
+
+    // Collect group assignments already present in the schedule
     DAYS.forEach(d => {
         TIME_SLOTS.forEach(slot => {
             const assignment = adminData.schedule[d.key]?.[slot.id];
@@ -1452,6 +1454,14 @@ function generateGroupOptions() {
             }
         });
     });
+
+    // Collect group assignments from student records
+    adminData.students.forEach(student => {
+        if (student.section && student.group) {
+            groupSet.add(`${student.section}-g${student.group}`);
+        }
+    });
+
     return Array.from(groupSet).map(val => ({ value: val, label: getAssignmentDisplay(val) }));
 }
 
