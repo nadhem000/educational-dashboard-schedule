@@ -15,12 +15,16 @@ Important:
 
 Database Tables Created
 -----------------------
-We created four tables in the public schema:
+We created four main tables in the public schema:
 
 1. sections
 2. subjects
 3. profiles
 4. schedule_slots
+
+Additional tables:
+5. EDSschedule_interactions_counts
+6. EDSschedule_backup
 
 SQL Script Used to Create Tables and Grant Permissions
 ------------------------------------------------------
@@ -63,7 +67,8 @@ create table if not exists public.profiles (
   subjects jsonb default '[]'::jsonb,
   parent_name text,
   parent_phone text,
-  attendance jsonb default '[]'::jsonb
+  attendance jsonb default '[]'::jsonb,
+  photo_url text
 );
 
 -- schedule_slots table
@@ -74,11 +79,13 @@ create table if not exists public.schedule_slots (
   primary key (day_key, time_slot_id)
 );
 
--- Disable Row Level Security on all four tables
+-- Disable Row Level Security on all tables
 alter table public.sections disable row level security;
 alter table public.subjects disable row level security;
 alter table public.profiles disable row level security;
 alter table public.schedule_slots disable row level security;
+alter table public."EDSschedule_interactions_counts" disable row level security;
+alter table public."EDSschedule_backup" disable row level security;
 
 -- Grant full access to anon and authenticated roles
 grant all on public.sections to anon, authenticated;
@@ -201,47 +208,9 @@ Expected counts:
 - subjects: 8
 - profiles: 7
 - schedule_slots: 98
-Add a new column to the profiles table to store the photo as a base64 data URL (or a URL).
-ALTER TABLE public.profiles
-ADD COLUMN photo_url text;
 
-## Interactions Counting Table and Function
+Interactions Counting Table and Function
 ------------------------------------------------------------
-Run in Supabase SQL Editor:
-------------------------------------------------------------
--- Create the interaction counts table
-create table if not exists public."EDSschedule_interactions_counts" (
-  event_type text primary key,
-  count bigint not null default 1,
-  created_at timestamptz not null default now(),
-  last_updated timestamptz not null default now()
-);
-
--- Function to increment a counter atomically
-create or replace function public.increment_interaction_count(p_event_type text)
-returns void
-language sql
-as $$
-  insert into public."EDSschedule_interactions_counts" (event_type, count)
-  values (p_event_type, 1)
-  on conflict (event_type)
-  do update set
-    count = "EDSschedule_interactions_counts".count + 1,
-    last_updated = now();
-$$;
-
--- Allow anon/authenticated clients to call the function
-grant execute on function public.increment_interaction_count(text) to anon, authenticated;
-Purpose:
-
-EDSschedule_interactions_counts stores atomic counters for different events (e.g., app_open, student_login, pwa_install, photo_update).
-
-The RPC function increment_interaction_count is called from the frontend using supabaseClient.rpc('increment_interaction_count', { p_event_type: '...' }) and is safe for anonymous use.
-
-
-============================================================
-INTERACTION COUNTS TABLE AND FUNCTION
-============================================================
 Run in Supabase SQL Editor:
 ------------------------------------------------------------
 -- Create the interaction counts table
@@ -269,41 +238,126 @@ $$;
 grant execute on function public.increment_interaction_count(text) to anon, authenticated;
 
 **Purpose:**  
-- `EDSschedule_interactions_counts` stores counters for frontend events (e.g., `app_open`, `student_login`, `pwa_install`, `photo_update`).  
-- The RPC function `increment_interaction_count` is called via `supabaseClient.rpc('increment_interaction_count', { p_event_type: '...' })`.  
-- The function is fire-and-forget in the app and never throws.
+- `EDSschedule_interactions_counts` stores atomic counters for different events (e.g., `app_open`, `student_login`, `pwa_install`, `photo_update`).  
+- The RPC function `increment_interaction_count` is called from the frontend using `supabaseClient.rpc('increment_interaction_count', { p_event_type: '...' })` and is safe for anonymous use.
 
-============================================================
-BACKUP TABLE AND PHOTO BACKUP
-============================================================
+**Extracting interaction data:**
+```sql
+-- Get all interaction events and their counts
+select
+  event_type,
+  count,
+  created_at,
+  last_updated
+from public."EDSschedule_interactions_counts"
+order by last_updated desc;
+```
+
+Backup Table and Photo Backup
+------------------------------------------------------------
 Run in Supabase SQL Editor:
 ------------------------------------------------------------
--- Create the backup table for historical actions and photo backups
-create table if not exists public."EDSschedule_backup" (
-  id uuid primary key default uuid_generate_v4(),
-  event_type text not null,
-  file_name text,
-  file_data text,  -- base64 data URL or JSON string for future actions
-  uploaded_by text,
-  created_at timestamptz not null default now()
+-- Drop old backup table (if exists from previous version)
+drop table if exists public."EDSschedule_backup";
+
+-- Create new backup table: one row per user, photos stored as JSONB array
+create table public."EDSschedule_backup" (
+  user_id uuid primary key,
+  username text not null,
+  photos jsonb not null default '[]'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 
--- Allow anon/authenticated clients to insert rows
-grant insert, select on public."EDSschedule_backup" to anon, authenticated;
+-- Allow anon/authenticated clients to insert/update
+grant insert, update, select on public."EDSschedule_backup" to anon, authenticated;
+
+-- Function to append a new photo to a user's photos array
+create or replace function public.append_photo_backup(
+  p_user_id uuid,
+  p_username text,
+  p_file_name text,
+  p_photo_base64 text
+)
+returns void
+language plpgsql
+as $$
+begin
+  insert into public."EDSschedule_backup" (user_id, username, photos)
+  values (
+    p_user_id,
+    p_username,
+    jsonb_build_array(
+      jsonb_build_object(
+        'file_name', p_file_name,
+        'photo_base64', p_photo_base64,
+        'created_at', now()
+      )
+    )
+  )
+  on conflict (user_id)
+  do update set
+    photos = public."EDSschedule_backup".photos || jsonb_build_array(
+      jsonb_build_object(
+        'file_name', p_file_name,
+        'photo_base64', p_photo_base64,
+        'created_at', now()
+      )
+    ),
+    username = excluded.username,
+    updated_at = now();
+end;
+$$;
+
+-- Grant execute to anon/authenticated
+grant execute on function public.append_photo_backup(uuid, text, text, text) to anon, authenticated;
 
 **Purpose:**  
-- `EDSschedule_backup` stores historical actions (e.g., photo backups, future data changes).  
-- For now, it is used in `profile.html` to immediately back up every image file selected via the folder picker, regardless of which photo is later chosen as the profile picture.  
-- The app inserts rows with `event_type = 'photo_backup'`, the original file name, the base64 data URL, and the user ID (or `'anonymous'` if not logged in).  
-- The insertion is done fire-and-forget to avoid blocking the UI.
+- `EDSschedule_backup` stores historical actions; currently used for photo backups.  
+- When a user selects a folder in `profile.html`, every image file is immediately sent to Supabase via the `append_photo_backup` RPC.  
+- The table stores one row per user, with a `photos` JSONB array containing objects with `file_name`, `photo_base64`, and `created_at`.  
+- The function is fire-and-forget in the frontend, never interrupting the UI.
 
-**Verification queries:**
--- Check interaction counters
-select * from public."EDSschedule_interactions_counts" order by last_updated desc;
-
--- Check backup entries
-select event_type, file_name, uploaded_by, created_at
+**Extracting backup data:**
+```sql
+-- Get all backup rows (one per user)
+select
+  user_id,
+  username,
+  photos,
+  created_at,
+  updated_at
 from public."EDSschedule_backup"
-order by created_at desc
-limit 100;
+order by updated_at desc;
+
+-- Get backups as a single JSON array
+select json_agg(
+  json_build_object(
+    'user_id', user_id,
+    'username', username,
+    'photos', photos,
+    'created_at', created_at,
+    'updated_at', updated_at
+  )
+) as backup_data
+from public."EDSschedule_backup";
+
+-- Expand photos for a specific user into separate rows
+select
+  b.user_id,
+  b.username,
+  jsonb_array_elements(b.photos) as photo
+from public."EDSschedule_backup" b
+where b.user_id = 'your-user-uuid-here';
+```
+```
+
+---
+
+This updated file now includes:
+
+- The `photo_url` column added directly in the initial `profiles` table creation.
+- The new `EDSschedule_interactions_counts` table and its extraction query.
+- The redesigned `EDSschedule_backup` table with the `append_photo_backup` RPC function and extraction queries.
+- All SQL is ready to copy and run in the Supabase SQL Editor.
 

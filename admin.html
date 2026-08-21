@@ -877,11 +877,13 @@ function editStudent(id) {
             <input type="text" id="edit-nameFr" value="${escapeHtml(student.nameFr || '')}" disabled>
         </div>
         <div class="form-group">
-            <label>Section</label>
-            <select id="edit-section">
-                ${Object.keys(adminData.sections).map(key => `<option value="${key}" ${student.section === key ? 'selected' : ''}>${key}</option>`).join('')}
-            </select>
-        </div>
+    <label>Section</label>
+    <input type="text" id="edit-section" list="edit-sections-list" value="${escapeHtml(student.section || '')}" autocomplete="off">
+    <datalist id="edit-sections-list">
+        ${Object.keys(adminData.sections).map(key => `<option value="${key}"></option>`).join('')}
+    </datalist>
+    <small>You can choose an existing section or type a new one.</small>
+</div>
         <div class="form-group">
             <label>Group (optional)</label>
             <input type="text" id="edit-group" value="${escapeHtml(student.group || '')}">
@@ -941,11 +943,13 @@ function addStudent() {
             <input type="text" id="new-nameFr" value="">
         </div>
         <div class="form-group">
-            <label>Section</label>
-            <select id="new-section">
-                ${Object.keys(adminData.sections).map(key => `<option value="${key}">${key}</option>`).join('')}
-            </select>
-        </div>
+    <label>Section</label>
+    <input type="text" id="new-section" list="sections-list" placeholder="e.g., 9base" autocomplete="off">
+    <datalist id="sections-list">
+        ${Object.keys(adminData.sections).map(key => `<option value="${key}"></option>`).join('')}
+    </datalist>
+    <small>You can choose an existing section or type a new one.</small>
+</div>
         <div class="form-group">
             <label>Group (optional)</label>
             <input type="text" id="new-group" value="">
@@ -1018,7 +1022,31 @@ async function saveStudent(id) {
         }
     });
     updated.attendance = attendance;
+    const sectionKey = updated.section.trim();
+    if (!sectionKey) {
+        alert('Section key is required');
+        return;
+    }
 
+    if (!adminData.sections[sectionKey]) {
+        const newSection = {
+            key: sectionKey,
+            name_ar: sectionKey,
+            name_en: sectionKey,
+            name_fr: sectionKey
+        };
+        const { error: sectionError } = await supabaseClient
+            .from('sections')
+            .insert(newSection);
+        if (sectionError) {
+            alert('Error creating new section: ' + sectionError.message);
+            return;
+        }
+        adminData.sections[sectionKey] = newSection;
+        toast('New section created: ' + sectionKey);
+    }
+
+    updated.section = sectionKey;   // ensure trimmed value is used
     const { error } = await supabaseClient
         .from('profiles')
         .update({
@@ -1058,7 +1086,31 @@ async function saveNewStudent() {
         parentPhone: document.getElementById('new-parentPhone').value,
         attendance: []
     };
+    const sectionKey = newStudent.section.trim();
+    if (!sectionKey) {
+        alert('Section key is required');
+        return;
+    }
 
+    // If section doesn't exist, create it first
+    if (!adminData.sections[sectionKey]) {
+        const newSection = {
+            key: sectionKey,
+            name_ar: sectionKey,
+            name_en: sectionKey,
+            name_fr: sectionKey
+        };
+        const { error: sectionError } = await supabaseClient
+            .from('sections')
+            .insert(newSection);
+        if (sectionError) {
+            alert('Error creating new section: ' + sectionError.message);
+            return;
+        }
+        adminData.sections[sectionKey] = newSection;
+        toast('New section created: ' + sectionKey);
+    }
+    newStudent.section = sectionKey; 
     const selectedSubjects = Array.from(document.getElementById('new-subjects').selectedOptions).map(opt => opt.value);
     if (selectedSubjects.includes('all')) {
         newStudent.subjects = 'all';
