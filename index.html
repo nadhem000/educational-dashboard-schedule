@@ -1414,9 +1414,47 @@ async function init() {
         document.getElementById('notes').innerHTML = '<strong>⚠️ Failed to load data. Please try again later.</strong>';
     }
 }
+// Register Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('Service Worker registered', reg))
+      .catch(err => console.log('Service Worker registration failed', err));
+  });
+}
 init();
+// Install Prompt Logic
+let deferredPrompt;
+const installBtn = document.getElementById('install-btn');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  // Prevent Chrome 67 and earlier from automatically showing the prompt
+  e.preventDefault();
+  // Stash the event so it can be triggered later
+  deferredPrompt = e;
+  // Show the install button
+  installBtn.style.display = 'inline-block';
+});
+
+installBtn.addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  // Show the install prompt
+  deferredPrompt.prompt();
+  // Wait for the user to respond
+  const { outcome } = await deferredPrompt.userChoice;
+  console.log(`User response to the install prompt: ${outcome}`);
+  // Clear the saved prompt
+  deferredPrompt = null;
+  // Hide the button again
+  installBtn.style.display = 'none';
+});
+
+// Hide the button once the app is installed
 window.addEventListener('appinstalled', () => {
+  console.log('PWA was installed');
     trackInteraction('pwa_install');
+  deferredPrompt = null;
+  installBtn.style.display = 'none';
 });
 </script>
 </body>

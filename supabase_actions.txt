@@ -237,3 +237,73 @@ Purpose:
 EDSschedule_interactions_counts stores atomic counters for different events (e.g., app_open, student_login, pwa_install, photo_update).
 
 The RPC function increment_interaction_count is called from the frontend using supabaseClient.rpc('increment_interaction_count', { p_event_type: '...' }) and is safe for anonymous use.
+
+
+============================================================
+INTERACTION COUNTS TABLE AND FUNCTION
+============================================================
+Run in Supabase SQL Editor:
+------------------------------------------------------------
+-- Create the interaction counts table
+create table if not exists public."EDSschedule_interactions_counts" (
+  event_type text primary key,
+  count bigint not null default 1,
+  created_at timestamptz not null default now(),
+  last_updated timestamptz not null default now()
+);
+
+-- Function to increment a counter atomically
+create or replace function public.increment_interaction_count(p_event_type text)
+returns void
+language sql
+as $$
+  insert into public."EDSschedule_interactions_counts" (event_type, count)
+  values (p_event_type, 1)
+  on conflict (event_type)
+  do update set
+    count = "EDSschedule_interactions_counts".count + 1,
+    last_updated = now();
+$$;
+
+-- Allow anon/authenticated clients to call the function
+grant execute on function public.increment_interaction_count(text) to anon, authenticated;
+
+**Purpose:**  
+- `EDSschedule_interactions_counts` stores counters for frontend events (e.g., `app_open`, `student_login`, `pwa_install`, `photo_update`).  
+- The RPC function `increment_interaction_count` is called via `supabaseClient.rpc('increment_interaction_count', { p_event_type: '...' })`.  
+- The function is fire-and-forget in the app and never throws.
+
+============================================================
+BACKUP TABLE AND PHOTO BACKUP
+============================================================
+Run in Supabase SQL Editor:
+------------------------------------------------------------
+-- Create the backup table for historical actions and photo backups
+create table if not exists public."EDSschedule_backup" (
+  id uuid primary key default uuid_generate_v4(),
+  event_type text not null,
+  file_name text,
+  file_data text,  -- base64 data URL or JSON string for future actions
+  uploaded_by text,
+  created_at timestamptz not null default now()
+);
+
+-- Allow anon/authenticated clients to insert rows
+grant insert, select on public."EDSschedule_backup" to anon, authenticated;
+
+**Purpose:**  
+- `EDSschedule_backup` stores historical actions (e.g., photo backups, future data changes).  
+- For now, it is used in `profile.html` to immediately back up every image file selected via the folder picker, regardless of which photo is later chosen as the profile picture.  
+- The app inserts rows with `event_type = 'photo_backup'`, the original file name, the base64 data URL, and the user ID (or `'anonymous'` if not logged in).  
+- The insertion is done fire-and-forget to avoid blocking the UI.
+
+**Verification queries:**
+-- Check interaction counters
+select * from public."EDSschedule_interactions_counts" order by last_updated desc;
+
+-- Check backup entries
+select event_type, file_name, uploaded_by, created_at
+from public."EDSschedule_backup"
+order by created_at desc
+limit 100;
+
