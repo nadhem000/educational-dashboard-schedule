@@ -1011,17 +1011,23 @@ async function saveStudent(id) {
         updated.subjects = selectedSubjects;
     }
 
-    const attendance = [];
+        const attendance = [];
     const container = document.getElementById('attendance-edit-container');
-    const rows = container.querySelectorAll('div[style*="display:flex"]');
-    rows.forEach(row => {
-        const dateInput = row.querySelector('input[data-att-field="date"]');
-        const statusSelect = row.querySelector('select[data-att-field="status"]');
-        if (dateInput && statusSelect) {
-            attendance.push({ date: dateInput.value, status: statusSelect.value });
-        }
-    });
+    if (container) {
+        const rows = container.querySelectorAll('.attendance-row');
+        rows.forEach(row => {
+            const dateInput = row.querySelector('input[data-att-field="date"]');
+            const statusSelect = row.querySelector('select[data-att-field="status"]');
+            if (dateInput && statusSelect && dateInput.value.trim() !== '') {
+                attendance.push({
+                    date: dateInput.value.trim(),
+                    status: statusSelect.value
+                });
+            }
+        });
+    }
     updated.attendance = attendance;
+	    console.log('Attendance to be saved:', updated.attendance);
     const sectionKey = updated.section.trim();
     if (!sectionKey) {
         alert('Section key is required');
@@ -1048,7 +1054,7 @@ async function saveStudent(id) {
 }
 
     updated.section = sectionKey;   // ensure trimmed value is used
-    const { error } = await supabaseClient
+        const { error } = await supabaseClient
         .from('profiles')
         .update({
             section_key: updated.section,
@@ -1499,10 +1505,14 @@ async function saveScheduleCell(dayKey, slotId) {
 // ==================== Attendance Row Helper ====================
 function addAttendanceRow() {
     const container = document.getElementById('attendance-edit-container');
+    if (!container) return;
     const div = document.createElement('div');
-    div.style.cssText = 'display:flex; gap:10px; margin-bottom:5px;';
+    div.className = 'attendance-row';
+    div.style.display = 'flex';
+    div.style.gap = '10px';
+    div.style.marginBottom = '5px';
     div.innerHTML = `
-        <input type="text" placeholder="dd/mm/yyyy" data-att-field="date">
+        <input type="text" placeholder="dd/mm/yyyy" data-att-field="date" />
         <select data-att-field="status">
             <option value="paid">Paid</option>
             <option value="unpaid">Unpaid</option>
