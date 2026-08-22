@@ -551,13 +551,34 @@ async function loadDataFromSupabase() {
 }
 
 // ==================== Admin Authentication ====================
-const ADMIN_CREDENTIALS = { username: 'admin', password: 'admin123' };
+async function verifyAdminCredentials(username, password) {
+    try {
+        const { data, error } = await supabaseClient
+            .from('admins')
+            .select('username, password')
+            .eq('username', username.trim().toLowerCase())
+            .maybeSingle();
+        if (error) {
+            console.warn('[AdminAuth]', error.message);
+            return false;
+        }
+        return data && data.password === password;
+    } catch (err) {
+        console.warn('[AdminAuth] init error', err.message);
+        return false;
+    }
+}
 
-function attemptAdminLogin() {
+async function attemptAdminLogin() {
     const username = document.getElementById('admin-username').value.trim();
     const password = document.getElementById('admin-password').value.trim();
     const errorEl = document.getElementById('admin-login-error');
-    if (username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password) {
+    if (!username || !password) {
+        errorEl.textContent = 'Please enter username and password';
+        return;
+    }
+    const isValid = await verifyAdminCredentials(username, password);
+    if (isValid) {
         sessionStorage.setItem('adminLoggedIn', 'true');
         document.getElementById('admin-login-overlay').style.display = 'none';
         errorEl.textContent = '';

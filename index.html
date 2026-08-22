@@ -312,10 +312,10 @@
         }
         .attendance-calendar-table th,
         .attendance-calendar-table td {
-            border: 1px solid var(--table-border);
-            padding: 5px;
-            text-align: center;
-            font-size: 12px;
+    border: 1px solid var(--table-border);
+    padding: 3px 2px;       /* was 5px */
+    text-align: center;
+    font-size: 10px;        /* was 12px */
         }
         .attendance-calendar-table th {
             background: var(--table-header-bg);
@@ -515,6 +515,15 @@
             <div id="materials-content"></div>
             <div id="parent-info" class="parent-info"></div>
         </div>
+		<!-- Admin Panels (visible only for admin) -->
+<div id="admin-students-panel" class="admin-panel" style="display:none;">
+    <h2>👥 جميع التلاميذ</h2>
+    <div id="admin-students-list"></div>
+</div>
+<div id="admin-subjects-panel" class="admin-panel" style="display:none;">
+    <h2>📚 جميع المواد</h2>
+    <div id="admin-subjects-list"></div>
+</div>
         <!-- Notes -->
         <div class="notes" id="notes">
             <strong>📌 ملاحظات:</strong><br>
@@ -556,7 +565,7 @@
 const SUPABASE_URL = 'https://ewvvlqujimxdubreulni.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV3dnZscXVqaW14ZHVicmV1bG5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxMzc0ODAsImV4cCI6MjEwMjcxMzQ4MH0._-i_8bMsMM1uhmE024MrgWo66GAQjt8vONlur9LfOtg';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-const ADMIN_CREDENTIALS = { name: 'admin', password: 'admin123' };
+
 /**
  * Fire-and-forget interaction counter.
  * Never throws, never interrupts the app.
@@ -569,6 +578,23 @@ function trackInteraction(eventType) {
             .catch(err => console.warn('[Tracking]', eventType, err.message));
     } catch (err) {
         console.warn('[Tracking] init error', err.message);
+    }
+}
+async function verifyAdminCredentials(name, password) {
+    try {
+        const { data, error } = await supabaseClient
+            .from('admins')
+            .select('username, password')
+            .eq('username', name.toLowerCase())
+            .maybeSingle();
+        if (error) {
+            console.warn('[AdminAuth]', error.message);
+            return false;
+        }
+        return data && data.password === password;
+    } catch (err) {
+        console.warn('[AdminAuth] init error', err.message);
+        return false;
     }
 }
 // ==================== DEFAULT CONSTANTS ====================
@@ -923,7 +949,44 @@ function updateMaterialsPanel() {
     parentInfoDiv.innerHTML = parentHtml;
     materialsPanelDiv.classList.add('visible');
 }
-
+function renderAdminStudents() {
+    const container = document.getElementById('admin-students-list');
+    if (!container) return;
+    const t = translations[currentLanguage];
+    if (!data.students || data.students.length === 0) {
+        container.innerHTML = `<p>${escapeHtml(t.noStudents)}</p>`;
+        return;
+    }
+    let html = '<ul style="list-style:none; padding:0; max-height:400px; overflow-y:auto;">';
+    data.students.forEach(student => {
+        const name = student.nameAr || student.nameEn || student.nameFr || 'Unnamed';
+        const section = student.section ? getSectionName(student.section) : '—';
+        const group = student.group ? `${t.groupLabel} ${student.group}` : '';
+        html += `<li style="padding:8px; border-bottom:1px solid var(--table-border);">
+            <strong>${escapeHtml(name)}</strong> — ${escapeHtml(section)} ${group ? ' - ' + escapeHtml(group) : ''}
+        </li>`;
+    });
+    html += '</ul>';
+    container.innerHTML = html;
+}
+function renderAdminSubjects() {
+    const container = document.getElementById('admin-subjects-list');
+    if (!container) return;
+    const t = translations[currentLanguage];
+    const keys = Object.keys(data.subjectCatalog);
+    if (keys.length === 0) {
+        container.innerHTML = `<p>${escapeHtml(t.noSubjects)}</p>`;
+        return;
+    }
+    let html = '<ul style="list-style:none; padding:0; max-height:400px; overflow-y:auto;">';
+    keys.forEach(key => {
+        const subj = data.subjectCatalog[key];
+        const display = subj ? getText(subj) : key;
+        html += `<li style="padding:8px; border-bottom:1px solid var(--table-border);">${escapeHtml(display)}</li>`;
+    });
+    html += '</ul>';
+    container.innerHTML = html;
+}
 function updateUserInfo() {
     if (!currentUser) return;
     const t = translations[currentLanguage];
@@ -940,9 +1003,13 @@ function updateAllPanels() {
         adminBtn.style.display = (currentUser && currentUser.isAdmin) ? 'inline-block' : 'none';
     }
 
-    if (currentUser && currentUser.isAdmin) {
-        // Admin: show full schedule only, hide student personal panels
+        if (currentUser && currentUser.isAdmin) {
+        // Admin: show full schedule and admin panels, hide student panels
         rebuildScheduleTable();
+        renderAdminStudents();
+        renderAdminSubjects();
+        document.getElementById('admin-students-panel').style.display = 'block';
+        document.getElementById('admin-subjects-panel').style.display = 'block';
         personalScheduleDiv.classList.remove('visible');
         rosterPanelDiv.classList.remove('visible');
         attendancePanelDiv.classList.remove('visible');
@@ -953,6 +1020,10 @@ function updateAllPanels() {
         userAvatarSpan.textContent = 'A';
         loggedNameSpan.innerHTML = `${escapeHtml(t.welcome)}، Admin`;
         return;
+    } else {
+        // Hide admin panels when not admin
+        document.getElementById('admin-students-panel').style.display = 'none';
+        document.getElementById('admin-subjects-panel').style.display = 'none';
     }
 
     if (currentUser) {
@@ -1152,7 +1223,7 @@ function closeStudentCardModal() {
 }
 
 // ==================== LOGIN / LOGOUT ====================
-function handleLogin() {
+async function handleLogin() {
     const name = loginNameInput.value.trim();
     const password = loginPasswordInput.value.trim();
     if (!name || !password) {
@@ -1161,12 +1232,14 @@ function handleLogin() {
     }
 
     // Admin login (from student page, gives access to admin panel)
-    if (name.toLowerCase() === ADMIN_CREDENTIALS.name && password === ADMIN_CREDENTIALS.password) {
+        // Admin login (from student page, gives access to admin panel)
+    const isAdmin = await verifyAdminCredentials(name, password);
+    if (isAdmin) {
         currentUser = { isAdmin: true, nameAr: 'Admin', nameEn: 'Admin', nameFr: 'Admin' };
-trackInteraction('admin_login');
         loginNameInput.value = '';
         loginPasswordInput.value = '';
         sessionStorage.setItem('adminLoggedIn', 'true');
+        trackInteraction('admin_login');
         updateAllPanels();
         loginForm.style.display = 'none';
         userInfoDiv.style.display = 'flex';

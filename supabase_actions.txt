@@ -360,4 +360,34 @@ This updated file now includes:
 - The new `EDSschedule_interactions_counts` table and its extraction query.
 - The redesigned `EDSschedule_backup` table with the `append_photo_backup` RPC function and extraction queries.
 - All SQL is ready to copy and run in the Supabase SQL Editor.
+Admin Authentication Table
+------------------------------------------------------------
+Run in Supabase SQL Editor:
+------------------------------------------------------------
+-- Create admins table
+create table if not exists public.admins (
+  id uuid primary key default uuid_generate_v4(),
+  username text unique not null,
+  password text not null,
+  created_at timestamptz not null default now()
+);
 
+-- Disable RLS for simplicity
+alter table public.admins disable row level security;
+
+-- Grant access to anon and authenticated roles
+grant select, insert, update, delete on public.admins to anon, authenticated;
+
+-- Insert the default admin account (if not exists)
+insert into public.admins (username, password)
+values ('admin', 'admin123')
+on conflict (username) do nothing;
+
+**Purpose:**  
+- Stores admin credentials in the database instead of hardcoding them in JavaScript.  
+- Both `index.html` and `admin.html` now use this table to verify admin login by querying `admins` via Supabase.  
+- The frontend no longer contains plaintext admin credentials in the source code.
+
+**Extracting admin data:**
+```sql
+select id, username, created_at from public.admins order by created_at asc;
