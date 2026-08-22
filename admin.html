@@ -317,7 +317,6 @@
 }
     </style>
 </head>
-<body>
 	<body>
     <div id="admin-login-overlay" class="admin-login-overlay">
         <div class="admin-login-box">
@@ -354,10 +353,13 @@
                 <div class="tab" data-tab="subjects">📚 Subjects</div>
             </div>
             <div class="tab-content active" id="tab-students">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                    <h3>Student List</h3>
-                    <button class="btn btn-success" id="add-student-btn">+ Add Student</button>
-                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
+    <h3>Student List</h3>
+    <div style="display:flex; gap:10px;">
+        <button class="btn btn-outline" id="assign-homework-btn">📝 Assign Homework</button>
+        <button class="btn btn-success" id="add-student-btn">+ Add Student</button>
+    </div>
+</div>
                 <div id="students-list"></div>
             </div>
             <div class="tab-content" id="tab-schedule">
@@ -444,7 +446,7 @@ let adminData = {
 };
 let originalHTML = null;
 let currentModalCallback = null;
-
+let editingHomework = [];
 // ==================== Utility Functions ====================
 function toast(message) {
     const t = document.getElementById('toast');
@@ -513,7 +515,8 @@ async function loadDataFromSupabase() {
             subjects: row.subjects,
             parentName: row.parent_name,
             parentPhone: row.parent_phone,
-            attendance: row.attendance || []
+            attendance: row.attendance || [],
+            homework: row.homework || []
         }));
 
         const { data: scheduleRows, error: scheduleError } = await supabaseClient
@@ -852,12 +855,38 @@ function getAssignmentDisplay(assignmentKey) {
     if (group) display += ` (Group ${group})`;
     return display;
 }
-
+function renderHomeworkEditList() {
+    const container = document.getElementById('homework-edit-container');
+    if (!container) return '';
+    if (editingHomework.length === 0) {
+        return '<p>No homework assigned.</p>';
+    }
+    return editingHomework.map((hw, index) => {
+        const subjectDisplay = adminData.subjectCatalog[hw.subject]
+            ? (adminData.subjectCatalog[hw.subject].ar || hw.subject)
+            : hw.subject;
+        return `
+        <div style="display:flex; gap:10px; align-items:center; margin-bottom:5px;">
+            <span style="flex:1;">
+                <strong>${escapeHtml(subjectDisplay)}</strong> - ${escapeHtml(hw.title || '')} (${escapeHtml(hw.due_date || '')})
+            </span>
+            <button type="button" class="btn btn-danger" onclick="deleteHomeworkFromEdit(${index})" style="padding:2px 8px;">🗑️</button>
+        </div>`;
+    }).join('');
+}
+function deleteHomeworkFromEdit(index) {
+    editingHomework.splice(index, 1);
+    const container = document.getElementById('homework-edit-container');
+    if (container) {
+        container.innerHTML = renderHomeworkEditList();
+    }
+}
 // ==================== Student CRUD (Supabase) ====================
 function editStudent(id) {
     const student = adminData.students.find(s => s.id === id);
     if (!student) return;
-
+    // Store a copy of the student's homework for editing
+    editingHomework = Array.isArray(student.homework) ? [...student.homework] : [];
     let subjectsOptions = '';
     const allSubjects = Object.keys(adminData.subjectCatalog);
     if (student.subjects === 'all') {
@@ -873,7 +902,7 @@ function editStudent(id) {
     let attendanceRows = '';
     (student.attendance || []).forEach((att, i) => {
         attendanceRows += `
-        <div style="display:flex; gap:10px; margin-bottom:5px;">
+        <div class="attendance-row" style="display:flex; gap:10px; margin-bottom:5px;">
             <input type="text" value="${escapeHtml(att.date)}" placeholder="dd/mm/yyyy" data-att-index="${i}" data-att-field="date">
             <select data-att-index="${i}" data-att-field="status">
                 <option value="paid" ${att.status === 'paid' ? 'selected' : ''}>Paid</option>
@@ -939,6 +968,10 @@ function editStudent(id) {
             <label>Attendance Records (dd/mm/yyyy)</label>
             <div id="attendance-edit-container">${attendanceRows}</div>
             <button class="btn btn-outline" type="button" onclick="addAttendanceRow()">+ Add Attendance</button>
+        </div>
+		        <div class="form-group">
+            <label>Homework</label>
+            <div id="homework-edit-container">${renderHomeworkEditList()}</div>
         </div>
         <div style="display:flex; gap:10px; justify-content:flex-end;">
             <button class="btn" onclick="saveStudent('${id}')">Save</button>
@@ -1022,7 +1055,8 @@ async function saveStudent(id) {
         subjects: [],
         parentName: document.getElementById('edit-parentName').value,
         parentPhone: document.getElementById('edit-parentPhone').value,
-        attendance: []
+        attendance: [],
+        homework: editingHomework 
     };
 
     const selectedSubjects = Array.from(document.getElementById('edit-subjects').selectedOptions).map(opt => opt.value);
@@ -1084,7 +1118,8 @@ async function saveStudent(id) {
             subjects: updated.subjects,
             parent_name: updated.parentName,
             parent_phone: updated.parentPhone,
-            attendance: updated.attendance
+            attendance: updated.attendance,
+            homework: updated.homework
         })
         .eq('id', id);
 
@@ -1542,7 +1577,171 @@ function addAttendanceRow() {
     `;
     container.appendChild(div);
 }
+// ==================== Homework Assignment ====================
+function getUniqueGroups() {
+    const groupSet = new Set();
+    adminData.students.forEach(s => {
+        if (s.section && s.group) {
+            groupSet.add(`${s.section}-g${s.group}`);
+        }
+    });
+    return Array.from(groupSet);
+}
 
+function getTargetStudents(targetType, targetValue) {
+    // Returns array of student IDs that match the target
+    switch (targetType) {
+        case 'student':
+            return [targetValue];
+        case 'group': {
+            return adminData.students
+                .filter(s => s.section && s.group && `${s.section}-g${s.group}` === targetValue)
+                .map(s => s.id);
+        }
+        case 'section': {
+            return adminData.students
+                .filter(s => s.section === targetValue)
+                .map(s => s.id);
+        }
+        default:
+            return [];
+    }
+}
+
+function openAssignHomeworkModal() {
+    const sectionOptions = Object.keys(adminData.sections)
+        .map(key => `<option value="${key}">${escapeHtml(key)}</option>`).join('');
+
+    const groupOptions = getUniqueGroups()
+        .map(g => `<option value="${g}">${escapeHtml(getAssignmentDisplay(g))}</option>`).join('');
+
+    const studentOptions = adminData.students
+        .map(s => {
+            const name = s.nameAr || s.nameEn || s.nameFr || 'Unnamed';
+            return `<option value="${s.id}">${escapeHtml(name)}</option>`;
+        }).join('');
+
+    const subjectOptions = Object.keys(adminData.subjectCatalog)
+        .map(key => `<option value="${key}">${escapeHtml(adminData.subjectCatalog[key].ar || key)}</option>`).join('');
+
+    const modalHtml = `
+        <h3>📝 Assign Homework</h3>
+        <div class="form-group">
+            <label>Assign To</label>
+            <select id="homework-target-type" onchange="updateHomeworkTargetOptions()">
+                <option value="student">Individual Student</option>
+                <option value="group">Whole Group</option>
+                <option value="section">Whole Section/Class</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Target</label>
+            <select id="homework-target-value">
+                ${studentOptions}
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Subject</label>
+            <select id="homework-subject">
+                ${subjectOptions}
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Title / Description</label>
+            <input type="text" id="homework-title" placeholder="e.g., Exercises page 12">
+        </div>
+        <div class="form-group">
+            <label>Due Date</label>
+            <input type="text" id="homework-due-date" placeholder="dd/mm/yyyy">
+        </div>
+        <div class="form-group">
+            <label>Notes (optional)</label>
+            <textarea id="homework-notes" rows="2"></textarea>
+        </div>
+        <div style="display:flex; gap:10px; justify-content:flex-end;">
+            <button class="btn btn-success" onclick="saveAssignedHomework()">Assign</button>
+            <button class="btn btn-danger" onclick="closeModal()">Cancel</button>
+        </div>
+    `;
+    openModal(modalHtml, null);
+}
+
+function updateHomeworkTargetOptions() {
+    const type = document.getElementById('homework-target-type').value;
+    const select = document.getElementById('homework-target-value');
+    let options = '';
+    if (type === 'student') {
+        options = adminData.students
+            .map(s => {
+                const name = s.nameAr || s.nameEn || s.nameFr || 'Unnamed';
+                return `<option value="${s.id}">${escapeHtml(name)}</option>`;
+            }).join('');
+    } else if (type === 'group') {
+        options = getUniqueGroups()
+            .map(g => `<option value="${g}">${escapeHtml(getAssignmentDisplay(g))}</option>`).join('');
+        if (!options) options = '<option value="">No groups available</option>';
+    } else if (type === 'section') {
+        options = Object.keys(adminData.sections)
+            .map(key => `<option value="${key}">${escapeHtml(key)}</option>`).join('');
+    }
+    select.innerHTML = options;
+}
+async function saveAssignedHomework() {
+    const targetType = document.getElementById('homework-target-type').value;
+    const targetValue = document.getElementById('homework-target-value').value;
+    const subject = document.getElementById('homework-subject').value;
+    const title = document.getElementById('homework-title').value.trim();
+    const dueDate = document.getElementById('homework-due-date').value.trim();
+    const notes = document.getElementById('homework-notes').value.trim();
+
+    if (!title || !dueDate) {
+        alert('Title and due date are required');
+        return;
+    }
+
+    const studentIds = getTargetStudents(targetType, targetValue);
+    if (studentIds.length === 0) {
+        alert('No students match the selected target');
+        return;
+    }
+
+    const homeworkObj = {
+        subject,
+        title,
+        due_date: dueDate,
+        notes,
+        assigned_by: 'admin'
+    };
+
+    // Update each matching student's homework array
+    const updatePromises = studentIds.map(async (studentId) => {
+        const student = adminData.students.find(s => s.id === studentId);
+        if (!student) return;
+
+        const updatedHomework = Array.isArray(student.homework) ? [...student.homework, homeworkObj] : [homeworkObj];
+        const { error } = await supabaseClient
+            .from('profiles')
+            .update({ homework: updatedHomework })
+            .eq('id', studentId);
+
+        if (error) {
+            console.warn('Error updating homework for', studentId, error.message);
+            throw error;
+        }
+
+        // Update local copy
+        student.homework = updatedHomework;
+    });
+
+    try {
+        await Promise.all(updatePromises);
+        closeModal();
+        renderStudents();
+        toast(`Homework assigned to ${studentIds.length} student(s)`);
+    } catch (err) {
+        alert('Error assigning homework: ' + err.message);
+    }
+}
 // ==================== Export (Optional Backup) ====================
 function generateDataObject() {
     return {
@@ -1667,7 +1866,7 @@ document.getElementById('download-html-btn').addEventListener('click', function(
 document.getElementById('add-student-btn').addEventListener('click', addStudent);
 document.getElementById('add-section-btn').addEventListener('click', addSection);
 document.getElementById('add-subject-btn').addEventListener('click', addSubject);
-
+document.getElementById('assign-homework-btn').addEventListener('click', openAssignHomeworkModal);
 // Expose functions to global scope
 window.editStudent = editStudent;
 window.deleteStudent = deleteStudent;
@@ -1684,6 +1883,10 @@ window.saveNewSection = saveNewSection;
 window.saveSubject = saveSubject;
 window.saveNewSubject = saveNewSubject;
 window.addAttendanceRow = addAttendanceRow;
+window.openAssignHomeworkModal = openAssignHomeworkModal;
+window.updateHomeworkTargetOptions = updateHomeworkTargetOptions;
+window.saveAssignedHomework = saveAssignedHomework;
+window.deleteHomeworkFromEdit = deleteHomeworkFromEdit;
 window.closeModal = closeModal;
 </script>
 </body>

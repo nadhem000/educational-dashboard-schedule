@@ -1,0 +1,46 @@
+# Security Hardening Plan for EDSchedule – Todo List
+
+## 1. Implement Secure Authentication
+- [ ] Replace custom admin/student password tables with Supabase Auth (email/password).
+- [ ] Create admin user in Supabase Auth and assign admin role.
+- [ ] Update `index.html` admin login to use `supabase.auth.signInWithPassword()`.
+- [ ] Update `admin.html` login to use Supabase Auth (or a serverless function).
+- [ ] Remove all plaintext password fields from database and frontend.
+- [ ] Ensure passwords are hashed (bcrypt) automatically via Supabase Auth.
+
+## 2. Enable Row Level Security (RLS)
+- [ ] Enable RLS on all tables: sections, subjects, profiles, schedule_slots, admins, interactions, backup.
+- [ ] Create policies:
+  - Students: read own profile, own schedule, own attendance.
+  - Admin: full access to all tables.
+  - Anonymous: no access (except maybe public schedule if needed).
+- [ ] Test policies with different roles to ensure data isolation.
+
+## 3. Add Rate Limiting and Brute‑Force Protection
+- [ ] Use Supabase Auth's built‑in rate limiting for login attempts.
+- [ ] If custom tables remain, implement a counter in the database to throttle failed logins.
+
+## 4. Secure API Keys and Environment
+- [ ] Store Supabase anon key in environment variables (if using a build step).
+- [ ] Use HTTPS for all deployments (Netlify already provides this).
+- [ ] Never expose service_role key in frontend.
+
+## 5. Remove Client‑Side Password Verification
+- [ ] Delete `verifyAdminCredentials` functions that fetch and compare passwords client‑side.
+- [ ] Move authentication logic to Supabase Auth or a secure RPC function.
+- [ ] Update `handleLogin()` in `index.html` and `attemptAdminLogin()` in `admin.html`.
+
+## 6. Session Management
+- [ ] Replace `sessionStorage` admin flag with Supabase Auth session (`supabase.auth.getSession()`).
+- [ ] Implement logout using `supabase.auth.signOut()`.
+- [ ] Protect admin.html by checking session and role on load.
+
+## 7. Update Documentation
+- [ ] Modify `supabase_actions.txt` to reflect auth changes.
+- [ ] Update README with new security setup instructions.
+
+## 8. Testing
+- [ ] Verify admin login via Supabase Auth.
+- [ ] Verify student login via Supabase Auth.
+- [ ] Verify RLS policies prevent unauthorized access.
+- [ ] Verify no plaintext passwords remain in code or database.

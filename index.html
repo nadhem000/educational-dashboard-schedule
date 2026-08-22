@@ -440,6 +440,66 @@
 .footer a:hover {
     text-decoration: underline;
 }
+@media print {
+    /* Hide everything on the page initially */
+    body * {
+        visibility: hidden;
+    }
+
+    /* Make the modal overlay static and visible */
+    .modal-overlay {
+        position: static;
+        background: none;
+        display: block;
+        visibility: visible;
+    }
+
+    /* Show the modal content and all its children */
+    .modal-content {
+        visibility: visible;
+        box-shadow: none;
+        max-width: 100%;
+        border: none;
+    }
+
+    .modal-content * {
+        visibility: visible;
+    }
+
+    /* Hide interactive elements that should not be printed */
+    .modal-close-btn,
+    #print-attendance-btn,
+    .calendar-header button,
+    .modal-footer {
+        display: none !important;
+    }
+
+    /* Remove scroll constraints so full content is printed */
+    .modal-body {
+        max-height: none;
+        overflow: visible;
+    }
+
+    /* Optional: make the calendar black & white for clarity */
+    .attendance-calendar-table th,
+    .attendance-calendar-table td {
+        background: #fff !important;
+        color: #000 !important;
+        border: 1px solid #000 !important;
+    }
+
+    .attendance-calendar-table th {
+        background: #eee !important;
+    }
+
+    .calendar-day.attendance-paid,
+    .calendar-day.attendance-unpaid,
+    .calendar-day.attendance-overdue {
+        background: #fff !important;
+        color: #000 !important;
+        font-weight: bold;
+    }
+}
     </style>
 </head>
 <body>
@@ -514,6 +574,11 @@
             <h2 id="materials-title">📚 المواد المتناولة</h2>
             <div id="materials-content"></div>
             <div id="parent-info" class="parent-info"></div>
+        </div>
+		        <!-- Homework Panel -->
+        <div id="homework-panel" class="homework-panel" style="display:none;">
+            <h2 id="homework-title">📝 الواجبات المنزلية</h2>
+            <ul id="homework-list" style="list-style:none; padding:0; max-height:300px; overflow-y:auto;"></ul>
         </div>
 		<!-- Admin Panels (visible only for admin) -->
 <div id="admin-students-panel" class="admin-panel" style="display:none;">
@@ -672,7 +737,8 @@ async function loadDataFromSupabase() {
     parentName: row.parent_name,
     parentPhone: row.parent_phone,
     attendance: row.attendance || [],
-    photo_url: row.photo_url || null   // <-- add this line
+    photo_url: row.photo_url || null,
+            homework: row.homework || []
 }));
 
         // Fetch schedule slots
@@ -949,6 +1015,29 @@ function updateMaterialsPanel() {
     parentInfoDiv.innerHTML = parentHtml;
     materialsPanelDiv.classList.add('visible');
 }
+function updateHomeworkPanel() {
+    const panel = document.getElementById('homework-panel');
+    const list = document.getElementById('homework-list');
+    if (!panel || !list) return;
+    if (!currentUser || currentUser.isAdmin) {
+        panel.style.display = 'none';
+        return;
+    }
+    const t = translations[currentLanguage];
+    const homework = Array.isArray(currentUser.homework) ? currentUser.homework : [];
+    if (homework.length === 0) {
+        list.innerHTML = `<li>${escapeHtml(t.noHomework)}</li>`;
+    } else {
+        list.innerHTML = homework.map(hw => {
+            const subjectDisplay = data.subjectCatalog[hw.subject] ? getText(data.subjectCatalog[hw.subject]) : hw.subject;
+            return `<li style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                <span><strong>${escapeHtml(subjectDisplay)}</strong> - ${escapeHtml(hw.title || '')}</span>
+                <span style="font-size:12px; opacity:0.8;">${escapeHtml(hw.due_date || '')}</span>
+            </li>`;
+        }).join('');
+    }
+    panel.style.display = 'block';
+}
 function renderAdminStudents() {
     const container = document.getElementById('admin-students-list');
     if (!container) return;
@@ -1010,6 +1099,7 @@ function updateAllPanels() {
         renderAdminSubjects();
         document.getElementById('admin-students-panel').style.display = 'block';
         document.getElementById('admin-subjects-panel').style.display = 'block';
+		document.getElementById('homework-panel').style.display = 'none';
         personalScheduleDiv.classList.remove('visible');
         rosterPanelDiv.classList.remove('visible');
         attendancePanelDiv.classList.remove('visible');
@@ -1033,6 +1123,7 @@ function updateAllPanels() {
         updateAttendance();
         updateWorkSystemPanel();
         updateMaterialsPanel();
+updateHomeworkPanel();
         updateUserInfo();
         studentCardBtn.style.display = 'inline-block';
     } else {
@@ -1042,6 +1133,7 @@ function updateAllPanels() {
         attendancePanelDiv.classList.remove('visible');
         workSystemPanelDiv.classList.remove('visible');
         materialsPanelDiv.classList.remove('visible');
+		document.getElementById('homework-panel').style.display = 'none';
         studentCardBtn.style.display = 'inline-block';
     }
 }
@@ -1063,6 +1155,7 @@ function applyLanguage(lang) {
     document.getElementById('attendance-title').textContent = t.attendanceTitle;
     document.getElementById('work-system-title').textContent = t.workSystemTitle;
     document.getElementById('materials-title').textContent = t.materialsTitle;
+	document.getElementById('homework-title').textContent = t.homeworkTitle;
     document.getElementById('notes').innerHTML = t.notes;
     document.getElementById('student-card-btn').textContent = t.studentCardBtn;
 	document.getElementById('footer-developed-by').textContent = t.footerDevelopedBy;
@@ -1196,6 +1289,11 @@ function populateStudentCardModal() {
             <h4>${t.attendanceCalendarTitle}</h4>
             <div id="attendance-calendar"></div>
         </div>
+<div class="attendance-calendar-section">
+    <h4>${t.attendanceCalendarTitle}</h4>
+    <div id="attendance-calendar"></div>
+    <button type="button" id="print-attendance-btn" onclick="printAttendance()">🖨️ ${t.printAttendance}</button>
+</div>
     `;
     modalBody.innerHTML = cardHtml;
     if (currentUser.attendance && currentUser.attendance.length > 0) {
@@ -1213,7 +1311,9 @@ function populateStudentCardModal() {
 	document.getElementById('modal-footer').innerHTML = 
     `<a href="profile.html" class="edit-profile-link">${escapeHtml(translations[currentLanguage].editProfile)}</a>`;
 }
-
+function printAttendance() {
+    window.print();
+}
 function openStudentCardModal() {
     populateStudentCardModal();
     modalOverlay.classList.add('show');
@@ -1289,6 +1389,8 @@ const translations = {
         attendanceTitle: '📆 سجل الحضور والدفع',
         workSystemTitle: '💼 نظام العمل',
         materialsTitle: '📚 المواد المتناولة',
+		homeworkTitle: '📝 الواجبات المنزلية',
+noHomework: 'لا توجد واجبات منزلية مسجلة',
         loginNamePlaceholder: 'الاسم الكامل',
         loginPasswordPlaceholder: 'الرقم السري',
         loginBtn: 'دخول',
@@ -1324,6 +1426,7 @@ footerVersion: 'الإصدار: 0.0.3',
 footerLastUpdate: 'آخر تحديث: 07/08/2026',
 footerContact: 'اتصل بنا',
 footerPrivacyPolicy: 'سياسة الخصوصية',
+printAttendance: 'طباعة الحضور',
         dayNames: { mon: 'الاثنين', tue: 'الثلاثاء', wed: 'الأربعاء', thu: 'الخميس', fri: 'الجمعة', sat: 'السبت', sun: 'الأحد' },
         attendanceCalendarTitle: 'تقويم الحضور',
         monthNames: ['جانفي', 'فيفري', 'مارس', 'أفريل', 'ماي', 'جوان', 'جويلية', 'أوت', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'],
@@ -1348,6 +1451,8 @@ footerPrivacyPolicy: 'سياسة الخصوصية',
         attendanceTitle: '📆 Registre de présence et paiement',
         workSystemTitle: '💼 Système de travail',
         materialsTitle: '📚 Matières étudiées',
+		homeworkTitle: '📝 Devoirs',
+noHomework: 'Aucun devoir enregistré',
         loginNamePlaceholder: 'Nom complet',
         loginPasswordPlaceholder: 'Mot de passe',
         loginBtn: 'Entrer',
@@ -1383,6 +1488,7 @@ footerVersion: 'Version : 0.0.3',
 footerLastUpdate: 'Dernière mise à jour : 07/08/2026',
 footerContact: 'Contact',
 footerPrivacyPolicy: 'Politique de confidentialité',
+printAttendance: 'Imprimer la présence',
         dayNames: { mon: 'Lundi', tue: 'Mardi', wed: 'Mercredi', thu: 'Jeudi', fri: 'Vendredi', sat: 'Samedi', sun: 'Dimanche' },
         attendanceCalendarTitle: 'Calendrier de présence',
         monthNames: ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'],
@@ -1407,6 +1513,8 @@ footerPrivacyPolicy: 'Politique de confidentialité',
         attendanceTitle: '📆 Attendance & Payment Record',
         workSystemTitle: '💼 Work System',
         materialsTitle: '📚 Subjects Studied',
+		homeworkTitle: '📝 Homework',
+noHomework: 'No homework assigned',
         loginNamePlaceholder: 'Full Name',
         loginPasswordPlaceholder: 'Password',
         loginBtn: 'Sign In',
@@ -1442,6 +1550,7 @@ footerVersion: 'Version : 0.0.3',
 footerLastUpdate: 'Last update : 07/08/2026',
 footerContact: 'Contact',
 footerPrivacyPolicy: 'Privacy Policy',
+printAttendance: 'Print Attendance',
         dayNames: { mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday', fri: 'Friday', sat: 'Saturday', sun: 'Sunday' },
         attendanceCalendarTitle: 'Attendance Calendar',
         monthNames: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
