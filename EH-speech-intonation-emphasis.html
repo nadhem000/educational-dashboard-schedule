@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Emphasis – Clear Speech Fun</title>
+    <link rel="stylesheet" href="styles/common.css">
+    <style>
+        * {
+            margin: 0; padding: 0; box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            min-height: 100vh; display: flex; flex-direction: column; padding: 20px;
+        }
+        .lesson-container {
+            max-width: 900px; margin: 0 auto; width: 100%; flex: 1;
+        }
+        .lesson-content {
+            background: rgba(255, 255, 255, 0.92); border-radius: 25px;
+            padding: 35px; box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+            margin-bottom: 30px; border: 2px solid rgba(255,255,255,0.3);
+        }
+        .lesson-intro {
+            font-size: 1.15rem; line-height: 1.7; color: #333; text-align: center;
+            margin-bottom: 30px; padding: 20px;
+            background: linear-gradient(to right, #f8f9fa, #e9ecef);
+            border-radius: 15px; border-left: 6px solid #11998e;
+        }
+        .emphasis-section {
+            background: white; border-radius: 18px; padding: 25px;
+            margin-bottom: 30px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .section-title {
+            font-size: 1.4rem; font-weight: bold; color: #1a2a6c;
+            margin-bottom: 15px;
+        }
+        .example-box {
+            background: #f0f4ff; border-radius: 12px; padding: 20px;
+            margin: 15px 0;
+            border-left: 5px solid #4e54c8;
+        }
+        .stressed-word {
+            display: inline-block;
+            background: #e94560;
+            color: white;
+            padding: 2px 10px;
+            border-radius: 15px;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        .meaning {
+            margin-top: 8px;
+            font-style: italic;
+            color: #555;
+        }
+        .example-sentence {
+            font-size: 1.3rem;
+            line-height: 1.8;
+            margin: 10px 0;
+            word-spacing: 4px;
+        }
+        .sentence-btn {
+            background: #4e54c8; color: white; border: none;
+            padding: 8px 18px; border-radius: 20px; cursor: pointer;
+            font-size: 0.9rem; transition: background 0.3s;
+            margin-top: 5px;
+        }
+        .sentence-btn:hover { background: #3f46c5; }
+        .quiz-box {
+            background: linear-gradient(135deg, #fdbb2d, #f46b45);
+            color: white; border-radius: 20px; padding: 30px;
+            text-align: center; margin-top: 30px;
+        }
+        .quiz-scenario {
+            font-size: 1.2rem; margin-bottom: 15px; font-style: italic;
+        }
+        .quiz-sentence {
+            font-size: 1.8rem; margin-bottom: 20px; letter-spacing: 1px;
+            background: rgba(255,255,255,0.2);
+            display: inline-block; padding: 10px 25px; border-radius: 15px;
+        }
+        .quiz-word-options {
+            display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+        .word-option {
+            background: white; color: #333; border: 2px solid transparent;
+            padding: 10px 20px; border-radius: 25px;
+            font-size: 1.2rem; font-weight: bold; cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+            min-width: 80px;
+        }
+        .word-option:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .quiz-result {
+            margin-top: 20px; font-size: 1.3rem; min-height: 30px;
+        }
+        .back-btn {
+            display: block; margin: 0 auto 20px;
+            background: #fdbb2d; color: white; border: none;
+            padding: 12px 30px; border-radius: 25px; cursor: pointer;
+            font-weight: bold; font-size: 1rem; transition: background 0.3s;
+        }
+        .back-btn:hover { background: #f7a900; }
+
+        /* Bilingual styles */
+        .en-text { font-weight: normal; }
+        .trans-text { display: block; font-size: 0.9em; opacity: 0.8; margin-top: 2px; }
+
+        @media (max-width: 600px) {
+            .lesson-content { padding: 20px; }
+            .quiz-sentence { font-size: 1.4rem; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Language Selector -->
+    <div style="position: fixed; top: 20px; right: 20px; z-index: 1000;">
+        <select id="language-selector" style="padding: 8px 12px; border-radius: 8px; border: 2px solid #fff; background: rgba(255,255,255,0.9); color: #333; font-weight: bold;">
+            <option value="en">English</option>
+            <option value="fr">Français</option>
+            <option value="ar">العربية</option>
+        </select>
+    </div>
+
+    <!-- Site Header -->
+    <div class="EH-site-header">
+        <a href="index.html" class="EH-site-logo-link" title="Main Page">
+            <img src="assets/icons/icon-192x192.png" alt="English Hub Logo" class="EH-site-logo">
+        </a>
+        <span class="EH-site-name" data-i18n="common.siteName">English Hub</span>
+    </div>
+
+    <div class="lesson-container">
+        <header class="EH-common-header">
+            <h1 class="EH-common-title" data-i18n="emphasis.title">Word Emphasis</h1>
+            <p class="EH-common-subtitle" data-i18n="emphasis.subtitle">Discover how stressing different words changes the meaning of a sentence</p>
+        </header>
+
+        <div class="lesson-content">
+            <p class="lesson-intro" data-i18n="emphasis.intro">
+                In English, you can change the entire meaning of a sentence just by <strong>emphasizing</strong> (stressing) a different word.
+                This is called <em>contrastive stress</em>. Below you'll see how the same sentence can have seven different meanings depending on which word is stressed.
+                Read the examples, then try the quiz!
+            </p>
+
+            <!-- Example Sentences with Different Emphasis -->
+            <div class="emphasis-section">
+                <h2 class="section-title" data-i18n="emphasis.exampleTitle">🔎 Example: "I didn't say he stole the money."</h2>
+                <p data-i18n="emphasis.exampleDesc">Click any sentence to hear it (spoken neutrally). Focus on how the <span class="stressed-word">bold</span> word would change the meaning if emphasized.</p>
+
+                <div class="example-box">
+                    <div class="example-sentence"><span class="stressed-word">I</span> didn't say he stole the money.</div>
+                    <div class="meaning" data-i18n="emphasis.meanings.i">Meaning: Someone else said it, not me.</div>
+                </div>
+                <div class="example-box">
+                    <div class="example-sentence">I <span class="stressed-word">didn't</span> say he stole the money.</div>
+                    <div class="meaning" data-i18n="emphasis.meanings.didnt">Meaning: I definitely did not say it.</div>
+                </div>
+                <div class="example-box">
+                    <div class="example-sentence">I didn't <span class="stressed-word">say</span> he stole the money.</div>
+                    <div class="meaning" data-i18n="emphasis.meanings.say">Meaning: I might have implied it, but I didn't say it aloud.</div>
+                </div>
+                <div class="example-box">
+                    <div class="example-sentence">I didn't say <span class="stressed-word">he</span> stole the money.</div>
+                    <div class="meaning" data-i18n="emphasis.meanings.he">Meaning: Someone else stole it, not him.</div>
+                </div>
+                <div class="example-box">
+                    <div class="example-sentence">I didn't say he <span class="stressed-word">stole</span> the money.</div>
+                    <div class="meaning" data-i18n="emphasis.meanings.stole">Meaning: He took the money, but maybe he borrowed it.</div>
+                </div>
+                <div class="example-box">
+                    <div class="example-sentence">I didn't say he stole the <span class="stressed-word">money</span>.</div>
+                    <div class="meaning" data-i18n="emphasis.meanings.money">Meaning: He stole something else, not the money.</div>
+                </div>
+            </div>
+
+            <!-- Additional Contrastive Stress Scenarios -->
+            <div class="emphasis-section">
+                <h2 class="section-title" data-i18n="emphasis.moreExamples">🗣️ More Emphasis in Everyday Speech</h2>
+                <p data-i18n="emphasis.moreDesc">Stressing a word can also express surprise, correct someone, or show contrast.</p>
+
+                <div class="example-box">
+                    <div class="example-sentence"><span class="stressed-word">She</span> is coming to the party?</div>
+                    <div class="meaning" data-i18n="emphasis.more.she">Surprise: "She? I thought her sister was coming."</div>
+                </div>
+                <div class="example-box">
+                    <div class="example-sentence">I want the <span class="stressed-word">red</span> dress, not the blue one.</div>
+                    <div class="meaning" data-i18n="emphasis.more.red">Contrast: distinguishing between two options.</div>
+                </div>
+                <div class="example-box">
+                    <div class="example-sentence">I <span class="stressed-word">do</span> like it!</div>
+                    <div class="meaning" data-i18n="emphasis.more.do">Emphatic agreement: correcting someone who thinks you don't.</div>
+                </div>
+            </div>
+
+            <!-- Quiz -->
+            <div class="quiz-box" id="quiz-box">
+                <h2 data-i18n="emphasis.quiz.title">🎯 Quiz: Choose the Stressed Word</h2>
+                <p data-i18n="emphasis.quiz.instruction">Read the scenario. Which word should be stressed to match the meaning?</p>
+                <div class="quiz-scenario" id="quiz-scenario"></div>
+                <div class="quiz-sentence" id="quiz-sentence"></div>
+                <div class="quiz-word-options" id="quiz-word-options"></div>
+                <div class="quiz-result" id="quiz-result"></div>
+                <button class="sentence-btn" id="quiz-next-btn" data-i18n="emphasis.quiz.next">Next Question ➜</button>
+            </div>
+
+            <button class="back-btn" onclick="window.location.href='Clear-Speech-Fun.html'" data-i18n="common.backToClearSpeech">← Back to Clear Speech Fun</button>
+        </div>
+    </div>
+
+    <footer class="EH-common-footer">
+        <div class="EH-common-footer-content">
+            <div class="EH-common-footer-developer" data-i18n="footer.developer">Developer: Mejri Ziad</div>
+            <div class="EH-common-footer-links">
+                <a href="policy.html" data-i18n="footer.privacy">Privacy Policy</a>
+                <a href="terms.html" data-i18n="footer.terms">Terms of Service</a>
+                <a href="contact.html" data-i18n="footer.contact">Contact</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ========== TRANSLATION DATA ========== -->
+    <script>
+        const translations = {
+            en: {
+                common: {
+                    siteName: "English Hub",
+                    backToClearSpeech: "← Back to Clear Speech Fun"
+                },
+                footer: {
+                    developer: "Developer: Mejri Ziad",
+                    privacy: "Privacy Policy",
+                    terms: "Terms of Service",
+                    contact: "Contact"
+                },
+                emphasis: {
+                    title: "Word Emphasis",
+                    subtitle: "Discover how stressing different words changes the meaning of a sentence",
+                    intro: "In English, you can change the entire meaning of a sentence just by <strong>emphasizing</strong> (stressing) a different word. This is called <em>contrastive stress</em>. Below you'll see how the same sentence can have seven different meanings depending on which word is stressed. Read the examples, then try the quiz!",
+                    exampleTitle: "🔎 Example: \"I didn't say he stole the money.\"",
+                    exampleDesc: "Click any sentence to hear it (spoken neutrally). Focus on how the <span class=\"stressed-word\">bold</span> word would change the meaning if emphasized.",
+                    meanings: {
+                        i: "Meaning: Someone else said it, not me.",
+                        didnt: "Meaning: I definitely did not say it.",
+                        say: "Meaning: I might have implied it, but I didn't say it aloud.",
+                        he: "Meaning: Someone else stole it, not him.",
+                        stole: "Meaning: He took the money, but maybe he borrowed it.",
+                        money: "Meaning: He stole something else, not the money."
+                    },
+                    moreExamples: "🗣️ More Emphasis in Everyday Speech",
+                    moreDesc: "Stressing a word can also express surprise, correct someone, or show contrast.",
+                    more: {
+                        she: "Surprise: \"She? I thought her sister was coming.\"",
+                        red: "Contrast: distinguishing between two options.",
+                        do: "Emphatic agreement: correcting someone who thinks you don't."
+                    },
+                    quiz: {
+                        title: "🎯 Quiz: Choose the Stressed Word",
+                        instruction: "Read the scenario. Which word should be stressed to match the meaning?",
+                        next: "Next Question ➜"
+                    }
+                }
+            },
+            fr: {
+                common: {
+                    siteName: "English Hub",
+                    backToClearSpeech: "← Retour à Clear Speech Fun"
+                },
+                footer: {
+                    developer: "Développeur : Mejri Ziad",
+                    privacy: "Politique de confidentialité",
+                    terms: "Conditions d'utilisation",
+                    contact: "Contact"
+                },
+                emphasis: {
+                    title: "Accentuation des mots",
+                    subtitle: "Découvrez comment l'accent sur différents mots change le sens d'une phrase",
+                    intro: "En anglais, vous pouvez changer entièrement le sens d'une phrase simplement en <strong>accentuant</strong> un mot différent. Cela s'appelle <em>l'accent contrastif</em>. Ci‑dessous, vous verrez comment la même phrase peut avoir sept significations différentes selon le mot accentué. Lisez les exemples, puis essayez le quiz !",
+                    exampleTitle: "🔎 Exemple : \"Je n'ai pas dit qu'il a volé l'argent.\"",
+                    exampleDesc: "Cliquez sur une phrase pour l'entendre (prononcée de façon neutre). Concentrez‑vous sur la façon dont le mot <span class=\"stressed-word\">en gras</span> changerait le sens s'il était accentué.",
+                    meanings: {
+                        i: "Sens : Quelqu'un d'autre l'a dit, pas moi.",
+                        didnt: "Sens : Je ne l'ai vraiment pas dit.",
+                        say: "Sens : Je l'ai peut‑être suggéré, mais pas dit à voix haute.",
+                        he: "Sens : C'est quelqu'un d'autre qui l'a volé, pas lui.",
+                        stole: "Sens : Il a pris l'argent, mais peut‑être l'a‑t‑il emprunté.",
+                        money: "Sens : Il a volé autre chose, pas l'argent."
+                    },
+                    moreExamples: "🗣️ Plus d'accentuation dans la vie quotidienne",
+                    moreDesc: "Accentuer un mot peut aussi exprimer la surprise, corriger quelqu'un ou montrer un contraste.",
+                    more: {
+                        she: "Surprise : \"Elle ? Je pensais que sa sœur venait.\"",
+                        red: "Contraste : distinguer entre deux options.",
+                        do: "Accord emphatique : corriger quelqu'un qui pense que vous n'aimez pas."
+                    },
+                    quiz: {
+                        title: "🎯 Quiz : Choisissez le mot accentué",
+                        instruction: "Lisez le scénario. Quel mot doit être accentué pour correspondre au sens ?",
+                        next: "Question suivante ➜"
+                    }
+                }
+            },
+            ar: {
+                common: {
+                    siteName: "English Hub",
+                    backToClearSpeech: "← العودة إلى Clear Speech Fun"
+                },
+                footer: {
+                    developer: "المطور: ماجري زياد",
+                    privacy: "سياسة الخصوصية",
+                    terms: "شروط الخدمة",
+                    contact: "اتصل بنا"
+                },
+                emphasis: {
+                    title: "التأكيد على الكلمات",
+                    subtitle: "اكتشف كيف يغير التشديد على كلمات مختلفة معنى الجملة",
+                    intro: "في اللغة الإنجليزية، يمكنك تغيير معنى الجملة بالكامل بمجرد <strong>التأكيد</strong> (التشديد) على كلمة مختلفة. هذا يسمى <em>التشديد التبايني</em>. أدناه سترى كيف يمكن للجملة نفسها أن تحمل سبعة معانٍ مختلفة حسب الكلمة المشددة. اقرأ الأمثلة، ثم جرب الاختبار!",
+                    exampleTitle: "🔎 مثال: \"أنا لم أقل إنه سرق المال.\"",
+                    exampleDesc: "انقر على أي جملة لسماعها (منطوقة بشكل محايد). ركز على كيف أن الكلمة <span class=\"stressed-word\">البارزة</span> ستغير المعنى إذا تم التأكيد عليها.",
+                    meanings: {
+                        i: "المعنى: شخص آخر قالها، وليس أنا.",
+                        didnt: "المعنى: أنا بالتأكيد لم أقلها.",
+                        say: "المعنى: ربما ألمحت إليها، لكني لم أقلها صراحة.",
+                        he: "المعنى: شخص آخر سرقه، وليس هو.",
+                        stole: "المعنى: أخذ المال، لكن ربما استعاره.",
+                        money: "المعنى: سرق شيئاً آخر، وليس المال."
+                    },
+                    moreExamples: "🗣️ المزيد من التأكيد في الكلام اليومي",
+                    moreDesc: "تأكيد كلمة يمكن أن يعبر أيضاً عن الدهشة، أو تصحيح شخص ما، أو إظهار التباين.",
+                    more: {
+                        she: "دهشة: \"هي؟ اعتقدت أن أختها قادمة.\"",
+                        red: "تباين: التمييز بين خيارين.",
+                        do: "موافقة توكيدية: تصحيح شخص يعتقد أنك لا تحب."
+                    },
+                    quiz: {
+                        title: "🎯 اختبار: اختر الكلمة المشددة",
+                        instruction: "اقرأ السيناريو. أي كلمة يجب التشديد عليها لتوافق المعنى؟",
+                        next: "السؤال التالي ➜"
+                    }
+                }
+            }
+        };
+    </script>
+
+    <!-- ========== GAME LOGIC ========== -->
+    <script>
+        // Optional: speak the sentence neutrally (emphasis won't be heard, but we keep the feature for consistency)
+        document.querySelectorAll('.example-sentence').forEach(el => {
+            el.style.cursor = 'pointer';
+            el.title = 'Click to hear';
+            el.addEventListener('click', function() {
+                // Get plain text by removing the <span> tags
+                const text = this.textContent.trim();
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.lang = 'en-US';
+                    utterance.rate = 0.9;
+                    window.speechSynthesis.speak(utterance);
+                }
+            });
+        });
+
+        // ========== QUIZ LOGIC ==========
+        const quizItems = [
+            {
+                sentence: "I didn't say he stole the money.",
+                scenario: "Someone else said it, not me.",
+                correctWord: "I"
+            },
+            {
+                sentence: "I didn't say he stole the money.",
+                scenario: "I might have written it, but I didn't say it aloud.",
+                correctWord: "say"
+            },
+            {
+                sentence: "I didn't say he stole the money.",
+                scenario: "He took the money, but maybe he borrowed it.",
+                correctWord: "stole"
+            },
+            {
+                sentence: "I didn't say he stole the money.",
+                scenario: "Someone else stole it, not him.",
+                correctWord: "he"
+            },
+            {
+                sentence: "I didn't say he stole the money.",
+                scenario: "I definitely did not say it.",
+                correctWord: "didn't"
+            },
+            {
+                sentence: "I didn't say he stole the money.",
+                scenario: "He stole something else, not the money.",
+                correctWord: "money"
+            },
+            {
+                sentence: "She is coming to the party?",
+                scenario: "I'm surprised it's her, not someone else.",
+                correctWord: "She"
+            },
+            {
+                sentence: "I want the red dress, not the blue one.",
+                scenario: "I'm contrasting between two colours.",
+                correctWord: "red"
+            }
+        ];
+
+        const wordsInSentence = ["I", "didn't", "say", "he", "stole", "the", "money"];
+        // We'll dynamically generate options based on the sentence words, but for the core sentence we'll use the main one.
+        // However, the quiz sentence is always the same? Not exactly; we have a few variations. We'll use the sentence from the quiz item and split into words, removing punctuation.
+        function getWords(sentence) {
+            return sentence.replace(/[?.,!]/g, '').split(' ');
+        }
+
+        let currentQuiz = null;
+        const quizScenario = document.getElementById('quiz-scenario');
+        const quizSentence = document.getElementById('quiz-sentence');
+        const quizResult = document.getElementById('quiz-result');
+        const quizWordOptionsDiv = document.getElementById('quiz-word-options');
+        const quizNextBtn = document.getElementById('quiz-next-btn');
+
+        function loadNewQuiz() {
+            const randomIndex = Math.floor(Math.random() * quizItems.length);
+            currentQuiz = quizItems[randomIndex];
+            quizScenario.textContent = currentQuiz.scenario;
+            quizSentence.textContent = currentQuiz.sentence;
+            quizResult.textContent = '';
+
+            // Clear options
+            quizWordOptionsDiv.innerHTML = '';
+            const words = getWords(currentQuiz.sentence);
+            // Remove duplicates while preserving order
+            const uniqueWords = [...new Set(words)];
+            uniqueWords.forEach(word => {
+                const btn = document.createElement('button');
+                btn.className = 'word-option';
+                btn.textContent = word;
+                btn.addEventListener('click', function() {
+                    if (this.textContent.toLowerCase() === currentQuiz.correctWord.toLowerCase()) {
+                        quizResult.innerHTML = '✅ Correct! Emphasizing <strong>"' + currentQuiz.correctWord + '"</strong> gives the intended meaning.';
+                        quizResult.style.color = '#c8e6c9';
+                    } else {
+                        quizResult.innerHTML = '❌ Not quite. The correct word to stress is <strong>"' + currentQuiz.correctWord + '"</strong>.';
+                        quizResult.style.color = '#ffccbc';
+                    }
+                });
+                quizWordOptionsDiv.appendChild(btn);
+            });
+        }
+
+        quizNextBtn.addEventListener('click', loadNewQuiz);
+
+        // Initialize
+        loadNewQuiz();
+
+        // ========== BILINGUAL TRANSLATION ==========
+        function applyBilingualTranslations(lang) {
+            const enData = translations.en;
+            function getTranslation(obj, path) {
+                const keys = path.split('.');
+                let val = obj;
+                for (const k of keys) {
+                    if (val && typeof val === 'object') val = val[k];
+                    else return undefined;
+                }
+                return val;
+            }
+
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                const enText = getTranslation(enData, key) || key;
+                const transText = lang !== 'en' ? (getTranslation(translations[lang], key) || enText) : '';
+
+                if (lang === 'en') {
+                    el.innerHTML = enText;
+                } else {
+                    el.innerHTML = `<span class="en-text">${enText}</span><span class="trans-text">${transText}</span>`;
+                }
+            });
+
+            document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+        }
+
+        const langSelector = document.getElementById('language-selector');
+        const savedLang = localStorage.getItem('preferredLanguage') || 'en';
+        langSelector.value = savedLang;
+        applyBilingualTranslations(savedLang);
+
+        langSelector.addEventListener('change', function() {
+            const lang = this.value;
+            localStorage.setItem('preferredLanguage', lang);
+            applyBilingualTranslations(lang);
+        });
+    </script>
+</body>
+</html>

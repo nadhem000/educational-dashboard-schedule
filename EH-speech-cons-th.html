@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TH Sound – Clear Speech Fun</title>
+    <link rel="stylesheet" href="styles/common.css">
+    <style>
+        * {
+            margin: 0; padding: 0; box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            min-height: 100vh; display: flex; flex-direction: column; padding: 20px;
+        }
+        .lesson-container {
+            max-width: 900px; margin: 0 auto; width: 100%; flex: 1;
+        }
+        .lesson-content {
+            background: rgba(255, 255, 255, 0.92); border-radius: 25px;
+            padding: 35px; box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+            margin-bottom: 30px; border: 2px solid rgba(255,255,255,0.3);
+        }
+        .lesson-intro {
+            font-size: 1.15rem; line-height: 1.7; color: #333; text-align: center;
+            margin-bottom: 30px; padding: 20px;
+            background: linear-gradient(to right, #f8f9fa, #e9ecef);
+            border-radius: 15px; border-left: 6px solid #11998e;
+        }
+        .sound-section {
+            background: white; border-radius: 18px; padding: 25px;
+            margin-bottom: 30px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .sound-header {
+            display: flex; align-items: center; margin-bottom: 10px;
+        }
+        .sound-ipa {
+            font-size: 2rem; font-weight: bold; color: #e94560; margin-right: 15px;
+            min-width: 80px;
+        }
+        .word-list {
+            display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;
+        }
+        .word-btn {
+            background: #4e54c8; color: white; border: none;
+            padding: 10px 20px; border-radius: 25px; cursor: pointer;
+            font-size: 1.1rem; transition: background 0.3s, transform 0.2s;
+        }
+        .word-btn:hover { background: #3f46c5; transform: scale(1.05); }
+        .quiz-box {
+            background: linear-gradient(135deg, #fdbb2d, #f46b45);
+            color: white; border-radius: 20px; padding: 30px;
+            text-align: center; margin-top: 30px;
+        }
+        .quiz-question {
+            font-size: 1.8rem; margin-bottom: 20px; letter-spacing: 2px;
+            direction: ltr;          /* Force left-to-right */
+            unicode-bidi: isolate;   /* Isolate from surrounding RTL */
+        }
+        .quiz-options {
+            display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;
+        }
+        .quiz-option {
+            background: white; color: #333; border: none;
+            padding: 15px 30px; border-radius: 25px;
+            font-size: 1.3rem; font-weight: bold; cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            min-width: 140px;
+        }
+        .quiz-option:hover { transform: scale(1.1); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .quiz-result {
+            margin-top: 20px; font-size: 1.3rem; min-height: 30px;
+        }
+        .back-btn {
+            display: block; margin: 0 auto 20px;
+            background: #fdbb2d; color: white; border: none;
+            padding: 12px 30px; border-radius: 25px; cursor: pointer;
+            font-weight: bold; font-size: 1rem; transition: background 0.3s;
+        }
+        .back-btn:hover { background: #f7a900; }
+
+        /* Bilingual styles */
+        .en-text { font-weight: normal; }
+        .trans-text { display: block; font-size: 0.9em; opacity: 0.8; margin-top: 2px; }
+
+        /* Visual effect overlay */
+        .visual-effect-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            background: rgba(0, 0, 0, 0.6);
+        }
+
+        .visual-effect-overlay.active {
+            opacity: 1;
+        }
+
+        .visual-effect-overlay .effect-content {
+            font-size: 6rem;
+            text-shadow: 0 0 25px rgba(255, 255, 255, 0.9);
+            animation: popIn 0.5s ease;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            80% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .effect-total-success {
+            background: radial-gradient(circle, rgba(46, 204, 113, 0.85), rgba(0, 128, 0, 0.9));
+        }
+
+        .effect-total-failure {
+            background: radial-gradient(circle, rgba(231, 76, 60, 0.85), rgba(128, 0, 0, 0.9));
+            animation: shake 0.5s ease;
+        }
+
+        .effect-greater-half {
+            background: radial-gradient(circle, rgba(52, 152, 219, 0.85), rgba(0, 0, 128, 0.9));
+        }
+
+        .effect-lesser-half {
+            background: radial-gradient(circle, rgba(241, 196, 15, 0.85), rgba(128, 128, 0, 0.9));
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-10px); }
+            40% { transform: translateX(10px); }
+            60% { transform: translateX(-5px); }
+            80% { transform: translateX(5px); }
+        }
+
+        @media (max-width: 600px) {
+            .lesson-content { padding: 20px; }
+            .sound-ipa { font-size: 1.6rem; min-width: 60px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Language Selector -->
+    <div style="position: fixed; top: 20px; right: 20px; z-index: 1000;">
+        <select id="language-selector" style="padding: 8px 12px; border-radius: 8px; border: 2px solid #fff; background: rgba(255,255,255,0.9); color: #333; font-weight: bold;">
+            <option value="en">English</option>
+            <option value="fr">Français</option>
+            <option value="ar">العربية</option>
+        </select>
+    </div>
+
+    <!-- Site Header -->
+    <div class="EH-site-header">
+        <a href="index.html" class="EH-site-logo-link" title="Main Page">
+            <img src="assets/icons/icon-192x192.png" alt="English Hub Logo" class="EH-site-logo">
+        </a>
+        <span class="EH-site-name" data-i18n="common.siteName">English Hub</span>
+    </div>
+
+    <div class="lesson-container">
+        <header class="EH-common-header">
+            <h1 class="EH-common-title" data-i18n="thSound.title">TH Sound</h1>
+            <p class="EH-common-subtitle" data-i18n="thSound.subtitle">Master the two "th" sounds: voiceless /θ/ and voiced /ð/</p>
+        </header>
+
+        <div class="lesson-content">
+            <p class="lesson-intro" data-i18n="thSound.intro">
+                The TH sound is one of the most distinctive English consonants. There are two versions – voiceless (like in "think") and voiced (like in "this").
+                Place your tongue between your teeth and push air out. Practice with the words below, then test your ear with the quiz!
+            </p>
+
+            <!-- Voiceless TH /θ/ -->
+            <div class="sound-section">
+                <div class="sound-header">
+                    <span class="sound-ipa">/θ/</span>
+                    <h2 data-i18n="thSound.voiceless.title">Voiceless TH</h2>
+                </div>
+                <p data-i18n="thSound.voiceless.desc">No vocal cord vibration. Just air passing between tongue and teeth. Click the words to hear them.</p>
+                <div class="word-list">
+                    <button class="word-btn" data-word="think">💭 think</button>
+                    <button class="word-btn" data-word="thank">🙏 thank</button>
+                    <button class="word-btn" data-word="three">3️⃣ three</button>
+                    <button class="word-btn" data-word="bath">🛁 bath</button>
+                    <button class="word-btn" data-word="mouth">👄 mouth</button>
+                    <button class="word-btn" data-word="thin">📏 thin</button>
+                    <button class="word-btn" data-word="nothing">🈚 nothing</button>
+                </div>
+            </div>
+
+            <!-- Voiced TH /ð/ -->
+            <div class="sound-section">
+                <div class="sound-header">
+                    <span class="sound-ipa">/ð/</span>
+                    <h2 data-i18n="thSound.voiced.title">Voiced TH</h2>
+                </div>
+                <p data-i18n="thSound.voiced.desc">Vocal cords vibrate – it feels like a gentle buzz. Click to listen.</p>
+                <div class="word-list">
+                    <button class="word-btn" data-word="this">👉 this</button>
+                    <button class="word-btn" data-word="that">👈 that</button>
+                    <button class="word-btn" data-word="mother">👩 mother</button>
+                    <button class="word-btn" data-word="father">👨 father</button>
+                    <button class="word-btn" data-word="weather">☀️ weather</button>
+                    <button class="word-btn" data-word="together">🤝 together</button>
+                    <button class="word-btn" data-word="brother">👬 brother</button>
+                </div>
+            </div>
+
+            <!-- Quiz: Identify the TH sound -->
+            <div class="quiz-box" id="quiz-box">
+                <h2 data-i18n="thSound.quiz.title">🎯 Ear Training: Which TH Sound?</h2>
+                <p data-i18n="thSound.quiz.instruction">Listen to the word. Is the TH sound voiceless (/θ/) or voiced (/ð/)?</p>
+                <button class="word-btn" id="quiz-speak-btn" data-i18n="thSound.quiz.listen">🔊 Listen</button>
+                <div class="quiz-question" id="quiz-word-display">_ _ ink</div>
+                <div class="quiz-options">
+                    <button class="quiz-option" data-th-type="voiceless">/θ/ Voiceless</button>
+                    <button class="quiz-option" data-th-type="voiced">/ð/ Voiced</button>
+                </div>
+                <div class="quiz-result" id="quiz-result"></div>
+                <button class="word-btn" id="quiz-next-btn" style="margin-top:15px;" data-i18n="thSound.quiz.next">Next Word ➜</button>
+            </div>
+
+            <button class="back-btn" onclick="window.location.href='Eh-general-clear-speech.html'" data-i18n="common.backToClearSpeech">← Back to Clear Speech Fun</button>
+        </div>
+    </div>
+
+    <footer class="EH-common-footer">
+        <div class="EH-common-footer-content">
+            <div class="EH-common-footer-developer" data-i18n="footer.developer">Developer: Mejri Ziad</div>
+            <div class="EH-common-footer-links">
+                <a href="policy.html" data-i18n="footer.privacy">Privacy Policy</a>
+                <a href="terms.html" data-i18n="footer.terms">Terms of Service</a>
+                <a href="contact.html" data-i18n="footer.contact">Contact</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Visual effect overlay for quiz results -->
+    <div id="visual-effect-overlay" class="visual-effect-overlay"></div>
+
+    <!-- ========== TRANSLATION DATA ========== -->
+    <script>
+        const translations = {
+            en: {
+                common: {
+                    siteName: "English Hub",
+                    backToClearSpeech: "← Back to Clear Speech Fun"
+                },
+                footer: {
+                    developer: "Developer: Mejri Ziad",
+                    privacy: "Privacy Policy",
+                    terms: "Terms of Service",
+                    contact: "Contact"
+                },
+                thSound: {
+                    title: "TH Sound",
+                    subtitle: "Master the two \"th\" sounds: voiceless /θ/ and voiced /ð/",
+                    intro: "The TH sound is one of the most distinctive English consonants. There are two versions – voiceless (like in \"think\") and voiced (like in \"this\"). Place your tongue between your teeth and push air out. Practice with the words below, then test your ear with the quiz!",
+                    voiceless: {
+                        title: "Voiceless TH",
+                        desc: "No vocal cord vibration. Just air passing between tongue and teeth. Click the words to hear them."
+                    },
+                    voiced: {
+                        title: "Voiced TH",
+                        desc: "Vocal cords vibrate – it feels like a gentle buzz. Click to listen."
+                    },
+                    quiz: {
+                        title: "🎯 Ear Training: Which TH Sound?",
+                        instruction: "Listen to the word. Is the TH sound voiceless (/θ/) or voiced (/ð/)?",
+                        listen: "🔊 Listen",
+                        next: "Next Word ➜",
+                        correct: "✅ Correct! The word is <strong>{word}</strong> – {type}.",
+                        incorrect: "❌ Not quite. The correct sound is <strong>{type}</strong>. The word is <strong>{word}</strong>.",
+                        complete: "🎯 Quiz Complete!",
+                        score: "Your score: {correct} out of {total}",
+                        restart: "🔁 Play Again"
+                    }
+                }
+            },
+            fr: {
+                common: {
+                    siteName: "English Hub",
+                    backToClearSpeech: "← Retour à Clear Speech Fun"
+                },
+                footer: {
+                    developer: "Développeur : Mejri Ziad",
+                    privacy: "Politique de confidentialité",
+                    terms: "Conditions d'utilisation",
+                    contact: "Contact"
+                },
+                thSound: {
+                    title: "Le son TH",
+                    subtitle: "Maîtrisez les deux sons \"th\" : sourd /θ/ et voisé /ð/",
+                    intro: "Le son TH est l'une des consonnes les plus distinctives de l'anglais. Il en existe deux versions – sourde (comme dans \"think\") et voisée (comme dans \"this\"). Placez votre langue entre vos dents et poussez l'air. Entraînez‑vous avec les mots ci‑dessous, puis testez votre oreille avec le quiz !",
+                    voiceless: {
+                        title: "TH sourd",
+                        desc: "Pas de vibration des cordes vocales. Juste de l'air qui passe entre la langue et les dents. Cliquez pour entendre."
+                    },
+                    voiced: {
+                        title: "TH voisé",
+                        desc: "Les cordes vocales vibrent – on sent un léger bourdonnement. Cliquez pour écouter."
+                    },
+                    quiz: {
+                        title: "🎯 Entraînement de l'oreille : Quel son TH ?",
+                        instruction: "Écoutez le mot. Le son TH est‑il sourd (/θ/) ou voisé (/ð/) ?",
+                        listen: "🔊 Écouter",
+                        next: "Mot suivant ➜",
+                        correct: "✅ Correct ! Le mot est <strong>{word}</strong> – {type}.",
+                        incorrect: "❌ Pas tout à fait. Le son correct est <strong>{type}</strong>. Le mot est <strong>{word}</strong>.",
+                        complete: "🎯 Quiz terminé !",
+                        score: "Votre score : {correct} sur {total}",
+                        restart: "🔁 Rejouer"
+                    }
+                }
+            },
+            ar: {
+                common: {
+                    siteName: "English Hub",
+                    backToClearSpeech: "← العودة إلى Clear Speech Fun"
+                },
+                footer: {
+                    developer: "المطور: ماجري زياد",
+                    privacy: "سياسة الخصوصية",
+                    terms: "شروط الخدمة",
+                    contact: "اتصل بنا"
+                },
+                thSound: {
+                    title: "صوت TH",
+                    subtitle: "أتقن صوتي \"th\": المهموس /θ/ والمجهور /ð/",
+                    intro: "صوت TH من أكثر الأصوات الساكنة تميزًا في الإنجليزية. له نسختان – مهموسة (كما في \"think\") ومجهورة (كما في \"this\"). ضع لسانك بين أسنانك وادفع الهواء. تدرب مع الكلمات أدناه، ثم اختبر أذنك بالاختبار!",
+                    voiceless: {
+                        title: "TH المهموس",
+                        desc: "لا تهتز الأحبال الصوتية. فقط هواء يمر بين اللسان والأسنان. انقر للاستماع."
+                    },
+                    voiced: {
+                        title: "TH المجهور",
+                        desc: "تهتز الأحبال الصوتية – يشعر بهزة خفيفة. انقر للاستماع."
+                    },
+                    quiz: {
+                        title: "🎯 تدريب الأذن: أي صوت TH؟",
+                        instruction: "استمع إلى الكلمة. هل صوت TH مهموس (/θ/) أم مجهور (/ð/)؟",
+                        listen: "🔊 استمع",
+                        next: "الكلمة التالية ➜",
+                        correct: "✅ صحيح! الكلمة هي <strong>{word}</strong> – {type}.",
+                        incorrect: "❌ ليس تماماً. الصوت الصحيح هو <strong>{type}</strong>. الكلمة هي <strong>{word}</strong>.",
+                        complete: "🎯 اكتمل الاختبار!",
+                        score: "نتيجتك: {correct} من {total}",
+                        restart: "🔁 العب مرة أخرى"
+                    }
+                }
+            }
+        };
+    </script>
+
+    <!-- ========== GAME LOGIC ========== -->
+    <script>
+        // ========== LANGUAGE HANDLING ==========
+        let currentLanguage = localStorage.getItem('preferredLanguage') || 'en';
+
+        // ========== LISTEN & REPEAT (word buttons) ==========
+        document.querySelectorAll('.word-btn[data-word]').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const word = this.getAttribute('data-word');
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(word);
+                    utterance.lang = 'en-US';
+                    utterance.rate = 0.85;
+                    window.speechSynthesis.speak(utterance);
+                } else {
+                    alert('Your browser does not support speech synthesis.');
+                }
+            });
+        });
+
+        // ========== AUDIO PLAYER ==========
+        function playSound(action) {
+            try {
+                const audio = new Audio(`assets3/general/audios/${action}.mp3`);
+                audio.play().catch(err => console.warn(`Sound "${action}" could not be played:`, err));
+            } catch (e) {
+                console.warn('Audio not supported:', e);
+            }
+        }
+
+        // ========== QUIZ LOGIC ==========
+        const quizWords = [
+            { word: 'think',      display: '_ _ ink',      type: 'voiceless' },
+            { word: 'this',       display: '_ _ is',        type: 'voiced' },
+            { word: 'three',      display: '_ _ ree',       type: 'voiceless' },
+            { word: 'mother',     display: 'mo _ _ er',     type: 'voiced' },
+            { word: 'bath',       display: 'ba _ _',        type: 'voiceless' },
+            { word: 'weather',    display: 'wea _ _ er',    type: 'voiced' },
+            { word: 'thin',       display: '_ _ in',        type: 'voiceless' },
+            { word: 'together',   display: 'toge _ _ er',   type: 'voiced' },
+            { word: 'nothing',    display: 'no _ _ ing',    type: 'voiceless' },
+            { word: 'brother',    display: 'bro _ _ er',    type: 'voiced' }
+        ];
+
+        let shuffledQuizWords = [...quizWords].sort(() => Math.random() - 0.5);
+        let currentIndex = 0;
+        let score = { correct: 0, total: 0 };
+        let gameEnded = false;
+        let isAnswering = false;
+        let currentQuizWord = null;
+
+        const quizWordDisplay = document.getElementById('quiz-word-display');
+        const quizResult = document.getElementById('quiz-result');
+        const quizSpeakBtn = document.getElementById('quiz-speak-btn');
+        const quizNextBtn = document.getElementById('quiz-next-btn');
+        const quizOptions = document.querySelectorAll('.quiz-option');
+
+        // Helper to get translation string with placeholder replacement
+        function getQuizTranslation(key, replacements = {}) {
+            const quizTrans = translations[currentLanguage]?.thSound?.quiz;
+            if (!quizTrans) return key;
+            let text = quizTrans[key] || translations.en.thSound.quiz[key] || key;
+            for (const [placeholder, value] of Object.entries(replacements)) {
+                text = text.replace(`{${placeholder}}`, value);
+            }
+            return text;
+        }
+
+        function updateQuizButtonText() {
+            if (gameEnded) {
+                quizNextBtn.textContent = getQuizTranslation('restart');
+            } else {
+                quizNextBtn.textContent = getQuizTranslation('next');
+            }
+        }
+
+        function displayFinalScore() {
+            const scoreText = getQuizTranslation('score', {
+                correct: score.correct,
+                total: score.total
+            });
+            quizWordDisplay.textContent = getQuizTranslation('complete');
+            quizResult.innerHTML = scoreText;
+            quizResult.style.color = '#fff';
+        }
+
+        function loadNewQuizWord() {
+            if (currentIndex >= shuffledQuizWords.length) {
+                endQuiz();
+                return;
+            }
+            currentQuizWord = shuffledQuizWords[currentIndex];
+            quizWordDisplay.textContent = currentQuizWord.display;
+            quizResult.textContent = '';
+            quizNextBtn.style.display = 'none';
+            gameEnded = false;
+            isAnswering = false;
+            updateQuizButtonText();
+        }
+
+        function endQuiz() {
+            gameEnded = true;
+            isAnswering = false;
+            displayFinalScore();
+            quizNextBtn.style.display = 'block';
+            updateQuizButtonText();
+
+            // Play final score sound and show visual effect
+            if (score.correct === score.total) {
+                playSound('completed-total-success');
+                showVisualEffect('total-success');
+            } else if (score.correct === 0) {
+                playSound('completed-total-failure');
+                showVisualEffect('total-failure');
+            } else if (score.correct > score.total / 2) {
+                playSound('score-greater-than-half');
+                showVisualEffect('greater-half');
+            } else {
+                playSound('score-lesser-or-equal-half');
+                showVisualEffect('lesser-half');
+            }
+        }
+
+        function showVisualEffect(type) {
+            const overlay = document.getElementById('visual-effect-overlay');
+            if (!overlay) return;
+
+            const content = document.createElement('div');
+            content.className = 'effect-content';
+
+            let overlayClass = 'visual-effect-overlay active ';
+            switch(type) {
+                case 'total-success':
+                    overlayClass += 'effect-total-success';
+                    content.textContent = '🎉';
+                    break;
+                case 'total-failure':
+                    overlayClass += 'effect-total-failure';
+                    content.textContent = '😢';
+                    break;
+                case 'greater-half':
+                    overlayClass += 'effect-greater-half';
+                    content.textContent = '👍';
+                    break;
+                case 'lesser-half':
+                    overlayClass += 'effect-lesser-half';
+                    content.textContent = '🤔';
+                    break;
+                default:
+                    return;
+            }
+
+            overlay.innerHTML = '';
+            overlay.appendChild(content);
+            overlay.className = overlayClass;
+
+            // Hide after 2 seconds, then clean up after fade-out
+            setTimeout(() => {
+                overlay.classList.remove('active');
+                setTimeout(() => {
+                    overlay.className = 'visual-effect-overlay';
+                    overlay.innerHTML = '';
+                }, 400);
+            }, 2000);
+        }
+
+        function restartQuiz() {
+            shuffledQuizWords = [...quizWords].sort(() => Math.random() - 0.5);
+            currentIndex = 0;
+            score = { correct: 0, total: 0 };
+            gameEnded = false;
+            isAnswering = false;
+            quizNextBtn.style.display = 'none';
+            loadNewQuizWord();
+        }
+
+        function speakQuizWord() {
+            if (currentQuizWord && 'speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(currentQuizWord.word);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.85;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // Answer click handler
+        quizOptions.forEach(option => {
+            option.addEventListener('click', function() {
+                if (gameEnded || isAnswering || !currentQuizWord) return;
+
+                playSound('click');
+
+                isAnswering = true;
+                const selectedType = this.getAttribute('data-th-type');
+                const isCorrect = selectedType === currentQuizWord.type;
+
+                score.total++;
+                if (isCorrect) score.correct++;
+
+                setTimeout(() => {
+                    playSound(isCorrect ? 'correct' : 'incorrect');
+                }, 150);
+
+                const typeText = currentQuizWord.type === 'voiceless' ? 'voiceless /θ/' : 'voiced /ð/';
+                const feedback = isCorrect
+                    ? getQuizTranslation('correct', { word: currentQuizWord.word, type: typeText })
+                    : getQuizTranslation('incorrect', { type: typeText, word: currentQuizWord.word });
+                quizResult.innerHTML = feedback;
+                quizResult.style.color = isCorrect ? '#c8e6c9' : '#ffccbc';
+
+                setTimeout(() => {
+                    currentIndex++;
+                    if (currentIndex < shuffledQuizWords.length) {
+                        loadNewQuizWord();
+                    } else {
+                        endQuiz();
+                    }
+                }, 1200);
+            });
+        });
+
+        quizSpeakBtn.addEventListener('click', speakQuizWord);
+        quizNextBtn.addEventListener('click', () => {
+            if (gameEnded) restartQuiz();
+        });
+
+        // ========== BILINGUAL TRANSLATION FUNCTION ==========
+        function applyBilingualTranslations(lang) {
+            currentLanguage = lang;
+            const enData = translations.en;
+            function getTranslation(obj, path) {
+                const keys = path.split('.');
+                let val = obj;
+                for (const k of keys) {
+                    if (val && typeof val === 'object') val = val[k];
+                    else return undefined;
+                }
+                return val;
+            }
+
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                const enText = getTranslation(enData, key) || key;
+                const transText = lang !== 'en' ? (getTranslation(translations[lang], key) || enText) : '';
+
+                if (lang === 'en') {
+                    el.innerHTML = enText;
+                } else {
+                    el.innerHTML = `<span class="en-text">${enText}</span><span class="trans-text">${transText}</span>`;
+                }
+            });
+
+            document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+
+            // Update quiz button text and final score if game ended
+            updateQuizButtonText();
+            if (gameEnded) {
+                displayFinalScore();
+            }
+        }
+
+        // ========== LANGUAGE SELECTOR EVENT ==========
+        const langSelector = document.getElementById('language-selector');
+        langSelector.value = currentLanguage;
+        langSelector.addEventListener('change', function() {
+            const lang = this.value;
+            localStorage.setItem('preferredLanguage', lang);
+            applyBilingualTranslations(lang);
+        });
+
+        // Initialize
+        applyBilingualTranslations(currentLanguage);
+        loadNewQuizWord();
+    </script>
+</body>
+</html>

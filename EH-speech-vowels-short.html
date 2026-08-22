@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Short Vowels – Clear Speech Fun</title>
+    <link rel="stylesheet" href="styles/common.css">
+    <style>
+        * {
+            margin: 0; padding: 0; box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            min-height: 100vh; display: flex; flex-direction: column; padding: 20px;
+        }
+        .lesson-container {
+            max-width: 900px; margin: 0 auto; width: 100%; flex: 1;
+        }
+        .lesson-content {
+            background: rgba(255, 255, 255, 0.92); border-radius: 25px;
+            padding: 35px; box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+            margin-bottom: 30px; border: 2px solid rgba(255,255,255,0.3);
+        }
+        .lesson-intro {
+            font-size: 1.15rem; line-height: 1.7; color: #333; text-align: center;
+            margin-bottom: 30px; padding: 20px;
+            background: linear-gradient(to right, #f8f9fa, #e9ecef);
+            border-radius: 15px; border-left: 6px solid #11998e;
+        }
+        .vowel-section {
+            background: white; border-radius: 18px; padding: 25px;
+            margin-bottom: 30px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .vowel-letter {
+            font-size: 2.5rem; font-weight: bold; color: #e94560; margin-right: 15px;
+            display: inline-block; width: 50px;
+        }
+        .word-list {
+            display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;
+        }
+        .word-btn {
+            background: #4e54c8; color: white; border: none;
+            padding: 10px 20px; border-radius: 25px; cursor: pointer;
+            font-size: 1.1rem; transition: background 0.3s, transform 0.2s;
+        }
+        .word-btn:hover { background: #3f46c5; transform: scale(1.05); }
+        .quiz-box {
+            background: linear-gradient(135deg, #fdbb2d, #f46b45);
+            color: white; border-radius: 20px; padding: 30px;
+            text-align: center; margin-top: 30px;
+        }
+        .quiz-question {
+    font-size: 1.8rem;
+    margin-bottom: 20px;
+    letter-spacing: 2px;
+    direction: ltr;          /* Force left-to-right */
+    unicode-bidi: isolate;   /* Isolate from surrounding RTL */
+}
+        .quiz-options {
+            display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;
+        }
+        .quiz-option {
+            background: white; color: #333; border: none; width: 60px; height: 60px;
+            border-radius: 50%; font-size: 2rem; font-weight: bold; cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .quiz-option:hover { transform: scale(1.1); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .quiz-result {
+            margin-top: 20px; font-size: 1.3rem; min-height: 30px;
+        }
+        .back-btn {
+            display: block; margin: 0 auto 20px;
+            background: #fdbb2d; color: white; border: none;
+            padding: 12px 30px; border-radius: 25px; cursor: pointer;
+            font-weight: bold; font-size: 1rem; transition: background 0.3s;
+        }
+        .back-btn:hover { background: #f7a900; }
+
+        /* Bilingual styles (same as Clear Speech Fun) */
+        .en-text { font-weight: normal; }
+        .trans-text { display: block; font-size: 0.9em; opacity: 0.8; margin-top: 2px; }
+
+        /* Visual effect overlay */
+        .visual-effect-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            background: rgba(0, 0, 0, 0.6);
+        }
+
+        .visual-effect-overlay.active {
+            opacity: 1;
+        }
+
+        .visual-effect-overlay .effect-content {
+            font-size: 6rem;
+            text-shadow: 0 0 25px rgba(255, 255, 255, 0.9);
+            animation: popIn 0.5s ease;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            80% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Specific effect backgrounds */
+        .effect-total-success {
+            background: radial-gradient(circle, rgba(46, 204, 113, 0.85), rgba(0, 128, 0, 0.9));
+        }
+
+        .effect-total-failure {
+            background: radial-gradient(circle, rgba(231, 76, 60, 0.85), rgba(128, 0, 0, 0.9));
+            animation: shake 0.5s ease;
+        }
+
+        .effect-greater-half {
+            background: radial-gradient(circle, rgba(52, 152, 219, 0.85), rgba(0, 0, 128, 0.9));
+        }
+
+        .effect-lesser-half {
+            background: radial-gradient(circle, rgba(241, 196, 15, 0.85), rgba(128, 128, 0, 0.9));
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-10px); }
+            40% { transform: translateX(10px); }
+            60% { transform: translateX(-5px); }
+            80% { transform: translateX(5px); }
+        }
+
+        @media (max-width: 600px) {
+            .lesson-content { padding: 20px; }
+            .vowel-letter { font-size: 2rem; width: 40px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Language Selector (same as other pages) -->
+    <div style="position: fixed; top: 20px; right: 20px; z-index: 1000;">
+        <select id="language-selector" style="padding: 8px 12px; border-radius: 8px; border: 2px solid #fff; background: rgba(255,255,255,0.9); color: #333; font-weight: bold;">
+            <option value="en">English</option>
+            <option value="fr">Français</option>
+            <option value="ar">العربية</option>
+        </select>
+    </div>
+
+    <!-- Site Header -->
+    <div class="EH-site-header">
+        <a href="index.html" class="EH-site-logo-link" title="Main Page">
+            <img src="assets/icons/icon-192x192.png" alt="English Hub Logo" class="EH-site-logo">
+        </a>
+        <span class="EH-site-name" data-i18n="common.siteName">English Hub</span>
+    </div>
+
+    <div class="lesson-container">
+        <header class="EH-common-header">
+            <h1 class="EH-common-title" data-i18n="shortVowels.title">Short Vowels</h1>
+            <p class="EH-common-subtitle" data-i18n="shortVowels.subtitle">Master the five short vowel sounds: /æ/, /ɛ/, /ɪ/, /ɒ/, /ʌ/</p>
+        </header>
+
+        <div class="lesson-content">
+            <p class="lesson-intro" data-i18n="shortVowels.intro">
+                Short vowels are the most common vowel sounds in English. They are quick, crisp sounds produced with a relaxed tongue.
+                Practice listening and repeating each word below, then test yourself with the quiz!
+            </p>
+
+            <!-- Vowel /æ/ as in cat -->
+            <div class="vowel-section">
+                <h2><span class="vowel-letter">A</span> <span data-i18n="shortVowels.a.sound">/æ/ as in "cat"</span></h2>
+                <p data-i18n="shortVowels.a.desc">This sound is made with a wide mouth, tongue low and forward. Click the words to hear them.</p>
+                <div class="word-list">
+                    <button class="word-btn" data-word="cat">🐱 cat</button>
+                    <button class="word-btn" data-word="hat">🎩 hat</button>
+                    <button class="word-btn" data-word="bag">👜 bag</button>
+                    <button class="word-btn" data-word="map">🗺️ map</button>
+                    <button class="word-btn" data-word="sad">😢 sad</button>
+                </div>
+            </div>
+
+            <!-- Vowel /ɛ/ as in bed -->
+            <div class="vowel-section">
+                <h2><span class="vowel-letter">E</span> <span data-i18n="shortVowels.e.sound">/ɛ/ as in "bed"</span></h2>
+                <p data-i18n="shortVowels.e.desc">Mouth slightly open, tongue mid‑height, lips relaxed. Click to listen.</p>
+                <div class="word-list">
+                    <button class="word-btn" data-word="bed">🛏️ bed</button>
+                    <button class="word-btn" data-word="red">🔴 red</button>
+                    <button class="word-btn" data-word="pen">🖊️ pen</button>
+                    <button class="word-btn" data-word="leg">🦵 leg</button>
+                    <button class="word-btn" data-word="wet">💧 wet</button>
+                </div>
+            </div>
+
+            <!-- Vowel /ɪ/ as in sit -->
+            <div class="vowel-section">
+                <h2><span class="vowel-letter">I</span> <span data-i18n="shortVowels.i.sound">/ɪ/ as in "sit"</span></h2>
+                <p data-i18n="shortVowels.i.desc">A short, relaxed sound. Tongue is high but not tense. Click to hear.</p>
+                <div class="word-list">
+                    <button class="word-btn" data-word="sit">🪑 sit</button>
+                    <button class="word-btn" data-word="big">🐘 big</button>
+                    <button class="word-btn" data-word="fish">🐟 fish</button>
+                    <button class="word-btn" data-word="milk">🥛 milk</button>
+                    <button class="word-btn" data-word="win">🏆 win</button>
+                </div>
+            </div>
+
+            <!-- Vowel /ɒ/ as in hot (American /ɑ/) -->
+            <div class="vowel-section">
+                <h2><span class="vowel-letter">O</span> <span data-i18n="shortVowels.o.sound">/ɒ/ as in "hot"</span></h2>
+                <p data-i18n="shortVowels.o.desc">Mouth open, tongue low and back. In American English, it's closer to /ɑ/. Click to listen.</p>
+                <div class="word-list">
+                    <button class="word-btn" data-word="hot">🔥 hot</button>
+                    <button class="word-btn" data-word="box">📦 box</button>
+                    <button class="word-btn" data-word="dog">🐶 dog</button>
+                    <button class="word-btn" data-word="clock">⏰ clock</button>
+                    <button class="word-btn" data-word="stop">✋ stop</button>
+                </div>
+            </div>
+
+            <!-- Vowel /ʌ/ as in cup -->
+            <div class="vowel-section">
+                <h2><span class="vowel-letter">U</span> <span data-i18n="shortVowels.u.sound">/ʌ/ as in "cup"</span></h2>
+                <p data-i18n="shortVowels.u.desc">Tongue mid‑central, mouth slightly open. A very relaxed "uh" sound.</p>
+                <div class="word-list">
+                    <button class="word-btn" data-word="cup">☕ cup</button>
+                    <button class="word-btn" data-word="sun">☀️ sun</button>
+                    <button class="word-btn" data-word="bus">🚌 bus</button>
+                    <button class="word-btn" data-word="run">🏃 run</button>
+                    <button class="word-btn" data-word="fun">🎉 fun</button>
+                </div>
+            </div>
+
+            <!-- Quiz Section -->
+            <div class="quiz-box" id="quiz-box">
+                <h2 data-i18n="shortVowels.quiz.title">🎯 Quick Quiz: Fill the Missing Vowel</h2>
+                <p data-i18n="shortVowels.quiz.instruction">Listen to the word and click the correct missing vowel.</p>
+                <button class="word-btn" id="quiz-speak-btn" data-i18n="shortVowels.quiz.listen">🔊 Listen</button>
+                <div class="quiz-question" id="quiz-word-display">_ at</div>
+                <div class="quiz-options">
+                    <button class="quiz-option" data-vowel="a">A</button>
+                    <button class="quiz-option" data-vowel="e">E</button>
+                    <button class="quiz-option" data-vowel="i">I</button>
+                    <button class="quiz-option" data-vowel="o">O</button>
+                    <button class="quiz-option" data-vowel="u">U</button>
+                </div>
+                <div class="quiz-result" id="quiz-result"></div>
+                <button class="word-btn" id="quiz-next-btn" style="margin-top:15px;" data-i18n="shortVowels.quiz.next">Next Word ➜</button>
+            </div>
+
+            <button class="back-btn" onclick="window.location.href='Eh-general-clear-speech.html'" data-i18n="common.backToClearSpeech">← Back to Clear Speech Fun</button>
+        </div>
+    </div>
+
+    <footer class="EH-common-footer">
+        <div class="EH-common-footer-content">
+            <div class="EH-common-footer-developer" data-i18n="footer.developer">Developer: Mejri Ziad</div>
+            <div class="EH-common-footer-links">
+                <a href="policy.html" data-i18n="footer.privacy">Privacy Policy</a>
+                <a href="terms.html" data-i18n="footer.terms">Terms of Service</a>
+                <a href="contact.html" data-i18n="footer.contact">Contact</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Visual effect overlay for quiz results -->
+    <div id="visual-effect-overlay" class="visual-effect-overlay"></div>
+
+    <!-- ========== TRANSLATION DATA ========== -->
+    <script>
+        const translations = {
+            en: {
+                common: {
+                    siteName: "English Hub",
+                    backToClearSpeech: "← Back to Clear Speech Fun"
+                },
+                footer: {
+                    developer: "Developer: Mejri Ziad",
+                    privacy: "Privacy Policy",
+                    terms: "Terms of Service",
+                    contact: "Contact"
+                },
+                shortVowels: {
+                    title: "Short Vowels",
+                    subtitle: "Master the five short vowel sounds: /æ/, /ɛ/, /ɪ/, /ɒ/, /ʌ/",
+                    intro: "Short vowels are the most common vowel sounds in English. They are quick, crisp sounds produced with a relaxed tongue. Practice listening and repeating each word below, then test yourself with the quiz!",
+                    a: {
+                        sound: "/æ/ as in \"cat\"",
+                        desc: "This sound is made with a wide mouth, tongue low and forward. Click the words to hear them."
+                    },
+                    e: {
+                        sound: "/ɛ/ as in \"bed\"",
+                        desc: "Mouth slightly open, tongue mid‑height, lips relaxed. Click to listen."
+                    },
+                    i: {
+                        sound: "/ɪ/ as in \"sit\"",
+                        desc: "A short, relaxed sound. Tongue is high but not tense. Click to hear."
+                    },
+                    o: {
+                        sound: "/ɒ/ as in \"hot\"",
+                        desc: "Mouth open, tongue low and back. In American English, it's closer to /ɑ/. Click to listen."
+                    },
+                    u: {
+                        sound: "/ʌ/ as in \"cup\"",
+                        desc: "Tongue mid‑central, mouth slightly open. A very relaxed \"uh\" sound."
+                    },
+                    quiz: {
+    title: "🎯 Quick Quiz: Fill the Missing Vowel",
+    instruction: "Listen to the word and click the correct missing vowel.",
+    listen: "🔊 Listen",
+    next: "Next Word ➜",
+    correct: "✅ Correct! The word is <strong>{word}</strong>.",
+    incorrect: "❌ Not quite. The correct vowel is <strong>{vowel}</strong>. The word is <strong>{word}</strong>.",
+    complete: "🎯 Quiz Complete!",
+    score: "Your score: {correct} out of {total}",
+    restart: "🔁 Play Again"
+}
+                }
+            },
+            fr: {
+                common: {
+                    siteName: "English Hub",
+                    backToClearSpeech: "← Retour à Clear Speech Fun"
+                },
+                footer: {
+                    developer: "Développeur : Mejri Ziad",
+                    privacy: "Politique de confidentialité",
+                    terms: "Conditions d'utilisation",
+                    contact: "Contact"
+                },
+                shortVowels: {
+                    title: "Voyelles courtes",
+                    subtitle: "Maîtrisez les cinq sons des voyelles courtes : /æ/, /ɛ/, /ɪ/, /ɒ/, /ʌ/",
+                    intro: "Les voyelles courtes sont les sons vocaliques les plus courants en anglais. Ce sont des sons rapides et nets produits avec une langue relâchée. Entraînez‑vous à écouter et à répéter chaque mot ci‑dessous, puis testez‑vous avec le quiz !",
+                    a: {
+                        sound: "/æ/ comme dans \"cat\"",
+                        desc: "Ce son est produit avec une bouche large, langue basse et avancée. Cliquez sur les mots pour les entendre."
+                    },
+                    e: {
+                        sound: "/ɛ/ comme dans \"bed\"",
+                        desc: "Bouche légèrement ouverte, langue à mi‑hauteur, lèvres relâchées."
+                    },
+                    i: {
+                        sound: "/ɪ/ comme dans \"sit\"",
+                        desc: "Un son court et relâché. La langue est haute mais pas tendue."
+                    },
+                    o: {
+                        sound: "/ɒ/ comme dans \"hot\"",
+                        desc: "Bouche ouverte, langue basse et en arrière. En anglais américain, il se rapproche de /ɑ/."
+                    },
+                    u: {
+                        sound: "/ʌ/ comme dans \"cup\"",
+                        desc: "Langue au centre, bouche légèrement ouverte. Un son \"uh\" très relâché."
+                    },
+                    quiz: {
+    title: "🎯 Quiz rapide : Remplissez la voyelle manquante",
+    instruction: "Écoutez le mot et cliquez sur la voyelle correcte.",
+    listen: "🔊 Écouter",
+    next: "Mot suivant ➜",
+    correct: "✅ Correct ! Le mot est <strong>{word}</strong>.",
+    incorrect: "❌ Pas tout à fait. La voyelle correcte est <strong>{vowel}</strong>. Le mot est <strong>{word}</strong>.",
+    complete: "🎯 Quiz terminé !",
+    score: "Votre score : {correct} sur {total}",
+    restart: "🔁 Rejouer"
+}
+                }
+            },
+            ar: {
+                common: {
+                    siteName: "English Hub",
+                    backToClearSpeech: "← العودة إلى Clear Speech Fun"
+                },
+                footer: {
+                    developer: "المطور: ماجري زياد",
+                    privacy: "سياسة الخصوصية",
+                    terms: "شروط الخدمة",
+                    contact: "اتصل بنا"
+                },
+                shortVowels: {
+                    title: "الحركات القصيرة",
+                    subtitle: "أتقن أصوات الحركات القصيرة الخمسة: /æ/, /ɛ/, /ɪ/, /ɒ/, /ʌ/",
+                    intro: "الحركات القصيرة هي أكثر أصوات العلة شيوعًا في اللغة الإنجليزية. إنها أصوات سريعة وواضحة تُنتج بلسان مرتخٍ. تدرب على الاستماع وتكرار كل كلمة أدناه، ثم اختبر نفسك بالاختبار!",
+                    a: {
+                        sound: "/æ/ كما في \"cat\"",
+                        desc: "يتم إصدار هذا الصوت بفم واسع ولسان منخفض ومتقدم. انقر على الكلمات لسماعها."
+                    },
+                    e: {
+                        sound: "/ɛ/ كما في \"bed\"",
+                        desc: "فم مفتوح قليلاً، اللسان في منتصف الارتفاع، الشفاه مرتخية."
+                    },
+                    i: {
+                        sound: "/ɪ/ كما في \"sit\"",
+                        desc: "صوت قصير ومرتخٍ. اللسان مرتفع لكن ليس متوترًا."
+                    },
+                    o: {
+                        sound: "/ɒ/ كما في \"hot\"",
+                        desc: "فم مفتوح، لسان منخفض ومتراجع. في الإنجليزية الأمريكية، يقترب من /ɑ/."
+                    },
+                    u: {
+                        sound: "/ʌ/ كما في \"cup\"",
+                        desc: "اللسان في المنتصف، الفم مفتوح قليلاً. صوت \"اه\" مرتخٍ جدًا."
+                    },
+                   quiz: {
+    title: "🎯 اختبار سريع: املأ الحركة الناقصة",
+    instruction: "استمع إلى الكلمة وانقر على الحركة الصحيحة.",
+    listen: "🔊 استمع",
+    next: "الكلمة التالية ➜",
+    correct: "✅ صحيح! الكلمة هي <strong>{word}</strong>.",
+    incorrect: "❌ ليس تماماً. الحركة الصحيحة هي <strong>{vowel}</strong>. الكلمة هي <strong>{word}</strong>.",
+    complete: "🎯 اكتمل الاختبار!",
+    score: "نتيجتك: {correct} من {total}",
+    restart: "🔁 العب مرة أخرى"
+}
+                }
+            }
+        };
+    </script>
+
+    <!-- ========== GAME LOGIC ========== -->
+    <script>
+    // ========== LANGUAGE HANDLING ==========
+    let currentLanguage = localStorage.getItem('preferredLanguage') || 'en';
+
+    // ========== LISTEN & REPEAT (word buttons) ==========
+    document.querySelectorAll('.word-btn[data-word]').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const word = this.getAttribute('data-word');
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(word);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.8;
+                window.speechSynthesis.speak(utterance);
+            } else {
+                alert('Your browser does not support speech synthesis.');
+            }
+        });
+    });
+
+    // ========== AUDIO PLAYER ==========
+    function playSound(action) {
+        try {
+            const audio = new Audio(`assets3/general/audios/${action}.mp3`);
+            audio.play().catch(err => console.warn(`Sound "${action}" could not be played:`, err));
+        } catch (e) {
+            console.warn('Audio not supported:', e);
+        }
+    }
+
+    // ========== QUIZ LOGIC (REVISED) ==========
+    const quizWords = [
+        { word: 'cat', missing: 'a', display: 'c_t' },
+        { word: 'bed', missing: 'e', display: 'b_d' },
+        { word: 'sit', missing: 'i', display: 's_t' },
+        { word: 'hot', missing: 'o', display: 'h_t' },
+        { word: 'cup', missing: 'u', display: 'c_p' },
+        { word: 'hat', missing: 'a', display: 'h_t' },
+        { word: 'red', missing: 'e', display: 'r_d' },
+        { word: 'big', missing: 'i', display: 'b_g' },
+        { word: 'box', missing: 'o', display: 'b_x' },
+        { word: 'sun', missing: 'u', display: 's_n' }
+    ];
+
+    let shuffledQuizWords = [...quizWords].sort(() => Math.random() - 0.5);
+    let currentIndex = 0;
+    let score = { correct: 0, total: 0 };
+    let gameEnded = false;
+    let isAnswering = false;
+    let currentQuizWord = null;
+
+    const quizWordDisplay = document.getElementById('quiz-word-display');
+    const quizResult = document.getElementById('quiz-result');
+    const quizSpeakBtn = document.getElementById('quiz-speak-btn');
+    const quizNextBtn = document.getElementById('quiz-next-btn');
+    const quizOptions = document.querySelectorAll('.quiz-option');
+
+    // Helper to get translation string with placeholder replacement
+    function getQuizTranslation(key, replacements = {}) {
+        const quizTrans = translations[currentLanguage]?.shortVowels?.quiz;
+        if (!quizTrans) return key;
+        let text = quizTrans[key] || translations.en.shortVowels.quiz[key] || key;
+        for (const [placeholder, value] of Object.entries(replacements)) {
+            text = text.replace(`{${placeholder}}`, value);
+        }
+        return text;
+    }
+
+    function updateQuizButtonText() {
+        if (gameEnded) {
+            quizNextBtn.textContent = getQuizTranslation('restart');
+        } else {
+            quizNextBtn.textContent = getQuizTranslation('next');
+        }
+    }
+
+    function displayFinalScore() {
+        const scoreText = getQuizTranslation('score', {
+            correct: score.correct,
+            total: score.total
+        });
+        quizWordDisplay.textContent = getQuizTranslation('complete');
+        quizResult.innerHTML = scoreText;
+        quizResult.style.color = '#fff';
+    }
+
+    function loadNewQuizWord() {
+        if (currentIndex >= shuffledQuizWords.length) {
+            endQuiz();
+            return;
+        }
+        currentQuizWord = shuffledQuizWords[currentIndex];
+        quizWordDisplay.textContent = currentQuizWord.display;
+        quizResult.textContent = '';
+        quizNextBtn.style.display = 'none';
+        gameEnded = false;
+        isAnswering = false;
+        updateQuizButtonText();
+    }
+
+    function endQuiz() {
+        gameEnded = true;
+        isAnswering = false;
+        displayFinalScore();
+        quizNextBtn.style.display = 'block';
+        updateQuizButtonText();
+
+        // Play final score sound and show visual effect
+        if (score.correct === score.total) {
+            playSound('completed-total-success');
+            showVisualEffect('total-success');
+        } else if (score.correct === 0) {
+            playSound('completed-total-failure');
+            showVisualEffect('total-failure');
+        } else if (score.correct > score.total / 2) {
+            playSound('score-greater-than-half');
+            showVisualEffect('greater-half');
+        } else {
+            playSound('score-lesser-or-equal-half');
+            showVisualEffect('lesser-half');
+        }
+    }
+
+    function showVisualEffect(type) {
+        const overlay = document.getElementById('visual-effect-overlay');
+        if (!overlay) return;
+
+        const content = document.createElement('div');
+        content.className = 'effect-content';
+
+        let overlayClass = 'visual-effect-overlay active ';
+        switch(type) {
+            case 'total-success':
+                overlayClass += 'effect-total-success';
+                content.textContent = '🎉';
+                break;
+            case 'total-failure':
+                overlayClass += 'effect-total-failure';
+                content.textContent = '😢';
+                break;
+            case 'greater-half':
+                overlayClass += 'effect-greater-half';
+                content.textContent = '👍';
+                break;
+            case 'lesser-half':
+                overlayClass += 'effect-lesser-half';
+                content.textContent = '🤔';
+                break;
+            default:
+                return;
+        }
+
+        overlay.innerHTML = '';
+        overlay.appendChild(content);
+        overlay.className = overlayClass;
+
+        // Hide after 2 seconds, then clean up after fade-out
+        setTimeout(() => {
+            overlay.classList.remove('active');
+            setTimeout(() => {
+                overlay.className = 'visual-effect-overlay';
+                overlay.innerHTML = '';
+            }, 400); // matches transition duration
+        }, 2000);
+    }
+
+    function restartQuiz() {
+        shuffledQuizWords = [...quizWords].sort(() => Math.random() - 0.5);
+        currentIndex = 0;
+        score = { correct: 0, total: 0 };
+        gameEnded = false;
+        isAnswering = false;
+        quizNextBtn.style.display = 'none';
+        loadNewQuizWord();
+    }
+
+    function speakQuizWord() {
+        if (currentQuizWord && 'speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(currentQuizWord.word);
+            utterance.lang = 'en-US';
+            utterance.rate = 0.8;
+            window.speechSynthesis.speak(utterance);
+        }
+    }
+
+    // Answer click handler
+    quizOptions.forEach(option => {
+        option.addEventListener('click', function() {
+            if (gameEnded || isAnswering || !currentQuizWord) return;
+
+            // Play click sound immediately
+            playSound('click');
+
+            isAnswering = true;
+            const selectedVowel = this.getAttribute('data-vowel');
+            const isCorrect = selectedVowel === currentQuizWord.missing;
+
+            score.total++;
+            if (isCorrect) score.correct++;
+
+            // Play correct/incorrect sound after a short delay
+            setTimeout(() => {
+                playSound(isCorrect ? 'correct' : 'incorrect');
+            }, 150);
+
+            // Use translated feedback
+            const feedback = isCorrect
+                ? getQuizTranslation('correct', { word: currentQuizWord.word })
+                : getQuizTranslation('incorrect', {
+                    vowel: currentQuizWord.missing.toUpperCase(),
+                    word: currentQuizWord.word
+                });
+            quizResult.innerHTML = feedback;
+            quizResult.style.color = isCorrect ? '#c8e6c9' : '#ffccbc';
+
+            // Advance to next word after a short delay
+            setTimeout(() => {
+                currentIndex++;
+                if (currentIndex < shuffledQuizWords.length) {
+                    loadNewQuizWord();
+                } else {
+                    endQuiz();
+                }
+            }, 1200);
+        });
+    });
+
+    quizSpeakBtn.addEventListener('click', speakQuizWord);
+    quizNextBtn.addEventListener('click', () => {
+        if (gameEnded) restartQuiz();
+    });
+
+    // ========== BILINGUAL TRANSLATION FUNCTION ==========
+    function applyBilingualTranslations(lang) {
+        currentLanguage = lang;
+        const enData = translations.en;
+        function getTranslation(obj, path) {
+            const keys = path.split('.');
+            let val = obj;
+            for (const k of keys) {
+                if (val && typeof val === 'object') val = val[k];
+                else return undefined;
+            }
+            return val;
+        }
+
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            const enText = getTranslation(enData, key) || key;
+            const transText = lang !== 'en' ? (getTranslation(translations[lang], key) || enText) : '';
+
+            if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+                if (el.hasAttribute('data-i18n-placeholder')) {
+                    const placeholderKey = el.getAttribute('data-i18n-placeholder');
+                    const placeholderEn = getTranslation(enData, placeholderKey) || '';
+                    const placeholderTrans = lang !== 'en' ? (getTranslation(translations[lang], placeholderKey) || placeholderEn) : placeholderEn;
+                    el.placeholder = lang === 'en' ? placeholderEn : placeholderTrans + ' / ' + placeholderEn;
+                }
+            } else {
+                el.innerHTML = lang === 'en' ? enText : `<span class="en-text">${enText}</span><span class="trans-text">${transText}</span>`;
+            }
+        });
+
+        document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+
+        // Update quiz button text and final score if game ended
+        updateQuizButtonText();
+        if (gameEnded) {
+            displayFinalScore();
+        }
+    }
+
+    // ========== LANGUAGE SELECTOR EVENT ==========
+    const langSelector = document.getElementById('language-selector');
+    langSelector.value = currentLanguage;
+    langSelector.addEventListener('change', function() {
+        const lang = this.value;
+        localStorage.setItem('preferredLanguage', lang);
+        applyBilingualTranslations(lang);
+    });
+
+    // Initialize
+    applyBilingualTranslations(currentLanguage);
+    loadNewQuizWord();
+</script>
+</body>
+</html>

@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Syllable Rhythm – Clear Speech Fun</title>
+    <link rel="stylesheet" href="styles/common.css">
+    <style>
+        * {
+            margin: 0; padding: 0; box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            min-height: 100vh; display: flex; flex-direction: column; padding: 20px;
+        }
+        .lesson-container {
+            max-width: 900px; margin: 0 auto; width: 100%; flex: 1;
+        }
+        .lesson-content {
+            background: rgba(255, 255, 255, 0.92); border-radius: 25px;
+            padding: 35px; box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+            margin-bottom: 30px; border: 2px solid rgba(255,255,255,0.3);
+        }
+        .lesson-intro {
+            font-size: 1.15rem; line-height: 1.7; color: #333; text-align: center;
+            margin-bottom: 30px; padding: 20px;
+            background: linear-gradient(to right, #f8f9fa, #e9ecef);
+            border-radius: 15px; border-left: 6px solid #11998e;
+        }
+        .rhythm-section {
+            background: white; border-radius: 18px; padding: 25px;
+            margin-bottom: 30px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .section-title {
+            font-size: 1.4rem; font-weight: bold; color: #1a2a6c;
+            margin-bottom: 15px;
+        }
+        .pattern-visual {
+            font-size: 2rem; letter-spacing: 5px; margin: 10px 0;
+            color: #e94560;
+        }
+        .word-list {
+            display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px;
+        }
+        .word-btn {
+            background: #4e54c8; color: white; border: none;
+            padding: 10px 20px; border-radius: 25px; cursor: pointer;
+            font-size: 1.1rem; transition: background 0.3s, transform 0.2s;
+        }
+        .word-btn:hover { background: #3f46c5; transform: scale(1.05); }
+        .quiz-box {
+            background: linear-gradient(135deg, #fdbb2d, #f46b45);
+            color: white; border-radius: 20px; padding: 30px;
+            text-align: center; margin-top: 30px;
+        }
+        .quiz-word {
+            font-size: 2rem; margin-bottom: 20px; font-weight: bold;
+        }
+        .quiz-options {
+            display: flex; justify-content: center; gap: 15px; flex-wrap: wrap;
+        }
+        .quiz-option {
+            background: white; color: #333; border: none;
+            padding: 12px 22px; border-radius: 25px;
+            font-size: 1.2rem; font-weight: bold; cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            min-width: 120px;
+        }
+        .quiz-option:hover { transform: scale(1.1); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .quiz-result {
+            margin-top: 20px; font-size: 1.3rem; min-height: 30px;
+        }
+        .back-btn {
+            display: block; margin: 0 auto 20px;
+            background: #fdbb2d; color: white; border: none;
+            padding: 12px 30px; border-radius: 25px; cursor: pointer;
+            font-weight: bold; font-size: 1rem; transition: background 0.3s;
+        }
+        .back-btn:hover { background: #f7a900; }
+
+        /* Bilingual styles */
+        .en-text { font-weight: normal; }
+        .trans-text { display: block; font-size: 0.9em; opacity: 0.8; margin-top: 2px; }
+
+        @media (max-width: 600px) {
+            .lesson-content { padding: 20px; }
+            .pattern-visual { font-size: 1.4rem; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Language Selector -->
+    <div style="position: fixed; top: 20px; right: 20px; z-index: 1000;">
+        <select id="language-selector" style="padding: 8px 12px; border-radius: 8px; border: 2px solid #fff; background: rgba(255,255,255,0.9); color: #333; font-weight: bold;">
+            <option value="en">English</option>
+            <option value="fr">Français</option>
+            <option value="ar">العربية</option>
+        </select>
+    </div>
+
+    <!-- Site Header -->
+    <div class="EH-site-header">
+        <a href="index.html" class="EH-site-logo-link" title="Main Page">
+            <img src="assets/icons/icon-192x192.png" alt="English Hub Logo" class="EH-site-logo">
+        </a>
+        <span class="EH-site-name" data-i18n="common.siteName">English Hub</span>
+    </div>
+
+    <div class="lesson-container">
+        <header class="EH-common-header">
+            <h1 class="EH-common-title" data-i18n="rhythm.title">Syllable Rhythm</h1>
+            <p class="EH-common-subtitle" data-i18n="rhythm.subtitle">Master the music of English: stressed and unstressed syllables</p>
+        </header>
+
+        <div class="lesson-content">
+            <p class="lesson-intro" data-i18n="rhythm.intro">
+                English is a <strong>stress‑timed</strong> language. This means some syllables are longer, louder, and higher in pitch, while others are reduced.
+                Getting the rhythm right makes you sound more natural. Below you'll explore common stress patterns, then test your ear.
+                <br>🔊 <em>Click any word to hear it pronounced.</em>
+            </p>
+
+            <!-- Two-syllable words -->
+            <div class="rhythm-section">
+                <h2 class="section-title" data-i18n="rhythm.twosyllable.title">Two‑Syllable Words</h2>
+
+                <!-- Stress on first syllable -->
+                <p data-i18n="rhythm.twosyllable.first.title">🔹 Stress on the <strong>first</strong> syllable (O o)</p>
+                <div class="pattern-visual">O o</div>
+                <div class="word-list">
+                    <button class="word-btn" data-word="TAble">TAble</button>
+                    <button class="word-btn" data-word="HAPpy">HAPpy</button>
+                    <button class="word-btn" data-word="PICture">PICture</button>
+                    <button class="word-btn" data-word="WINdow">WINdow</button>
+                    <button class="word-btn" data-word="FLOWer">FLOWer</button>
+                </div>
+
+                <!-- Stress on second syllable -->
+                <p style="margin-top:20px;" data-i18n="rhythm.twosyllable.second.title">🔹 Stress on the <strong>second</strong> syllable (o O)</p>
+                <div class="pattern-visual">o O</div>
+                <div class="word-list">
+                    <button class="word-btn" data-word="aGAIN">aGAIN</button>
+                    <button class="word-btn" data-word="toDAY">toDAY</button>
+                    <button class="word-btn" data-word="beLOW">beLOW</button>
+                    <button class="word-btn" data-word="corRECT">corRECT</button>
+                    <button class="word-btn" data-word="poLICE">poLICE</button>
+                </div>
+            </div>
+
+            <!-- Three-syllable words -->
+            <div class="rhythm-section">
+                <h2 class="section-title" data-i18n="rhythm.threesyllable.title">Three‑Syllable Words</h2>
+
+                <!-- Stress on first syllable -->
+                <p data-i18n="rhythm.threesyllable.first.title">🔹 Stress on <strong>first</strong> syllable (O o o)</p>
+                <div class="pattern-visual">O o o</div>
+                <div class="word-list">
+                    <button class="word-btn" data-word="BEAUtiful">BEAUtiful</button>
+                    <button class="word-btn" data-word="FAMily">FAMily</button>
+                    <button class="word-btn" data-word="CHOColate">CHOColate</button>
+                </div>
+
+                <!-- Stress on second syllable -->
+                <p style="margin-top:20px;" data-i18n="rhythm.threesyllable.second.title">🔹 Stress on <strong>second</strong> syllable (o O o)</p>
+                <div class="pattern-visual">o O o</div>
+                <div class="word-list">
+                    <button class="word-btn" data-word="toMOrrow">toMOrrow</button>
+                    <button class="word-btn" data-word="comPUter">comPUter</button>
+                    <button class="word-btn" data-word="baNAna">baNAna</button>
+                </div>
+
+                <!-- Stress on third syllable -->
+                <p style="margin-top:20px;" data-i18n="rhythm.threesyllable.third.title">🔹 Stress on <strong>third</strong> syllable (o o O)</p>
+                <div class="pattern-visual">o o O</div>
+                <div class="word-list">
+                    <button class="word-btn" data-word="afterNOON">afterNOON</button>
+                    <button class="word-btn" data-word="underSTAND">underSTAND</button>
+                    <button class="word-btn" data-word="engiNEER">engiNEER</button>
+                </div>
+            </div>
+
+            <!-- Compound words -->
+            <div class="rhythm-section">
+                <h2 class="section-title" data-i18n="rhythm.compound.title">Compound Words</h2>
+                <p data-i18n="rhythm.compound.desc">Most compound nouns are stressed on the <strong>first</strong> word.</p>
+                <div class="word-list">
+                    <button class="word-btn" data-word="BLACKboard">BLACKboard</button>
+                    <button class="word-btn" data-word="FOOTball">FOOTball</button>
+                    <button class="word-btn" data-word="SUNglasses">SUNglasses</button>
+                    <button class="word-btn" data-word="HAIRcut">HAIRcut</button>
+                </div>
+            </div>
+
+            <!-- Quiz: Identify stressed syllable -->
+            <div class="quiz-box" id="quiz-box">
+                <h2 data-i18n="rhythm.quiz.title">🎯 Quiz: Which Syllable Is Stressed?</h2>
+                <p data-i18n="rhythm.quiz.instruction">Listen to the word and click the syllable that receives the main stress.</p>
+                <button class="word-btn" id="quiz-speak-btn" data-i18n="rhythm.quiz.listen">🔊 Listen</button>
+                <div class="quiz-word" id="quiz-word-display">toMOrrow</div>
+                <div class="quiz-options" id="quiz-options-container">
+                    <!-- Options generated dynamically -->
+                </div>
+                <div class="quiz-result" id="quiz-result"></div>
+                <button class="word-btn" id="quiz-next-btn" style="margin-top:15px;" data-i18n="rhythm.quiz.next">Next Word ➜</button>
+            </div>
+
+            <button class="back-btn" onclick="window.location.href='Clear-Speech-Fun.html'" data-i18n="common.backToClearSpeech">← Back to Clear Speech Fun</button>
+        </div>
+    </div>
+
+    <footer class="EH-common-footer">
+        <div class="EH-common-footer-content">
+            <div class="EH-common-footer-developer" data-i18n="footer.developer">Developer: Mejri Ziad</div>
+            <div class="EH-common-footer-links">
+                <a href="policy.html" data-i18n="footer.privacy">Privacy Policy</a>
+                <a href="terms.html" data-i18n="footer.terms">Terms of Service</a>
+                <a href="contact.html" data-i18n="footer.contact">Contact</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ========== TRANSLATION DATA ========== -->
+    <script>
+        const translations = {
+            en: {
+                common: {
+                    siteName: "English Hub",
+                    backToClearSpeech: "← Back to Clear Speech Fun"
+                },
+                footer: {
+                    developer: "Developer: Mejri Ziad",
+                    privacy: "Privacy Policy",
+                    terms: "Terms of Service",
+                    contact: "Contact"
+                },
+                rhythm: {
+                    title: "Syllable Rhythm",
+                    subtitle: "Master the music of English: stressed and unstressed syllables",
+                    intro: "English is a <strong>stress‑timed</strong> language. This means some syllables are longer, louder, and higher in pitch, while others are reduced. Getting the rhythm right makes you sound more natural. Below you'll explore common stress patterns, then test your ear. 🔊 <em>Click any word to hear it pronounced.</em>",
+                    twosyllable: {
+                        title: "Two‑Syllable Words",
+                        first: {
+                            title: "🔹 Stress on the <strong>first</strong> syllable (O o)"
+                        },
+                        second: {
+                            title: "🔹 Stress on the <strong>second</strong> syllable (o O)"
+                        }
+                    },
+                    threesyllable: {
+                        title: "Three‑Syllable Words",
+                        first: {
+                            title: "🔹 Stress on <strong>first</strong> syllable (O o o)"
+                        },
+                        second: {
+                            title: "🔹 Stress on <strong>second</strong> syllable (o O o)"
+                        },
+                        third: {
+                            title: "🔹 Stress on <strong>third</strong> syllable (o o O)"
+                        }
+                    },
+                    compound: {
+                        title: "Compound Words",
+                        desc: "Most compound nouns are stressed on the <strong>first</strong> word."
+                    },
+                    quiz: {
+                        title: "🎯 Quiz: Which Syllable Is Stressed?",
+                        instruction: "Listen to the word and click the syllable that receives the main stress.",
+                        listen: "🔊 Listen",
+                        next: "Next Word ➜"
+                    }
+                }
+            },
+            fr: {
+                common: {
+                    siteName: "English Hub",
+                    backToClearSpeech: "← Retour à Clear Speech Fun"
+                },
+                footer: {
+                    developer: "Développeur : Mejri Ziad",
+                    privacy: "Politique de confidentialité",
+                    terms: "Conditions d'utilisation",
+                    contact: "Contact"
+                },
+                rhythm: {
+                    title: "Rythme syllabique",
+                    subtitle: "Maîtrisez la musique de l'anglais : syllabes accentuées et inaccentuées",
+                    intro: "L'anglais est une langue <strong>à rythme accentuel</strong>. Cela signifie que certaines syllabes sont plus longues, plus fortes et plus aiguës, tandis que d'autres sont réduites. Maîtriser le rythme vous fait paraître plus naturel. Explorez ci‑dessous les schémas d'accentuation courants, puis testez votre oreille. 🔊 <em>Cliquez sur un mot pour l'entendre.</em>",
+                    twosyllable: {
+                        title: "Mots de deux syllabes",
+                        first: { title: "🔹 Accent sur la <strong>première</strong> syllabe (O o)" },
+                        second: { title: "🔹 Accent sur la <strong>deuxième</strong> syllabe (o O)" }
+                    },
+                    threesyllable: {
+                        title: "Mots de trois syllabes",
+                        first: { title: "🔹 Accent sur la <strong>première</strong> syllabe (O o o)" },
+                        second: { title: "🔹 Accent sur la <strong>deuxième</strong> syllabe (o O o)" },
+                        third: { title: "🔹 Accent sur la <strong>troisième</strong> syllabe (o o O)" }
+                    },
+                    compound: {
+                        title: "Mots composés",
+                        desc: "La plupart des noms composés sont accentués sur le <strong>premier</strong> mot."
+                    },
+                    quiz: {
+                        title: "🎯 Quiz : Quelle syllabe est accentuée ?",
+                        instruction: "Écoutez le mot et cliquez sur la syllabe qui porte l'accent principal.",
+                        listen: "🔊 Écouter",
+                        next: "Mot suivant ➜"
+                    }
+                }
+            },
+            ar: {
+                common: {
+                    siteName: "English Hub",
+                    backToClearSpeech: "← العودة إلى Clear Speech Fun"
+                },
+                footer: {
+                    developer: "المطور: ماجري زياد",
+                    privacy: "سياسة الخصوصية",
+                    terms: "شروط الخدمة",
+                    contact: "اتصل بنا"
+                },
+                rhythm: {
+                    title: "إيقاع المقاطع",
+                    subtitle: "أتقن موسيقى اللغة الإنجليزية: المقاطع المشددة وغير المشددة",
+                    intro: "اللغة الإنجليزية <strong>ذات إيقاع نَبْري</strong>. هذا يعني أن بعض المقاطع أطول وأعلى وأقوى، بينما تُختزل أخرى. إتقان الإيقاع يجعلك تبدو طبيعياً أكثر. استكشف أدناه أنماط النبر الشائعة، ثم اختبر أذنك. 🔊 <em>انقر على أي كلمة لسماعها.</em>",
+                    twosyllable: {
+                        title: "كلمات من مقطعين",
+                        first: { title: "🔹 النبر على <strong>المقطع الأول</strong> (O o)" },
+                        second: { title: "🔹 النبر على <strong>المقطع الثاني</strong> (o O)" }
+                    },
+                    threesyllable: {
+                        title: "كلمات من ثلاثة مقاطع",
+                        first: { title: "🔹 النبر على <strong>المقطع الأول</strong> (O o o)" },
+                        second: { title: "🔹 النبر على <strong>المقطع الثاني</strong> (o O o)" },
+                        third: { title: "🔹 النبر على <strong>المقطع الثالث</strong> (o o O)" }
+                    },
+                    compound: {
+                        title: "الكلمات المركبة",
+                        desc: "معظم الأسماء المركبة يُنْبَر على <strong>الكلمة الأولى</strong>."
+                    },
+                    quiz: {
+                        title: "🎯 اختبار: أي مقطع يُنبر؟",
+                        instruction: "استمع إلى الكلمة وانقر على المقطع الذي يحمل النبر الرئيسي.",
+                        listen: "🔊 استمع",
+                        next: "الكلمة التالية ➜"
+                    }
+                }
+            }
+        };
+    </script>
+
+    <!-- ========== GAME LOGIC ========== -->
+    <script>
+        // ========== LISTEN & REPEAT (word buttons) ==========
+        document.querySelectorAll('.word-btn[data-word]').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const word = this.getAttribute('data-word');
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
+                    const utterance = new SpeechSynthesisUtterance(word);
+                    utterance.lang = 'en-US';
+                    utterance.rate = 0.85;
+                    window.speechSynthesis.speak(utterance);
+                }
+            });
+        });
+
+        // ========== QUIZ LOGIC ==========
+        // Quiz items: { word (plain), displayWord (optional, can be formatted), stressedSyllable (number 1, 2, 3...), options array of syllable numbers }
+        const quizItems = [
+            { word: 'table', stressed: 1 },
+            { word: 'again', stressed: 2 },
+            { word: 'happy', stressed: 1 },
+            { word: 'police', stressed: 2 },
+            { word: 'beautiful', stressed: 1 },
+            { word: 'tomorrow', stressed: 2 },
+            { word: 'computer', stressed: 2 },
+            { word: 'afternoon', stressed: 3 },
+            { word: 'understand', stressed: 3 },
+            { word: 'engineer', stressed: 3 }
+        ];
+
+        let currentQuizItem = null;
+        const quizWordDisplay = document.getElementById('quiz-word-display');
+        const quizResult = document.getElementById('quiz-result');
+        const quizSpeakBtn = document.getElementById('quiz-speak-btn');
+        const quizNextBtn = document.getElementById('quiz-next-btn');
+        const quizOptionsContainer = document.getElementById('quiz-options-container');
+
+        function loadNewQuizWord() {
+            const randomIndex = Math.floor(Math.random() * quizItems.length);
+            currentQuizItem = quizItems[randomIndex];
+            // Display word with the stressed syllable in uppercase (just for visual cue, but we hide which one is stressed)
+            // Actually we display the word as plain text; the learner must listen. To avoid giving away the answer, we display all lowercase.
+            quizWordDisplay.textContent = currentQuizItem.word.charAt(0).toUpperCase() + currentQuizItem.word.slice(1);
+            quizResult.textContent = '';
+
+            // Determine number of syllables (approximate by counting vowel groups, but we'll hardcode based on word)
+            // We'll just generate options 1 to 3 (or more) depending on word. Since our quiz items have known syllable counts, we can predefine.
+            const syllableCount = {
+                'table': 2,
+                'again': 2,
+                'happy': 2,
+                'police': 2,
+                'beautiful': 3,
+                'tomorrow': 3,
+                'computer': 3,
+                'afternoon': 3,
+                'understand': 3,
+                'engineer': 3
+            };
+            const count = syllableCount[currentQuizItem.word] || 3;
+
+            quizOptionsContainer.innerHTML = '';
+            for (let i = 1; i <= count; i++) {
+                const btn = document.createElement('button');
+                btn.className = 'quiz-option';
+                // Label the syllable as "1st", "2nd", "3rd"
+                const labels = ['', '1st', '2nd', '3rd'];
+                btn.textContent = labels[i] + ' syllable';
+                btn.setAttribute('data-syllable', i);
+                btn.addEventListener('click', function() {
+                    const selected = parseInt(this.getAttribute('data-syllable'));
+                    if (selected === currentQuizItem.stressed) {
+                        quizResult.innerHTML = '✅ Correct! The stress falls on the <strong>' + selected + getOrdinalSuffix(selected) + '</strong> syllable in <strong>"' + currentQuizItem.word + '"</strong>.';
+                        quizResult.style.color = '#c8e6c9';
+                    } else {
+                        quizResult.innerHTML = '❌ Not quite. The stress is on the <strong>' + currentQuizItem.stressed + getOrdinalSuffix(currentQuizItem.stressed) + '</strong> syllable. The word is <strong>"' + currentQuizItem.word + '"</strong>.';
+                        quizResult.style.color = '#ffccbc';
+                    }
+                });
+                quizOptionsContainer.appendChild(btn);
+            }
+        }
+
+        function getOrdinalSuffix(n) {
+            if (n === 1) return 'st';
+            if (n === 2) return 'nd';
+            if (n === 3) return 'rd';
+            return 'th';
+        }
+
+        function speakQuizWord() {
+            if (currentQuizItem && 'speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(currentQuizItem.word);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.85;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        quizSpeakBtn.addEventListener('click', speakQuizWord);
+        quizNextBtn.addEventListener('click', loadNewQuizWord);
+
+        // Initialize
+        loadNewQuizWord();
+
+        // ========== BILINGUAL TRANSLATION ==========
+        function applyBilingualTranslations(lang) {
+            const enData = translations.en;
+            function getTranslation(obj, path) {
+                const keys = path.split('.');
+                let val = obj;
+                for (const k of keys) {
+                    if (val && typeof val === 'object') val = val[k];
+                    else return undefined;
+                }
+                return val;
+            }
+
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                const enText = getTranslation(enData, key) || key;
+                const transText = lang !== 'en' ? (getTranslation(translations[lang], key) || enText) : '';
+
+                if (lang === 'en') {
+                    el.innerHTML = enText;
+                } else {
+                    el.innerHTML = `<span class="en-text">${enText}</span><span class="trans-text">${transText}</span>`;
+                }
+            });
+
+            document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+        }
+
+        const langSelector = document.getElementById('language-selector');
+        const savedLang = localStorage.getItem('preferredLanguage') || 'en';
+        langSelector.value = savedLang;
+        applyBilingualTranslations(savedLang);
+
+        langSelector.addEventListener('change', function() {
+            const lang = this.value;
+            localStorage.setItem('preferredLanguage', lang);
+            applyBilingualTranslations(lang);
+        });
+    </script>
+</body>
+</html>
