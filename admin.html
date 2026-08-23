@@ -434,7 +434,13 @@
                         <label>Body (French)</label>
                         <textarea id="notif-body-fr" rows="2" placeholder="Texte français"></textarea>
                     </div>
-                </details>
+                                </details>
+                <div class="form-group" style="margin-top:15px;">
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                        <input type="checkbox" id="send-push-checkbox" checked>
+                        Also send as web push notification
+                    </label>
+                </div>
                 <button class="btn btn-success" onclick="sendNotification()">Send Notification</button>
 				<hr style="margin:20px 0;">
 <h4>📜 Notification History</h4>
@@ -1846,23 +1852,81 @@ async function sendNotification() {
         return;
     }
 
-    const { error } = await supabaseClient.rpc('send_notification', {
-        p_title: title,
-        p_body: body,
-        p_target_type: targetType,
-        p_target_value: targetType === 'all' ? null : targetValue,
-        p_title_ar: titleAr,
-        p_title_en: titleEn,
-        p_title_fr: titleFr,
-        p_body_ar: bodyAr,
-        p_body_en: bodyEn,
-        p_body_fr: bodyFr
-    });
+    let inAppSuccess = false;
+    let pushSuccess = false;
+    const errors = [];
 
-    if (error) {
-        alert('Error sending notification: ' + error.message);
-        return;
+    // 1. Send in-app notification
+    try {
+        const { error } = await supabaseClient.rpc('send_notification', {
+            p_title: title,
+            p_body: body,
+            p_target_type: targetType,
+            p_target_value: targetType === 'all' ? null : targetValue,
+            p_title_ar: titleAr,
+            p_title_en: titleEn,
+            p_title_fr: titleFr,
+            p_body_ar: bodyAr,
+            p_body_en: bodyEn,
+            p_body_fr: bodyFr
+        });
+
+        if (error) {
+            errors.push('In-app: ' + error.message);
+        } else {
+            inAppSuccess = true;
+        }
+    } catch (err) {
+        errors.push('In-app: ' + err.message);
     }
+
+    // 2. Send web push notification (only if a checkbox is checked, or always if checkbox absent)
+    const pushCheckbox = document.getElementById('send-push-checkbox');
+    const shouldSendPush = pushCheckbox ? pushCheckbox.checked : true; // default true if no checkbox
+
+    if (shouldSendPush) {
+        try {
+            const pushResponse = await fetch(
+                'https://ewvvlqujimxdubreulni.supabase.co/functions/v1/send-push',
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title: title,
+                        body: body,
+                        target_type: targetType,
+                        target_value: targetType === 'all' ? null : targetValue
+                    })
+                }
+            );
+
+            if (!pushResponse.ok) {
+                errors.push('Web push: HTTP ' + pushResponse.status);
+            } else {
+                const pushResult = await pushResponse.json().catch(() => ({}));
+                if (pushResult.error) {
+                    errors.push('Web push: ' + pushResult.error);
+                } else {
+                    pushSuccess = true;
+                }
+            }
+        } catch (err) {
+            errors.push('Web push: ' + err.message);
+        }
+    }
+
+    // 3. Show feedback
+    if (inAppSuccess && pushSuccess) {
+        toast('Notification sent (in-app + web push)');
+    } else if (inAppSuccess) {
+        toast('In-app notification sent');
+    } else if (pushSuccess) {
+        toast('Web push notification sent');
+    } else {
+        toast('Notification failed: ' + errors.join(', '));
+    }
+
+    // Clear fields
     document.getElementById('notif-title').value = '';
     document.getElementById('notif-body').value = '';
     document.getElementById('notif-title-ar').value = '';
@@ -1871,7 +1935,6 @@ async function sendNotification() {
     document.getElementById('notif-body-ar').value = '';
     document.getElementById('notif-body-en').value = '';
     document.getElementById('notif-body-fr').value = '';
-    toast('Notification sent');
 }
 async function loadNotificationHistory() {
     const container = document.getElementById('notif-history-list');
