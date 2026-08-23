@@ -1951,7 +1951,7 @@ window.toast = toast;
 				updateAllPanels();
     subscribeToNotifications();
     loadNotifications();
-	subscribeForPushNotifications();
+    subscribeForPushNotifications(); 
 				loginForm.style.display = 'none';
 				userInfoDiv.style.display = 'flex';
 			}
@@ -2216,6 +2216,7 @@ window.toast = toast;
 							userInfoDiv.style.display = 'flex';
 							subscribeToNotifications();
 							loadNotifications();
+                subscribeForPushNotifications(); 
 							} else {
 							localStorage.removeItem(STORAGE_KEY_STUDENT_ID);
 							currentUser = null;
