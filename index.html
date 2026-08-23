@@ -1166,6 +1166,7 @@ const VAPID_PUBLIC_KEY = 'BKAovYnLBGttYz0N1yrwJsu8Dj_anomAHnpeSIxi0bGTWOpgKlk6Sd
 			const STORAGE_KEY_STUDENT_ID = 'edschedule_student_id';
 			let attendanceCalendarMonth = new Date();
 			let currentNotifications = [];
+			let notificationsChannel = null;
 			// ==================== DOM REFS ====================
 			const languageSelect = document.getElementById('language-select');
 			const themeToggle = document.getElementById('theme-toggle');
@@ -1529,17 +1530,19 @@ window.toast = toast;
 				notificationsModal.classList.remove('show');
 			}
 			function subscribeToNotifications() {
-				if (!currentUser || currentUser.isAdmin) return;
-				const channel = supabaseClient
-				.channel('notifications-' + currentUser.id)
-				.on(
-					'postgres_changes',
-					{
-						event: 'INSERT',
-						schema: 'public',
-						table: 'notifications',
-						filter: `user_id=eq.${currentUser.id}`
-					},
+    if (!currentUser || currentUser.isAdmin) return;
+    if (notificationsChannel) return; // already subscribed
+
+    notificationsChannel = supabaseClient
+        .channel('notifications-' + currentUser.id)
+        .on(
+            'postgres_changes',
+            {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'notifications',
+                filter: `user_id=eq.${currentUser.id}`
+            },
             (payload) => {
                 currentNotifications.unshift(payload.new);
                 const unreadCount = currentNotifications.filter(n => !n.read).length;
@@ -1547,9 +1550,9 @@ window.toast = toast;
                 toast(translations[currentLanguage].newNotification);
                 trackInteraction('notification_received');
             }
-				)
-				.subscribe();
-			}
+        )
+        .subscribe();
+}
 			async function subscribeForPushNotifications() {
     if (!currentUser || currentUser.isAdmin) return;
 
@@ -1960,6 +1963,10 @@ window.toast = toast;
 				if (currentUser) {
 					trackInteraction(currentUser.isAdmin ? 'admin_logout' : 'student_logout');
 				}
+				if (notificationsChannel) {
+    supabaseClient.removeChannel(notificationsChannel);
+    notificationsChannel = null;
+}
 				currentUser = null;
 				localStorage.removeItem(STORAGE_KEY_ADMIN);
 				localStorage.removeItem(STORAGE_KEY_STUDENT_ID);

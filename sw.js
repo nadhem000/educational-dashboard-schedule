@@ -1,6 +1,6 @@
 // EDSchedule Service Worker – development-friendly caching
 // Version bumped to v4 to clear old cache that might contain Supabase responses
-const CACHE_NAME = 'edschedule-cache-v36';
+const CACHE_NAME = 'edschedule-cache-v37';
 
 // Core assets to pre-cache on install
 const CORE_ASSETS = [
@@ -14,10 +14,13 @@ const CORE_ASSETS = [
 ];
 
 // Install event: pre-cache core files
+// Install event: pre-cache core files (resilient)
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(CORE_ASSETS))
+      .then(cache => Promise.allSettled(
+        CORE_ASSETS.map(url => cache.add(url))
+      ))
       .then(() => self.skipWaiting())
   );
 });
