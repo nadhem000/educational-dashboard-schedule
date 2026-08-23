@@ -1,6 +1,6 @@
 // EDSchedule Service Worker – development-friendly caching
 // Version bumped to v4 to clear old cache that might contain Supabase responses
-const CACHE_NAME = 'edschedule-cache-v32';
+const CACHE_NAME = 'edschedule-cache-v35';
 
 // Core assets to pre-cache on install
 const CORE_ASSETS = [
@@ -104,4 +104,49 @@ self.addEventListener('fetch', event => {
         });
       })
   );
+});
+// Handle push notifications
+self.addEventListener('push', event => {
+    let payload = { title: 'New Notification', body: 'You have a new message.' };
+
+    try {
+        if (event.data) {
+            const data = event.data.json();
+            payload = {
+                title: data.title || payload.title,
+                body: data.body || payload.body,
+                icon: data.icon || './assets/icons/icon-192x192.png',
+                badge: './assets/icons/icon-94x94.png',
+                data: data.url || './index.html'
+            };
+        }
+    } catch (err) {
+        console.warn('[SW] Push payload parse error', err);
+    }
+
+    event.waitUntil(
+        self.registration.showNotification(payload.title, {
+            body: payload.body,
+            icon: payload.icon,
+            badge: payload.badge,
+            data: payload.data
+        })
+    );
+});
+self.addEventListener('notificationclick', event => {
+    event.notification.close();
+    const urlToOpen = event.notification.data || './index.html';
+    event.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true })
+            .then(windowClients => {
+                for (const client of windowClients) {
+                    if ('focus' in client) {
+                        return client.focus();
+                    }
+                }
+                if (clients.openWindow) {
+                    return clients.openWindow(urlToOpen);
+                }
+            })
+    );
 });

@@ -998,7 +998,7 @@ body[dir="rtl"] {
 			const SUPABASE_URL = 'https://ewvvlqujimxdubreulni.supabase.co';
 			const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV3dnZscXVqaW14ZHVicmV1bG5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxMzc0ODAsImV4cCI6MjEwMjcxMzQ4MH0._-i_8bMsMM1uhmE024MrgWo66GAQjt8vONlur9LfOtg';
 			const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
+const VAPID_PUBLIC_KEY = 'BKAovYnLBGttYz0N1yrwJsu8Dj_anomAHnpeSIxi0bGTWOpgKlk6Sd-Gi1oYsKzhtJ9cwAB1To6G7ES-Gw5oZfg';
 			/**
 				* Fire-and-forget interaction counter.
 				* Never throws, never interrupts the app.
@@ -1030,6 +1030,18 @@ body[dir="rtl"] {
 					return false;
 				}
 			}
+			function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding)
+        .replace(/\-/g, '+')
+        .replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
 			// ==================== DEFAULT CONSTANTS ====================
 			const days = [
 				{ key: 'mon', ar: 'الاثنين', en: 'Monday', fr: 'Lundi' },
@@ -1538,6 +1550,49 @@ window.toast = toast;
 				)
 				.subscribe();
 			}
+			async function subscribeForPushNotifications() {
+    if (!currentUser || currentUser.isAdmin) return;
+
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+        console.warn('[Push] Not supported');
+        return;
+    }
+
+    try {
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+            console.warn('[Push] Permission denied');
+            return;
+        }
+
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+        });
+
+        // Save subscription to Supabase
+        const { error } = await supabaseClient
+            .from('push_subscriptions')
+            .upsert(
+                {
+                    user_id: currentUser.id,
+                    subscription: JSON.parse(JSON.stringify(subscription)),
+                    updated_at: new Date()
+                },
+                { onConflict: 'user_id' }
+            );
+
+        if (error) {
+            console.warn('[Push] Save subscription error', error.message);
+        } else {
+            console.log('[Push] Subscription saved');
+            trackInteraction('push_subscribed');
+        }
+    } catch (err) {
+        console.warn('[Push] Subscribe error', err.message);
+    }
+}
 			function renderAdminStudents() {
 				const container = document.getElementById('admin-students-list');
 				if (!container) return;
@@ -1896,6 +1951,7 @@ window.toast = toast;
 				updateAllPanels();
     subscribeToNotifications();
     loadNotifications();
+	subscribeForPushNotifications();
 				loginForm.style.display = 'none';
 				userInfoDiv.style.display = 'flex';
 			}

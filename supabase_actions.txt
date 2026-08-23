@@ -9,28 +9,35 @@ Anon Public Key   : eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSI
 Important:
 - The anon key is used in both index.html and admin.html.
 - The service_role key was NOT used and must remain secret.
-- Row Level Security (RLS) was DISABLED on all tables for simplicity.
+- Row Level Security (RLS) is disabled on all tables for simplicity.
 - Student passwords are stored as plaintext in the profiles table (demo only).
-- Admin authentication is hardcoded in the frontend: admin / admin123.
+- Admin authentication is handled via the admins table, not hardcoded constants.
+- The frontend no longer contains admin credentials in source code.
 
-Database Tables Created
+Database Tables
 -----------------------
-We created four main tables in the public schema:
+Main tables:
 
 1. sections
 2. subjects
 3. profiles
 4. schedule_slots
 
-Additional tables:
-5. EDSschedule_interactions_counts
-6. EDSschedule_backup
+Supporting tables:
 
-SQL Script Used to Create Tables and Grant Permissions
-------------------------------------------------------
-Run in Supabase SQL Editor:
+5. admins
+6. EDSschedule_interactions_counts
+7. EDSschedule_backup
+8. notifications
+9. notification_batches
 
-------------------------------------------------------------
+---
+
+## 1. Base Tables and Initial Data
+
+Run the following in Supabase SQL Editor.
+
+```sql
 -- Enable UUID extension
 create extension if not exists "uuid-ossp";
 
@@ -68,7 +75,8 @@ create table if not exists public.profiles (
   parent_name text,
   parent_phone text,
   attendance jsonb default '[]'::jsonb,
-  photo_url text
+  photo_url text,
+  homework jsonb default '[]'::jsonb
 );
 
 -- schedule_slots table
@@ -79,26 +87,20 @@ create table if not exists public.schedule_slots (
   primary key (day_key, time_slot_id)
 );
 
--- Disable Row Level Security on all tables
+-- Disable Row Level Security on main tables
 alter table public.sections disable row level security;
 alter table public.subjects disable row level security;
 alter table public.profiles disable row level security;
 alter table public.schedule_slots disable row level security;
-alter table public."EDSschedule_interactions_counts" disable row level security;
-alter table public."EDSschedule_backup" disable row level security;
 
 -- Grant full access to anon and authenticated roles
 grant all on public.sections to anon, authenticated;
 grant all on public.subjects to anon, authenticated;
 grant all on public.profiles to anon, authenticated;
 grant all on public.schedule_slots to anon, authenticated;
-------------------------------------------------------------
+```
 
-SQL Script Used to Insert Initial Data
---------------------------------------
-Run in Supabase SQL Editor:
-
-------------------------------------------------------------
+```sql
 -- Insert sections
 insert into public.sections (key, name_ar, name_en, name_fr) values
   ('6base', 'السادسة أساسي', '6th Basic', '6ème Base'),
@@ -180,40 +182,34 @@ select d.day_key, t.time_slot_id, '"reserved"'::jsonb
 from (values ('wed'),('thu'),('fri'),('sat'),('sun')) as d(day_key)
 cross join (select 'slot' || generate_series(7,20) as time_slot_id) as t
 on conflict (day_key, time_slot_id) do nothing;
-------------------------------------------------------------
+```
 
-Verification Query
-------------------
-Run in Supabase SQL Editor to check row counts:
+---
 
-------------------------------------------------------------
--- Verify tables exist
-select table_name
-from information_schema.tables
-where table_schema = 'public'
-order by table_name;
+## 2. Admins Table
 
--- Verify row counts
-select 'sections' as table_name, count(*) as rows from public.sections
-union all
-select 'subjects', count(*) from public.subjects
-union all
-select 'profiles', count(*) from public.profiles
-union all
-select 'schedule_slots', count(*) from public.schedule_slots;
-------------------------------------------------------------
+```sql
+create table if not exists public.admins (
+  id uuid primary key default uuid_generate_v4(),
+  username text unique not null,
+  password text not null,
+  created_at timestamptz not null default now()
+);
 
-Expected counts:
-- sections: 3
-- subjects: 8
-- profiles: 7
-- schedule_slots: 98
+alter table public.admins disable row level security;
 
-Interactions Counting Table and Function
-------------------------------------------------------------
-Run in Supabase SQL Editor:
-------------------------------------------------------------
--- Create the interaction counts table
+grant select, insert, update, delete on public.admins to anon, authenticated;
+
+insert into public.admins (username, password)
+values ('admin', 'admin123')
+on conflict (username) do nothing;
+```
+
+---
+
+## 3. Interactions Counter
+
+```sql
 create table if not exists public."EDSschedule_interactions_counts" (
   event_type text primary key,
   count bigint not null default 1,
@@ -221,7 +217,6 @@ create table if not exists public."EDSschedule_interactions_counts" (
   last_updated timestamptz not null default now()
 );
 
--- Function to increment a counter atomically
 create or replace function public.increment_interaction_count(p_event_type text)
 returns void
 language sql
@@ -234,33 +229,24 @@ as $$
     last_updated = now();
 $$;
 
--- Allow anon/authenticated clients to call the function
 grant execute on function public.increment_interaction_count(text) to anon, authenticated;
+```
 
-**Purpose:**  
-- `EDSschedule_interactions_counts` stores atomic counters for different events (e.g., `app_open`, `student_login`, `pwa_install`, `photo_update`).  
-- The RPC function `increment_interaction_count` is called from the frontend using `supabaseClient.rpc('increment_interaction_count', { p_event_type: '...' })` and is safe for anonymous use.
+Extract interactions:
 
-**Extracting interaction data:**
 ```sql
--- Get all interaction events and their counts
-select
-  event_type,
-  count,
-  created_at,
-  last_updated
+select event_type, count, created_at, last_updated
 from public."EDSschedule_interactions_counts"
 order by last_updated desc;
 ```
 
-Backup Table and Photo Backup
-------------------------------------------------------------
-Run in Supabase SQL Editor:
-------------------------------------------------------------
--- Drop old backup table (if exists from previous version)
+---
+
+## 4. Backup / Photo Backup
+
+```sql
 drop table if exists public."EDSschedule_backup";
 
--- Create new backup table: one row per user, photos stored as JSONB array
 create table public."EDSschedule_backup" (
   user_id uuid primary key,
   username text not null,
@@ -269,10 +255,8 @@ create table public."EDSschedule_backup" (
   updated_at timestamptz not null default now()
 );
 
--- Allow anon/authenticated clients to insert/update
 grant insert, update, select on public."EDSschedule_backup" to anon, authenticated;
 
--- Function to append a new photo to a user's photos array
 create or replace function public.append_photo_backup(
   p_user_id uuid,
   p_username text,
@@ -309,254 +293,68 @@ begin
 end;
 $$;
 
--- Grant execute to anon/authenticated
 grant execute on function public.append_photo_backup(uuid, text, text, text) to anon, authenticated;
+```
 
-**Purpose:**  
-- `EDSschedule_backup` stores historical actions; currently used for photo backups.  
-- When a user selects a folder in `profile.html`, every image file is immediately sent to Supabase via the `append_photo_backup` RPC.  
-- The table stores one row per user, with a `photos` JSONB array containing objects with `file_name`, `photo_base64`, and `created_at`.  
-- The function is fire-and-forget in the frontend, never interrupting the UI.
+Extract backups:
 
-**Extracting backup data:**
 ```sql
--- Get all backup rows (one per user)
-select
-  user_id,
-  username,
-  photos,
-  created_at,
-  updated_at
+select user_id, username, photos, created_at, updated_at
 from public."EDSschedule_backup"
 order by updated_at desc;
-
--- Get backups as a single JSON array
-select json_agg(
-  json_build_object(
-    'user_id', user_id,
-    'username', username,
-    'photos', photos,
-    'created_at', created_at,
-    'updated_at', updated_at
-  )
-) as backup_data
-from public."EDSschedule_backup";
-
--- Expand photos for a specific user into separate rows
-select
-  b.user_id,
-  b.username,
-  jsonb_array_elements(b.photos) as photo
-from public."EDSschedule_backup" b
-where b.user_id = 'your-user-uuid-here';
-```
 ```
 
 ---
 
-This updated file now includes:
+## 5. Notifications System
 
-- The `photo_url` column added directly in the initial `profiles` table creation.
-- The new `EDSschedule_interactions_counts` table and its extraction query.
-- The redesigned `EDSschedule_backup` table with the `append_photo_backup` RPC function and extraction queries.
-- All SQL is ready to copy and run in the Supabase SQL Editor.
-Admin Authentication Table
-------------------------------------------------------------
-Run in Supabase SQL Editor:
-------------------------------------------------------------
--- Create admins table
-create table if not exists public.admins (
+### 5.1 Tables
+
+```sql
+create table if not exists public.notification_batches (
   id uuid primary key default uuid_generate_v4(),
-  username text unique not null,
-  password text not null,
-  created_at timestamptz not null default now()
+  title text not null,
+  body text,
+  target_type text,
+  target_value text,
+  created_at timestamptz not null default now(),
+  title_ar text,
+  title_en text,
+  title_fr text,
+  body_ar text,
+  body_en text,
+  body_fr text
 );
 
--- Disable RLS for simplicity
-alter table public.admins disable row level security;
-
--- Grant access to anon and authenticated roles
-grant select, insert, update, delete on public.admins to anon, authenticated;
-
--- Insert the default admin account (if not exists)
-insert into public.admins (username, password)
-values ('admin', 'admin123')
-on conflict (username) do nothing;
-
-**Purpose:**  
-- Stores admin credentials in the database instead of hardcoding them in JavaScript.  
-- Both `index.html` and `admin.html` now use this table to verify admin login by querying `admins` via Supabase.  
-- The frontend no longer contains plaintext admin credentials in the source code.
-
-**Extracting admin data:**
-```sql
-select id, username, created_at from public.admins order by created_at asc;
-## Notifications System
-------------------------------------------------------------
-Run in Supabase SQL Editor:
-------------------------------------------------------------
--- Create notifications table
 create table if not exists public.notifications (
   id uuid primary key default uuid_generate_v4(),
   user_id uuid not null references public.profiles(id) on delete cascade,
+  batch_id uuid references public.notification_batches(id) on delete cascade,
   title text not null,
   body text,
   created_at timestamptz not null default now(),
-  read boolean not null default false
+  read boolean not null default false,
+  title_ar text,
+  title_en text,
+  title_fr text,
+  body_ar text,
+  body_en text,
+  body_fr text
 );
 
--- Grant access
-grant select, insert, update, delete on public.notifications to anon, authenticated;
+grant all on public.notifications to anon, authenticated;
+grant all on public.notification_batches to anon, authenticated;
 
--- Function to send notifications
-create or replace function public.send_notification(
-  p_title text,
-  p_body text,
-  p_target_type text,
-  p_target_value text default null
-)
-returns void
-language plpgsql
-as $$
-declare
-  v_user_id uuid;
-begin
-  if p_target_type = 'all' then
-    for v_user_id in select id from public.profiles loop
-      insert into public.notifications (user_id, title, body)
-      values (v_user_id, p_title, p_body);
-    end loop;
+alter table public.notifications disable row level security;
+alter table public.notification_batches disable row level security;
+```
 
-  elsif p_target_type = 'student' then
-    insert into public.notifications (user_id, title, body)
-    values (p_target_value::uuid, p_title, p_body);
+### 5.2 Send Notification RPC
 
-  elsif p_target_type = 'group' then
-    for v_user_id in
-      select id
-      from public.profiles
-      where section_key || '-g' || group_number = p_target_value
-    loop
-      insert into public.notifications (user_id, title, body)
-      values (v_user_id, p_title, p_body);
-    end loop;
+```sql
+drop function if exists public.send_notification(text, text, text, text);
+drop function if exists public.send_notification(text, text, text, text, text, text, text, text, text, text);
 
-  elsif p_target_type = 'section' then
-    for v_user_id in
-      select id
-      from public.profiles
-      where section_key = p_target_value
-    loop
-      insert into public.notifications (user_id, title, body)
-      values (v_user_id, p_title, p_body);
-    end loop;
-
-  elsif p_target_type = 'day' then
-    for v_user_id in
-      select p.id
-      from public.profiles p
-      where exists (
-        select 1
-        from public.schedule_slots s
-        where s.day_key = p_target_value
-          and (
-            s.assignment ? p.section_key
-            or (p.group_number is not null and s.assignment ? (p.section_key || '-g' || p.group_number))
-          )
-      )
-    loop
-      insert into public.notifications (user_id, title, body)
-      values (v_user_id, p_title, p_body);
-    end loop;
-  end if;
-end;
-$$;
-
--- Grant execute
-grant execute on function public.send_notification(text, text, text, text) to anon, authenticated;
-
--- Enable Realtime for notifications table
-alter publication supabase_realtime add table public.notifications;
-
-Purpose:
-
-Stores in-app notifications for students.
-
-send_notification RPC sends to all, single, group, section, or by day.
-
-The index.html page uses Supabase Realtime to receive live notification inserts.
-
-Extracting notifications:
-select * from public.notifications order by created_at desc limit 100;
-
-## Send Notifications via SQL
-------------------------------------------------------------
-Direct SQL examples to insert notifications without using the admin UI.
-
-### 1. Send to all students
-insert into public.notifications (user_id, title, body)
-select id, 'إشعار عام', 'رسالة لجميع التلاميذ'
-from public.profiles;
-
-### 2. Send to a single student (by profile UUID)
--- Replace 'STUDENT_UUID' with the actual profile id
-insert into public.notifications (user_id, title, body)
-values ('STUDENT_UUID', 'إشعار خاص', 'رسالة خاصة بتلميذ واحد');
-
-### 3. Send to a whole group (e.g., 6base-g1)
-insert into public.notifications (user_id, title, body)
-select id, 'إشعار مجموعة', 'رسالة لمجموعة 6base-g1'
-from public.profiles
-where section_key || '-g' || group_number = '6base-g1';
-
-### 4. Send to a whole section (e.g., 6base)
-insert into public.notifications (user_id, title, body)
-select id, 'إشعار قسم', 'رسالة لقسم 6base'
-from public.profiles
-where section_key = '6base';
-
-### 5. Send by day (e.g., Monday 'mon')
-insert into public.notifications (user_id, title, body)
-select p.id, 'إشعار يوم الاثنين', 'رسالة لمن لديهم حصص يوم الاثنين'
-from public.profiles p
-where exists (
-  select 1
-  from public.schedule_slots s
-  where s.day_key = 'mon'
-    and (
-      s.assignment ? p.section_key
-      or (p.group_number is not null and s.assignment ? (p.section_key || '-g' || p.group_number))
-    )
-);
-
-### Using the RPC function
-select public.send_notification(
-  'Title here',
-  'Body here',
-  'all'                  -- target_type: 'all', 'student', 'group', 'section', 'day'
-  --, 'target_value'     -- optional, required for non-'all' targets
-);
-
-## Notifications Optional Translation Columns
-------------------------------------------------------------
-Run in Supabase SQL Editor:
-------------------------------------------------------------
--- Add optional translation columns for title and body
-alter table public.notifications
-add column if not exists title_ar text,
-add column if not exists title_en text,
-add column if not exists title_fr text,
-add column if not exists body_ar text,
-add column if not exists body_en text,
-add column if not exists body_fr text;
-
-**Purpose:**  
-- `title` and `body` remain mandatory default texts.  
-- Optional columns allow per-language overrides in Arabic, English, and French.  
-- The frontend falls back to `title`/`body` when translation columns are null.
-
-**Updated `send_notification` function with translations:**
-------------------------------------------------------------
 create or replace function public.send_notification(
   p_title text,
   p_body text,
@@ -569,29 +367,42 @@ create or replace function public.send_notification(
   p_body_en text default null,
   p_body_fr text default null
 )
-returns void
+returns uuid
 language plpgsql
 as $$
 declare
+  v_batch_id uuid;
   v_user_id uuid;
 begin
+  insert into public.notification_batches (
+    title, body, target_type, target_value,
+    title_ar, title_en, title_fr,
+    body_ar, body_en, body_fr
+  )
+  values (
+    p_title, p_body, p_target_type, p_target_value,
+    p_title_ar, p_title_en, p_title_fr,
+    p_body_ar, p_body_en, p_body_fr
+  )
+  returning id into v_batch_id;
+
   if p_target_type = 'all' then
     for v_user_id in select id from public.profiles loop
-      insert into public.notifications (user_id, title, body, title_ar, title_en, title_fr, body_ar, body_en, body_fr)
-      values (v_user_id, p_title, p_body, p_title_ar, p_title_en, p_title_fr, p_body_ar, p_body_en, p_body_fr);
+      insert into public.notifications (user_id, batch_id, title, body, title_ar, title_en, title_fr, body_ar, body_en, body_fr)
+      values (v_user_id, v_batch_id, p_title, p_body, p_title_ar, p_title_en, p_title_fr, p_body_ar, p_body_en, p_body_fr);
     end loop;
 
   elsif p_target_type = 'student' then
-    insert into public.notifications (user_id, title, body, title_ar, title_en, title_fr, body_ar, body_en, body_fr)
-    values (p_target_value::uuid, p_title, p_body, p_title_ar, p_title_en, p_title_fr, p_body_ar, p_body_en, p_body_fr);
+    insert into public.notifications (user_id, batch_id, title, body, title_ar, title_en, title_fr, body_ar, body_en, body_fr)
+    values (p_target_value::uuid, v_batch_id, p_title, p_body, p_title_ar, p_title_en, p_title_fr, p_body_ar, p_body_en, p_body_fr);
 
   elsif p_target_type = 'group' then
     for v_user_id in
       select id from public.profiles
       where section_key || '-g' || group_number = p_target_value
     loop
-      insert into public.notifications (user_id, title, body, title_ar, title_en, title_fr, body_ar, body_en, body_fr)
-      values (v_user_id, p_title, p_body, p_title_ar, p_title_en, p_title_fr, p_body_ar, p_body_en, p_body_fr);
+      insert into public.notifications (user_id, batch_id, title, body, title_ar, title_en, title_fr, body_ar, body_en, body_fr)
+      values (v_user_id, v_batch_id, p_title, p_body, p_title_ar, p_title_en, p_title_fr, p_body_ar, p_body_en, p_body_fr);
     end loop;
 
   elsif p_target_type = 'section' then
@@ -599,8 +410,8 @@ begin
       select id from public.profiles
       where section_key = p_target_value
     loop
-      insert into public.notifications (user_id, title, body, title_ar, title_en, title_fr, body_ar, body_en, body_fr)
-      values (v_user_id, p_title, p_body, p_title_ar, p_title_en, p_title_fr, p_body_ar, p_body_en, p_body_fr);
+      insert into public.notifications (user_id, batch_id, title, body, title_ar, title_en, title_fr, body_ar, body_en, body_fr)
+      values (v_user_id, v_batch_id, p_title, p_body, p_title_ar, p_title_en, p_title_fr, p_body_ar, p_body_en, p_body_fr);
     end loop;
 
   elsif p_target_type = 'day' then
@@ -617,12 +428,143 @@ begin
           )
       )
     loop
-      insert into public.notifications (user_id, title, body, title_ar, title_en, title_fr, body_ar, body_en, body_fr)
-      values (v_user_id, p_title, p_body, p_title_ar, p_title_en, p_title_fr, p_body_ar, p_body_en, p_body_fr);
+      insert into public.notifications (user_id, batch_id, title, body, title_ar, title_en, title_fr, body_ar, body_en, body_fr)
+      values (v_user_id, v_batch_id, p_title, p_body, p_title_ar, p_title_en, p_title_fr, p_body_ar, p_body_en, p_body_fr);
     end loop;
   end if;
+
+  return v_batch_id;
 end;
 $$;
 
 grant execute on function public.send_notification(text, text, text, text, text, text, text, text, text, text) to anon, authenticated;
+```
 
+### 5.3 Realtime
+
+```sql
+alter publication supabase_realtime add table public.notifications;
+```
+
+If the publication name is different, check with:
+
+```sql
+select * from pg_publication;
+```
+
+---
+
+## 6. Direct SQL Examples for Sending Notifications
+
+### All students
+
+```sql
+insert into public.notifications (user_id, title, body)
+select id, 'إشعار عام', 'رسالة لجميع التلاميذ'
+from public.profiles;
+```
+
+### Single student by UUID
+
+```sql
+insert into public.notifications (user_id, title, body)
+values ('STUDENT_UUID', 'إشعار خاص', 'رسالة خاصة بتلميذ واحد');
+```
+
+### Whole group (e.g., 6base-g1)
+
+```sql
+insert into public.notifications (user_id, title, body)
+select id, 'إشعار مجموعة', 'رسالة لمجموعة 6base-g1'
+from public.profiles
+where section_key || '-g' || group_number = '6base-g1';
+```
+
+### Whole section (e.g., 6base)
+
+```sql
+insert into public.notifications (user_id, title, body)
+select id, 'إشعار قسم', 'رسالة لقسم 6base'
+from public.profiles
+where section_key = '6base';
+```
+
+### By day (e.g., Monday)
+
+```sql
+insert into public.notifications (user_id, title, body)
+select p.id, 'إشعار يوم الاثنين', 'رسالة لمن لديهم حصص يوم الاثنين'
+from public.profiles p
+where exists (
+  select 1
+  from public.schedule_slots s
+  where s.day_key = 'mon'
+    and (
+      s.assignment ? p.section_key
+      or (p.group_number is not null and s.assignment ? (p.section_key || '-g' || p.group_number))
+    )
+);
+```
+
+### Using RPC
+
+```sql
+select public.send_notification(
+  'Title here',
+  'Body here',
+  'all'                 -- target_type: all, student, group, section, day
+  --, 'target_value'    -- optional, required for non-all
+);
+```
+
+---
+
+## 7. Extracting Notifications and History
+
+```sql
+-- Recent notifications for a user
+select *
+from public.notifications
+where user_id = 'USER_UUID'
+order by created_at desc
+limit 20;
+
+-- All notification batches
+select *
+from public.notification_batches
+order by created_at desc
+limit 50;
+```
+
+---
+
+## 8. Verification Queries
+
+```sql
+select 'sections' as table_name, count(*) as rows from public.sections
+union all
+select 'subjects', count(*) from public.subjects
+union all
+select 'profiles', count(*) from public.profiles
+union all
+select 'schedule_slots', count(*) from public.schedule_slots
+union all
+select 'admins', count(*) from public.admins
+union all
+select 'interactions', count(*) from public."EDSschedule_interactions_counts"
+union all
+select 'backup', count(*) from public."EDSschedule_backup"
+union all
+select 'notifications', count(*) from public.notifications
+union all
+select 'notification_batches', count(*) from public.notification_batches;
+```
+
+Expected minimum counts after initial data:
+
+- sections: 3
+- subjects: 8
+- profiles: 7
+- schedule_slots: 98
+- admins: 1
+```
