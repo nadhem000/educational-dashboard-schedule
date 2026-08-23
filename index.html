@@ -797,6 +797,54 @@ body[dir="rtl"] {
 .roster-panel li {
     justify-content: flex-start;
 }
+.notifications-btn {
+    background: #3498db;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    position: relative;
+}
+.notifications-badge {
+    background: #e74c3c;
+    color: white;
+    border-radius: 50%;
+    padding: 2px 7px;
+    font-size: 12px;
+    margin-left: 5px;
+    display: inline-block;
+}
+#notifications-list li {
+    padding: 10px 12px;
+    background: var(--container-bg);
+    border: 1px solid var(--table-border);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    cursor: pointer;
+}
+#notifications-list li.unread {
+    background: var(--highlight-bg);
+    font-weight: bold;
+}
+.toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #333;
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 6px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    z-index: 2000;
+}
+.toast.show {
+    opacity: 1;
+}
     </style>
 </head>
 <body>
@@ -817,6 +865,7 @@ body[dir="rtl"] {
     </div>
     <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
         <button id="admin-btn" class="admin-btn" style="display:none;" onclick="window.location.href='admin.html'">🛠️ Admin Panel</button>
+        <button id="notifications-btn" class="notifications-btn" style="display:none;">🔔 <span id="notifications-badge" class="notifications-badge" style="display:none;">0</span></button>
         <button id="student-card-btn" class="student-card-btn">بطاقة التلميذ</button>
         <button id="logout-btn" class="logout-btn">تسجيل الخروج</button>
     </div>
@@ -930,1109 +979,1244 @@ body[dir="rtl"] {
             </div>
         </div>
     </div>
-	<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-   <script>
-// ==================== Supabase Configuration ====================
-const SUPABASE_URL = 'https://ewvvlqujimxdubreulni.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV3dnZscXVqaW14ZHVicmV1bG5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxMzc0ODAsImV4cCI6MjEwMjcxMzQ4MH0._-i_8bMsMM1uhmE024MrgWo66GAQjt8vONlur9LfOtg';
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-/**
- * Fire-and-forget interaction counter.
- * Never throws, never interrupts the app.
- */
-function trackInteraction(eventType) {
-    try {
-        if (!window.supabase || !supabaseClient) return;
-        supabaseClient.rpc('increment_interaction_count', { p_event_type: eventType })
-            .then(() => {})
-            .catch(err => console.warn('[Tracking]', eventType, err.message));
-    } catch (err) {
-        console.warn('[Tracking] init error', err.message);
-    }
-}
-async function verifyAdminCredentials(name, password) {
-    try {
-        const { data, error } = await supabaseClient
-            .from('admins')
-            .select('username, password')
-            .eq('username', name.toLowerCase())
-            .maybeSingle();
-        if (error) {
-            console.warn('[AdminAuth]', error.message);
-            return false;
-        }
-        return data && data.password === password;
-    } catch (err) {
-        console.warn('[AdminAuth] init error', err.message);
-        return false;
-    }
-}
-// ==================== DEFAULT CONSTANTS ====================
-const days = [
-    { key: 'mon', ar: 'الاثنين', en: 'Monday', fr: 'Lundi' },
-    { key: 'tue', ar: 'الثلاثاء', en: 'Tuesday', fr: 'Mardi' },
-    { key: 'wed', ar: 'الأربعاء', en: 'Wednesday', fr: 'Mercredi' },
-    { key: 'thu', ar: 'الخميس', en: 'Thursday', fr: 'Jeudi' },
-    { key: 'fri', ar: 'الجمعة', en: 'Friday', fr: 'Vendredi' },
-    { key: 'sat', ar: 'السبت', en: 'Saturday', fr: 'Samedi' },
-    { key: 'sun', ar: 'الأحد', en: 'Sunday', fr: 'Dimanche' }
-];
-
-const timeSlots = [];
-for (let hour = 7; hour <= 20; hour++) {
-    timeSlots.push({
-        id: `slot${hour}`,
-        ar: `${hour}:00 - ${hour+1}:00`,
-        en: `${hour}:00 - ${hour+1}:00`,
-        fr: `${hour}h - ${hour+1}h`
-    });
-}
-
-// ==================== GLOBAL DATA (populated from Supabase) ====================
-let data = {
-    days,
-    timeSlots,
-    sections: {},
-    subjectCatalog: {},
-    schedule: {},
-    students: []
-};
-
-// ==================== LOAD DATA FROM SUPABASE ====================
-async function loadDataFromSupabase() {
-    try {
-        // Fetch sections
-        const { data: sectionsRows, error: sectionsError } = await supabaseClient
-            .from('sections')
-            .select('*');
-        if (sectionsError) throw sectionsError;
-
-        const sections = {};
-        sectionsRows.forEach(row => {
-            sections[row.key] = { ar: row.name_ar, en: row.name_en, fr: row.name_fr };
-        });
-
-        // Fetch subjects
-        const { data: subjectsRows, error: subjectsError } = await supabaseClient
-            .from('subjects')
-            .select('*');
-        if (subjectsError) throw subjectsError;
-
-        const subjectCatalog = {};
-        subjectsRows.forEach(row => {
-            subjectCatalog[row.key] = { ar: row.name_ar, en: row.name_en, fr: row.name_fr };
-        });
-
-        // Fetch students (profiles)
-        const { data: profilesRows, error: profilesError } = await supabaseClient
-            .from('profiles')
-            .select('*');
-        if (profilesError) throw profilesError;
-
-        const students = profilesRows.map(row => ({
-    id: row.id,
-    nameAr: row.name_ar,
-    nameEn: row.name_en,
-    nameFr: row.name_fr,
-    section: row.section_key,
-    group: row.group_number,
-    workSystem: row.work_system,
-    password: row.password,
-    subjects: row.subjects,
-    parentName: row.parent_name,
-    parentPhone: row.parent_phone,
-    attendance: row.attendance || [],
-    photo_url: row.photo_url || null,
-            homework: row.homework || []
-}));
-
-        // Fetch schedule slots
-        const { data: scheduleRows, error: scheduleError } = await supabaseClient
-            .from('schedule_slots')
-            .select('*');
-        if (scheduleError) throw scheduleError;
-
-        const schedule = {};
-        days.forEach(day => { schedule[day.key] = {}; });
-        scheduleRows.forEach(row => {
-            if (!schedule[row.day_key]) schedule[row.day_key] = {};
-            schedule[row.day_key][row.time_slot_id] = row.assignment;
-        });
-
-        // Fill missing cells with 'reserved'
-        days.forEach(day => {
-            timeSlots.forEach(slot => {
-                if (!schedule[day.key][slot.id]) {
-                    schedule[day.key][slot.id] = 'reserved';
-                }
-            });
-        });
-
-        // Update global data
-        data.sections = sections;
-        data.subjectCatalog = subjectCatalog;
-        data.students = students;
-        data.schedule = schedule;
-
-        console.log('Data loaded from Supabase');
-        return true;
-    } catch (error) {
-        console.error('Error loading data from Supabase:', error);
-        alert('Failed to load data from Supabase. Please check your connection and try again.');
-        return false;
-    }
-}
-
-// ==================== STATE ====================
-let currentLanguage = 'ar';
-let currentTheme = 'light';
-let currentUser = null;
-const STORAGE_KEY_ADMIN = 'edschedule_admin_logged';
-const STORAGE_KEY_STUDENT_ID = 'edschedule_student_id';
-let attendanceCalendarMonth = new Date();
-
-// ==================== DOM REFS ====================
-const languageSelect = document.getElementById('language-select');
-const themeToggle = document.getElementById('theme-toggle');
-const scheduleHead = document.getElementById('schedule-head');
-const scheduleBody = document.getElementById('schedule-body');
-const personalScheduleDiv = document.getElementById('personal-schedule');
-const personalList = document.getElementById('personal-list');
-const rosterPanelDiv = document.getElementById('roster-panel');
-const rosterList = document.getElementById('roster-list');
-const attendancePanelDiv = document.getElementById('attendance-panel');
-const attendanceList = document.getElementById('attendance-list');
-const attendanceLegend = document.getElementById('attendance-legend');
-const workSystemPanelDiv = document.getElementById('work-system-panel');
-const workSystemContent = document.getElementById('work-system-content');
-const materialsPanelDiv = document.getElementById('materials-panel');
-const materialsContent = document.getElementById('materials-content');
-const parentInfoDiv = document.getElementById('parent-info');
-const parentInfoPanelDiv = document.getElementById('parent-info-panel');
-const body = document.body;
-const loginForm = document.getElementById('login-form');
-const userInfoDiv = document.getElementById('user-info');
-const loggedNameSpan = document.getElementById('logged-name');
-const userAvatarSpan = document.getElementById('user-avatar');
-const logoutBtn = document.getElementById('logout-btn');
-const loginNameInput = document.getElementById('login-name');
-const loginPasswordInput = document.getElementById('login-password');
-const loginBtn = document.getElementById('login-btn');
-const modalOverlay = document.getElementById('student-card-modal');
-const modalBody = document.getElementById('modal-body');
-const modalTitle = document.getElementById('modal-title');
-const modalCloseBtn = document.getElementById('modal-close-btn');
-const studentCardBtn = document.getElementById('student-card-btn');
-const adminBtn = document.getElementById('admin-btn');
-
-// ==================== UTILITY FUNCTIONS ====================
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-function getText(obj, lang = currentLanguage) {
-    if (!obj) return '';
-    if (lang === 'ar') return obj.ar || obj.nameAr || '';
-    if (lang === 'fr') return obj.fr || obj.nameFr || '';
-    return obj.en || obj.nameEn || '';
-}
-function getSectionName(sectionKey) {
-    if (sectionKey === 'reserved') return translations[currentLanguage].reservedName || 'Reserved';
-    const sec = data.sections[sectionKey];
-    return sec ? getText(sec) : sectionKey;
-}
-function parseAssignmentKey(key) {
-    const match = key.match(/^(.+?)-g(\d+)$/);
-    if (match) return { section: match[1], group: match[2] };
-    return { section: key, group: null };
-}
-function isAssignmentForStudent(assignmentKey, student) {
-    if (student && student.isAdmin) return false;
-    const parsed = parseAssignmentKey(assignmentKey);
-    if (parsed.section !== student.section) return false;
-    if (parsed.group !== null) return student.group !== null && student.group === parsed.group;
-    return true;
-}
-function getAssignmentDisplay(assignmentKey) {
-    const parsed = parseAssignmentKey(assignmentKey);
-    if (parsed.section === 'reserved') return getSectionName('reserved');
-    const baseName = getSectionName(parsed.section);
-    if (parsed.group) return `${baseName} (${translations[currentLanguage].groupLabel} ${parsed.group})`;
-    return baseName;
-}
-
-// ==================== RENDER FUNCTIONS ====================
-function rebuildScheduleTable() {
-    let headerHtml = `<tr><th>${translations[currentLanguage].thDay}</th>`;
-    data.timeSlots.forEach(slot => headerHtml += `<th>${escapeHtml(getText(slot))}</th>`);
-    headerHtml += '</tr>';
-    scheduleHead.innerHTML = headerHtml;
-
-    let bodyHtml = '';
-    data.days.forEach(day => {
-        bodyHtml += `<tr><td class="day-cell">${escapeHtml(getText(day))}</td>`;
-        data.timeSlots.forEach(slot => {
-            const assignment = data.schedule[day.key]?.[slot.id] || 'reserved';
-            let cellContent = '';
-            let hasStudentMatch = false;
-            if (Array.isArray(assignment)) {
-                cellContent = assignment.map(item => {
-                    const display = getAssignmentDisplay(item);
-                    const match = currentUser && isAssignmentForStudent(item, currentUser);
-                    if (match) hasStudentMatch = true;
-                    const cls = match ? 'merged-item student-highlight' : 'merged-item';
-                    return `<span class="${cls}">${escapeHtml(display)}</span>`;
-                }).join('');
-            } else {
-                const display = getAssignmentDisplay(assignment);
-                const match = currentUser && isAssignmentForStudent(assignment, currentUser);
-                if (match) hasStudentMatch = true;
-                const cls = match ? 'student-highlight' : (assignment === 'reserved' ? 'reserved' : '');
-                cellContent = `<span class="${cls}">${escapeHtml(display)}</span>`;
-            }
-            bodyHtml += `<td class="${hasStudentMatch ? 'student-highlight' : ''}">${cellContent}</td>`;
-        });
-        bodyHtml += '</tr>';
-    });
-    scheduleBody.innerHTML = bodyHtml;
-}
-
-function updatePersonalSchedule() {
-    if (!currentUser) {
-        personalScheduleDiv.classList.remove('visible');
-        return;
-    }
-    const personalSessions = [];
-    data.days.forEach(day => {
-        data.timeSlots.forEach(slot => {
-            const assignment = data.schedule[day.key]?.[slot.id] || 'reserved';
-            let matches = false;
-            if (Array.isArray(assignment)) matches = assignment.some(item => isAssignmentForStudent(item, currentUser));
-            else matches = isAssignmentForStudent(assignment, currentUser);
-            if (matches) personalSessions.push({ day, slot });
-        });
-    });
-    if (personalSessions.length === 0) {
-        personalList.innerHTML = `<li>${translations[currentLanguage].noSessions}</li>`;
-    } else {
-        personalList.innerHTML = personalSessions.map(session => {
-            return `<li>${escapeHtml(getText(session.day))} - ${escapeHtml(getText(session.slot))}</li>`;
-        }).join('');
-    }
-    personalScheduleDiv.classList.add('visible');
-}
-
-function updateRoster() {
-    if (!currentUser) {
-        rosterPanelDiv.classList.remove('visible');
-        return;
-    }
-    const classmates = data.students.filter(u => {
-        if (u.section !== currentUser.section) return false;
-        if (currentUser.group) return u.group === currentUser.group;
-        return true;
-    });
-    if (classmates.length === 0) {
-        rosterList.innerHTML = `<li>${translations[currentLanguage].noStudents}</li>`;
-    } else {
-                rosterList.innerHTML = classmates.map(u => {
-            const displayName = getText(u) || u.nameAr;
-            const highlight = (u.nameAr === currentUser.nameAr) ? 'student-highlight' : '';
-            let avatarHtml = '';
-            if (u.photo_url) {
-                avatarHtml = `<img class="roster-avatar" src="${escapeHtml(u.photo_url)}" alt="${escapeHtml(displayName)}">`;
-            } else {
-                const initial = displayName.charAt(0).toUpperCase();
-                avatarHtml = `<span class="roster-avatar-placeholder">${escapeHtml(initial)}</span>`;
-            }
-            return `<li class="${highlight}">${avatarHtml} <span>${escapeHtml(displayName)}</span></li>`;
-        }).join('');
-    }
-    rosterPanelDiv.classList.add('visible');
-}
-
-function updateAttendance() {
-    if (!currentUser) {
-        attendancePanelDiv.classList.remove('visible');
-        return;
-    }
-    const records = currentUser.attendance || [];
-    if (records.length === 0) {
-        attendanceList.innerHTML = `<li>${translations[currentLanguage].noAttendance}</li>`;
-    } else {
-        attendanceList.innerHTML = records.map(record => {
-            const statusClass = `attendance-${record.status}`;
-            const statusLabel = translations[currentLanguage]['status_' + record.status] || record.status;
-            return `<li class="${statusClass}">
-                <span>${escapeHtml(record.date)}</span>
-                <span class="attendance-status-label">${escapeHtml(statusLabel)}</span>
-            </li>`;
-        }).join('');
-    }
-    const legendHtml = `
-        <span style="display:inline-block; margin-right: 10px;">
-            <span style="display:inline-block; width:12px; height:12px; background-color: var(--attendance-paid-bg); border-radius:3px; margin-left:3px;"></span>
-            ${escapeHtml(translations[currentLanguage].status_paid)}
-        </span>
-        <span style="display:inline-block; margin-right: 10px;">
-            <span style="display:inline-block; width:12px; height:12px; background-color: var(--attendance-unpaid-bg); border-radius:3px; margin-left:3px;"></span>
-            ${escapeHtml(translations[currentLanguage].status_unpaid)}
-        </span>
-        <span style="display:inline-block; margin-right: 10px;">
-            <span style="display:inline-block; width:12px; height:12px; background-color: var(--attendance-overdue-bg); border-radius:3px; margin-left:3px;"></span>
-            ${escapeHtml(translations[currentLanguage].status_overdue)}
-        </span>
-    `;
-    attendanceLegend.innerHTML = legendHtml;
-    attendancePanelDiv.classList.add('visible');
-}
-
-function updateWorkSystemPanel() {
-    if (!currentUser) {
-        workSystemPanelDiv.classList.remove('visible');
-        return;
-    }
-    const t = translations[currentLanguage];
-    const labels = { monthly: t.workMonthly, per8sessions: t.workPer8, custom: t.workCustom };
-    const systemLabel = labels[currentUser.workSystem] || currentUser.workSystem;
-    workSystemContent.innerHTML = `<p><strong>${t.workSystemLabel}:</strong> ${escapeHtml(systemLabel)}</p>`;
-    workSystemPanelDiv.classList.add('visible');
-}
-
-function updateMaterialsPanel() {
-    if (!currentUser) {
-        materialsPanelDiv.classList.remove('visible');
-        return;
-    }
-    const t = translations[currentLanguage];
-    const subjects = currentUser.subjects;
-    let materialsHtml = '';
-    if (subjects === 'all') {
-        materialsHtml = `<span>${escapeHtml(t.allSubjects)}</span>`;
-    } else if (Array.isArray(subjects) && subjects.length > 0) {
-        materialsHtml = subjects.map(key => {
-            const subj = data.subjectCatalog[key];
-            return `<span>${escapeHtml(subj ? getText(subj) : key)}</span>`;
-        }).join('');
-    } else {
-        materialsHtml = `<span>${escapeHtml(t.noSubjects)}</span>`;
-    }
-    materialsContent.innerHTML = `<div class="materials-list">${materialsHtml}</div>`;
-    materialsPanelDiv.classList.add('visible');
-}
-
-function updateParentInfoPanel() {
-    if (!currentUser) {
-        parentInfoPanelDiv.classList.remove('visible');
-        return;
-    }
-    const t = translations[currentLanguage];
-    let parentHtml = '';
-    if (currentUser.parentName || currentUser.parentPhone) {
-        parentHtml += `<div class="info-line"><strong>${t.parentName}:</strong> ${escapeHtml(currentUser.parentName || '—')}</div>`;
-        parentHtml += `<div class="info-line"><strong>${t.parentPhone}:</strong> ${escapeHtml(currentUser.parentPhone || '—')}</div>`;
-    } else {
-        parentHtml += `<div class="info-line">${escapeHtml(t.noParentInfo)}</div>`;
-    }
-    parentInfoDiv.innerHTML = parentHtml;
-    parentInfoPanelDiv.classList.add('visible');
-}
-function updateHomeworkPanel() {
-    const panel = document.getElementById('homework-panel');
-    const list = document.getElementById('homework-list');
-    if (!panel || !list) return;
-    if (!currentUser || currentUser.isAdmin) {
-        panel.style.display = 'none';
-        return;
-    }
-    const t = translations[currentLanguage];
-    const homework = Array.isArray(currentUser.homework) ? currentUser.homework : [];
-    if (homework.length === 0) {
-        list.innerHTML = `<li>${escapeHtml(t.noHomework)}</li>`;
-    } else {
-        list.innerHTML = homework.map(hw => {
-            const subjectDisplay = data.subjectCatalog[hw.subject] ? getText(data.subjectCatalog[hw.subject]) : hw.subject;
-            return `<li style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-                <span><strong>${escapeHtml(subjectDisplay)}</strong> - ${escapeHtml(hw.title || '')}</span>
-                <span style="font-size:12px; opacity:0.8;">${escapeHtml(hw.due_date || '')}</span>
-            </li>`;
-        }).join('');
-    }
-    panel.style.display = 'block';
-}
-function renderAdminStudents() {
-    const container = document.getElementById('admin-students-list');
-    if (!container) return;
-    const t = translations[currentLanguage];
-    if (!data.students || data.students.length === 0) {
-        container.innerHTML = `<p>${escapeHtml(t.noStudents)}</p>`;
-        return;
-    }
-    let html = '<ul style="list-style:none; padding:0; max-height:400px; overflow-y:auto;">';
-    data.students.forEach(student => {
-        const name = student.nameAr || student.nameEn || student.nameFr || 'Unnamed';
-        const section = student.section ? getSectionName(student.section) : '—';
-        const group = student.group ? `${t.groupLabel} ${student.group}` : '';
-        html += `<li style="padding:8px; border-bottom:1px solid var(--table-border);">
-            <strong>${escapeHtml(name)}</strong> — ${escapeHtml(section)} ${group ? ' - ' + escapeHtml(group) : ''}
-        </li>`;
-    });
-    html += '</ul>';
-    container.innerHTML = html;
-}
-function renderAdminSubjects() {
-    const container = document.getElementById('admin-subjects-list');
-    if (!container) return;
-    const t = translations[currentLanguage];
-    const keys = Object.keys(data.subjectCatalog);
-    if (keys.length === 0) {
-        container.innerHTML = `<p>${escapeHtml(t.noSubjects)}</p>`;
-        return;
-    }
-    let html = '<ul style="list-style:none; padding:0; max-height:400px; overflow-y:auto;">';
-    keys.forEach(key => {
-        const subj = data.subjectCatalog[key];
-        const display = subj ? getText(subj) : key;
-        html += `<li style="padding:8px; border-bottom:1px solid var(--table-border);">${escapeHtml(display)}</li>`;
-    });
-    html += '</ul>';
-    container.innerHTML = html;
-}
-function renderAdminSections() {
-    const container = document.getElementById('admin-sections-list');
-    if (!container) return;
-    const t = translations[currentLanguage];
-    const sectionKeys = Object.keys(data.sections);
-    if (sectionKeys.length === 0) {
-        container.innerHTML = `<p>${escapeHtml(t.noSections || 'No sections')}</p>`;
-        return;
-    }
-    let html = '<ul style="list-style:none; padding:0; max-height:400px; overflow-y:auto;">';
-    sectionKeys.forEach(key => {
-        const sec = data.sections[key];
-        const count = data.students.filter(s => s.section === key).length;
-        html += `<li style="padding:8px; border-bottom:1px solid var(--table-border);">
-            <strong>${escapeHtml(key)}</strong> — ${escapeHtml(sec.ar || '')} | ${escapeHtml(sec.en || '')} | ${escapeHtml(sec.fr || '')}
-            <span style="margin-left:10px; font-weight:bold; color:var(--highlight-text);">(${count})</span>
-        </li>`;
-    });
-    html += '</ul>';
-    container.innerHTML = html;
-}
-function updateUserInfo() {
-    if (!currentUser) return;
-    const t = translations[currentLanguage];
-    const displayName = getText(currentUser) || currentUser.nameAr;
-    userAvatarSpan.innerHTML = currentUser.photo_url 
-        ? `<img src="${currentUser.photo_url}" alt="${escapeHtml(displayName)}" style="width:100%; height:100%; object-fit:cover; border-radius:10px;">` 
-        : displayName.charAt(0).toUpperCase();
-    loggedNameSpan.innerHTML = `${escapeHtml(t.welcome)}، ${escapeHtml(displayName)}`;
-}
-
-function updateAllPanels() {
-    // Show admin button only if admin is logged in
-    if (adminBtn) {
-        adminBtn.style.display = (currentUser && currentUser.isAdmin) ? 'inline-block' : 'none';
-    }
-
-        if (currentUser && currentUser.isAdmin) {
-        // Admin: show full schedule and admin panels, hide student panels
-        rebuildScheduleTable();
-        renderAdminStudents();
-        renderAdminSubjects();
-		renderAdminSections();
-        document.getElementById('admin-students-panel').style.display = 'block';
-        document.getElementById('admin-subjects-panel').style.display = 'block';
-document.getElementById('admin-sections-panel').style.display = 'block';
-		document.getElementById('homework-panel').style.display = 'none';
-        personalScheduleDiv.classList.remove('visible');
-        rosterPanelDiv.classList.remove('visible');
-        attendancePanelDiv.classList.remove('visible');
-        workSystemPanelDiv.classList.remove('visible');
-        materialsPanelDiv.classList.remove('visible');
-		parentInfoPanelDiv.classList.remove('visible');
-        studentCardBtn.style.display = 'none';
-        const t = translations[currentLanguage];
-        userAvatarSpan.textContent = 'A';
-        loggedNameSpan.innerHTML = `${escapeHtml(t.welcome)}، Admin`;
-        return;
-    } else {
-        // Hide admin panels when not admin
-        document.getElementById('admin-students-panel').style.display = 'none';
-        document.getElementById('admin-subjects-panel').style.display = 'none';
-		document.getElementById('admin-sections-panel').style.display = 'none';
-    }
-
-    if (currentUser) {
-        rebuildScheduleTable();
-        updatePersonalSchedule();
-        updateRoster();
-        updateAttendance();
-        updateWorkSystemPanel();
-        updateMaterialsPanel();
-updateParentInfoPanel();
-updateHomeworkPanel();
-        updateUserInfo();
-        studentCardBtn.style.display = 'inline-block';
-    } else {
-        rebuildScheduleTable();
-        personalScheduleDiv.classList.remove('visible');
-        rosterPanelDiv.classList.remove('visible');
-        attendancePanelDiv.classList.remove('visible');
-        workSystemPanelDiv.classList.remove('visible');
-        materialsPanelDiv.classList.remove('visible');
-		parentInfoPanelDiv.classList.remove('visible');
-		document.getElementById('homework-panel').style.display = 'none';
-		document.getElementById('admin-sections-panel').style.display = 'none';
-        studentCardBtn.style.display = 'inline-block';
-    }
-}
-
-// ==================== LANGUAGE & THEME ====================
-function applyLanguage(lang) {
-    currentLanguage = lang;
-    document.documentElement.lang = lang;
-    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
-    document.body.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
-    const t = translations[lang];
-    document.getElementById('page-title').textContent = t.title;
-    document.getElementById('subtitle').textContent = t.subtitle;
-    document.querySelector('.control-group label[for="language-select"]').textContent = t.languageLabel;
-    document.querySelector('.control-group label[for="theme-toggle"]').textContent = t.themeLabel;
-    document.getElementById('theme-toggle').textContent = currentTheme === 'light' ? t.themeNight : t.themeDay;
-    document.getElementById('install-btn').textContent = t.installBtnLabel;
-    document.getElementById('personal-title').textContent = t.personalTitle;
-    document.getElementById('roster-title').textContent = t.rosterTitle;
-    document.getElementById('attendance-title').textContent = t.attendanceTitle;
-    document.getElementById('work-system-title').textContent = t.workSystemTitle;
-    document.getElementById('materials-title').textContent = t.materialsTitle;
-	document.getElementById('parent-info-title').textContent = t.parentInfoTitle;
-	document.getElementById('admin-sections-title').textContent = t.adminSectionsTitle;
-	document.getElementById('homework-title').textContent = t.homeworkTitle;
-    document.getElementById('notes').innerHTML = t.notes;
-    document.getElementById('student-card-btn').textContent = t.studentCardBtn;
-	document.getElementById('footer-developed-by').textContent = t.footerDevelopedBy;
-document.getElementById('footer-hosted-on').textContent = t.footerHostedOn;
-document.getElementById('footer-version').textContent = t.footerVersion;
-document.getElementById('footer-last-update').textContent = t.footerLastUpdate;
-document.getElementById('footer-contact').textContent = t.footerContact;
-document.getElementById('footer-privacy-policy').textContent = t.footerPrivacyPolicy;
-    modalTitle.textContent = t.modalTitle;
-    loginNameInput.placeholder = t.loginNamePlaceholder;
-    loginPasswordInput.placeholder = t.loginPasswordPlaceholder;
-    loginBtn.textContent = t.loginBtn;
-    logoutBtn.textContent = t.logoutBtn;
-    updateAllPanels();
-}
-
-function applyTheme(theme) {
-    currentTheme = theme;
-    body.classList.toggle('dark', theme === 'dark');
-    const t = translations[currentLanguage];
-    themeToggle.textContent = theme === 'light' ? t.themeNight : t.themeDay;
-}
-
-// ==================== MODAL FUNCTIONS ====================
-function parseAttendanceDate(dateStr) {
-    const parts = dateStr.split('/');
-    if (parts.length !== 3) return null;
-    const day = parseInt(parts[0], 10);
-    const month = parseInt(parts[1], 10) - 1;
-    const year = parseInt(parts[2], 10);
-    if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
-    return new Date(year, month, day);
-}
-
-function getAttendanceStatusForDate(date) {
-    if (!currentUser || !currentUser.attendance) return null;
-    const target = date.toDateString();
-    for (const att of currentUser.attendance) {
-        const attDate = parseAttendanceDate(att.date);
-        if (attDate && attDate.toDateString() === target) {
-            return att.status;
-        }
-    }
-    return null;
-}
-
-function renderAttendanceCalendar() {
-    const container = document.getElementById('attendance-calendar');
-    if (!container) return;
-    const t = translations[currentLanguage];
-    const year = attendanceCalendarMonth.getFullYear();
-    const month = attendanceCalendarMonth.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const daysInMonth = lastDay.getDate();
-    const startWeekday = firstDay.getDay();
-    const monthNames = t.monthNames;
-    const weekdayNames = t.weekdayNames;
-    let html = `<div class="calendar-header">
-        <button type="button" onclick="changeAttendanceMonth(-1)">‹</button>
-        <span>${monthNames[month]} ${year}</span>
-        <button type="button" onclick="changeAttendanceMonth(1)">›</button>
-    </div>`;
-    html += `<table class="attendance-calendar-table"><thead><tr>`;
-    weekdayNames.forEach(w => html += `<th>${w}</th>`);
-    html += `</tr></thead><tbody><tr>`;
-    for (let i = 0; i < startWeekday; i++) html += `<td></td>`;
-    for (let day = 1; day <= daysInMonth; day++) {
-        const date = new Date(year, month, day);
-        const status = getAttendanceStatusForDate(date);
-        const statusClass = status ? `attendance-${status}` : '';
-        html += `<td class="calendar-day ${statusClass}">${day}</td>`;
-        if ((startWeekday + day) % 7 === 0) html += `</tr><tr>`;
-    }
-    const totalCells = startWeekday + daysInMonth;
-    const remainder = totalCells % 7;
-    if (remainder !== 0) {
-        for (let i = remainder; i < 7; i++) html += `<td></td>`;
-    }
-    html += `</tr></tbody></table>`;
-    container.innerHTML = html;
-}
-
-function changeAttendanceMonth(delta) {
-    attendanceCalendarMonth.setMonth(attendanceCalendarMonth.getMonth() + delta);
-    renderAttendanceCalendar();
-}
-window.changeAttendanceMonth = changeAttendanceMonth;
-
-function populateStudentCardModal() {
-    if (!currentUser) return;
-    const t = translations[currentLanguage];
-    const displayName = getText(currentUser) || currentUser.nameAr;
-    const sectionName = getSectionName(currentUser.section);
-    const group = currentUser.group ? `${t.groupLabel} ${currentUser.group}` : t.noGroup;
-    const workSystemLabels = { monthly: t.workMonthly, per8sessions: t.workPer8, custom: t.workCustom };
-    const workSystem = workSystemLabels[currentUser.workSystem] || currentUser.workSystem;
-    let subjectsHtml = '';
-    if (currentUser.subjects === 'all') {
-        subjectsHtml = `<span class="subject-tag">${escapeHtml(t.allSubjects)}</span>`;
-    } else if (Array.isArray(currentUser.subjects) && currentUser.subjects.length > 0) {
-        subjectsHtml = currentUser.subjects.map(key => {
-            const subj = data.subjectCatalog[key];
-            return `<span class="subject-tag">${escapeHtml(subj ? getText(subj) : key)}</span>`;
-        }).join('');
-    } else {
-        subjectsHtml = `<span>${escapeHtml(t.noSubjects)}</span>`;
-    }
-    const parentInfo = (currentUser.parentName || currentUser.parentPhone)
-        ? `<div class="detail-item"><strong>${t.parentName}</strong><span class="value">${escapeHtml(currentUser.parentName || '—')}</span></div>
-           <div class="detail-item"><strong>${t.parentPhone}</strong><span class="value">${escapeHtml(currentUser.parentPhone || '—')}</span></div>`
-        : `<div class="detail-item"><strong>${t.parentName}</strong><span class="value">${escapeHtml(t.noParentInfo)}</span></div>`;
-    const cardHtml = `
-        <div class="student-card-profile">
-            <div class="student-card-avatar">
-    ${currentUser.photo_url 
-        ? `<img src="${currentUser.photo_url}" alt="${escapeHtml(displayName)}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">` 
-        : escapeHtml(displayName.charAt(0).toUpperCase())}
-</div>
-            <div>
-                <div class="student-card-name">${escapeHtml(displayName)}</div>
-                <div class="student-card-section">${escapeHtml(sectionName)}${currentUser.group ? ' - ' + escapeHtml(group) : ''}</div>
+	    <!-- Notifications Modal -->
+    <div class="modal-overlay" id="notifications-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="notifications-modal-title">🔔 الإشعارات</h3>
+                <button class="modal-close-btn" onclick="closeNotificationsModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <ul id="notifications-list" style="list-style:none; padding:0; max-height:300px; overflow-y:auto;"></ul>
             </div>
         </div>
-        <div class="student-card-details">
-            <div class="detail-item"><strong>${t.workSystemLabel}</strong><span class="value">${escapeHtml(workSystem)}</span></div>
-            <div class="detail-item"><strong>${t.subjectsLabel}</strong><div class="subjects-tags">${subjectsHtml}</div></div>
-            ${parentInfo}
-        </div>
-                <div class="attendance-calendar-section">
-            <h4>${t.attendanceCalendarTitle}</h4>
-            <div id="attendance-calendar"></div>
-            <button type="button" id="print-attendance-btn" onclick="printAttendance()">🖨️ ${t.printAttendance}</button>
-        </div>
-    `;
-    modalBody.innerHTML = cardHtml;
-    if (currentUser.attendance && currentUser.attendance.length > 0) {
-        const latestDateStr = currentUser.attendance[currentUser.attendance.length - 1].date;
-        const latestDate = parseAttendanceDate(latestDateStr);
-        if (latestDate) {
-            attendanceCalendarMonth = new Date(latestDate.getFullYear(), latestDate.getMonth(), 1);
-        } else {
-            attendanceCalendarMonth = new Date();
-        }
-    } else {
-        attendanceCalendarMonth = new Date();
-    }
-    renderAttendanceCalendar();
-	document.getElementById('modal-footer').innerHTML = 
-    `<a href="profile.html" class="edit-profile-link">${escapeHtml(translations[currentLanguage].editProfile)}</a>`;
+    </div>
+	<div class="toast" id="toast"></div>
+	<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+   	<script>
+			// ==================== Supabase Configuration ====================
+			const SUPABASE_URL = 'https://ewvvlqujimxdubreulni.supabase.co';
+			const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV3dnZscXVqaW14ZHVicmV1bG5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxMzc0ODAsImV4cCI6MjEwMjcxMzQ4MH0._-i_8bMsMM1uhmE024MrgWo66GAQjt8vONlur9LfOtg';
+			const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+			/**
+				* Fire-and-forget interaction counter.
+				* Never throws, never interrupts the app.
+			*/
+			function trackInteraction(eventType) {
+				try {
+					if (!window.supabase || !supabaseClient) return;
+					supabaseClient.rpc('increment_interaction_count', { p_event_type: eventType })
+					.then(() => {})
+					.catch(err => console.warn('[Tracking]', eventType, err.message));
+					} catch (err) {
+					console.warn('[Tracking] init error', err.message);
+				}
+			}
+			async function verifyAdminCredentials(name, password) {
+				try {
+					const { data, error } = await supabaseClient
+					.from('admins')
+					.select('username, password')
+					.eq('username', name.toLowerCase())
+					.maybeSingle();
+					if (error) {
+						console.warn('[AdminAuth]', error.message);
+						return false;
+					}
+					return data && data.password === password;
+					} catch (err) {
+					console.warn('[AdminAuth] init error', err.message);
+					return false;
+				}
+			}
+			// ==================== DEFAULT CONSTANTS ====================
+			const days = [
+				{ key: 'mon', ar: 'الاثنين', en: 'Monday', fr: 'Lundi' },
+				{ key: 'tue', ar: 'الثلاثاء', en: 'Tuesday', fr: 'Mardi' },
+				{ key: 'wed', ar: 'الأربعاء', en: 'Wednesday', fr: 'Mercredi' },
+				{ key: 'thu', ar: 'الخميس', en: 'Thursday', fr: 'Jeudi' },
+				{ key: 'fri', ar: 'الجمعة', en: 'Friday', fr: 'Vendredi' },
+				{ key: 'sat', ar: 'السبت', en: 'Saturday', fr: 'Samedi' },
+				{ key: 'sun', ar: 'الأحد', en: 'Sunday', fr: 'Dimanche' }
+			];
+
+			const timeSlots = [];
+			for (let hour = 7; hour <= 20; hour++) {
+				timeSlots.push({
+					id: `slot${hour}`,
+					ar: `${hour}:00 - ${hour+1}:00`,
+					en: `${hour}:00 - ${hour+1}:00`,
+					fr: `${hour}h - ${hour+1}h`
+				});
+			}
+
+			// ==================== GLOBAL DATA (populated from Supabase) ====================
+			let data = {
+				days,
+				timeSlots,
+				sections: {},
+				subjectCatalog: {},
+				schedule: {},
+				students: []
+			};
+
+			// ==================== LOAD DATA FROM SUPABASE ====================
+			async function loadDataFromSupabase() {
+				try {
+					// Fetch sections
+					const { data: sectionsRows, error: sectionsError } = await supabaseClient
+					.from('sections')
+					.select('*');
+					if (sectionsError) throw sectionsError;
+					
+					const sections = {};
+					sectionsRows.forEach(row => {
+						sections[row.key] = { ar: row.name_ar, en: row.name_en, fr: row.name_fr };
+					});
+					
+					// Fetch subjects
+					const { data: subjectsRows, error: subjectsError } = await supabaseClient
+					.from('subjects')
+					.select('*');
+					if (subjectsError) throw subjectsError;
+					
+					const subjectCatalog = {};
+					subjectsRows.forEach(row => {
+						subjectCatalog[row.key] = { ar: row.name_ar, en: row.name_en, fr: row.name_fr };
+					});
+					
+					// Fetch students (profiles)
+					const { data: profilesRows, error: profilesError } = await supabaseClient
+					.from('profiles')
+					.select('*');
+					if (profilesError) throw profilesError;
+					
+					const students = profilesRows.map(row => ({
+						id: row.id,
+						nameAr: row.name_ar,
+						nameEn: row.name_en,
+						nameFr: row.name_fr,
+						section: row.section_key,
+						group: row.group_number,
+						workSystem: row.work_system,
+						password: row.password,
+						subjects: row.subjects,
+						parentName: row.parent_name,
+						parentPhone: row.parent_phone,
+						attendance: row.attendance || [],
+						photo_url: row.photo_url || null,
+						homework: row.homework || []
+					}));
+					
+					// Fetch schedule slots
+					const { data: scheduleRows, error: scheduleError } = await supabaseClient
+					.from('schedule_slots')
+					.select('*');
+					if (scheduleError) throw scheduleError;
+					
+					const schedule = {};
+					days.forEach(day => { schedule[day.key] = {}; });
+					scheduleRows.forEach(row => {
+						if (!schedule[row.day_key]) schedule[row.day_key] = {};
+						schedule[row.day_key][row.time_slot_id] = row.assignment;
+					});
+					
+					// Fill missing cells with 'reserved'
+					days.forEach(day => {
+						timeSlots.forEach(slot => {
+							if (!schedule[day.key][slot.id]) {
+								schedule[day.key][slot.id] = 'reserved';
+							}
+						});
+					});
+					
+					// Update global data
+					data.sections = sections;
+					data.subjectCatalog = subjectCatalog;
+					data.students = students;
+					data.schedule = schedule;
+					
+					console.log('Data loaded from Supabase');
+					return true;
+					} catch (error) {
+					console.error('Error loading data from Supabase:', error);
+					alert('Failed to load data from Supabase. Please check your connection and try again.');
+					return false;
+				}
+			}
+
+			// ==================== STATE ====================
+			let currentLanguage = 'ar';
+			let currentTheme = 'light';
+			let currentUser = null;
+			const STORAGE_KEY_ADMIN = 'edschedule_admin_logged';
+			const STORAGE_KEY_STUDENT_ID = 'edschedule_student_id';
+			let attendanceCalendarMonth = new Date();
+			let currentNotifications = [];
+			// ==================== DOM REFS ====================
+			const languageSelect = document.getElementById('language-select');
+			const themeToggle = document.getElementById('theme-toggle');
+			const scheduleHead = document.getElementById('schedule-head');
+			const scheduleBody = document.getElementById('schedule-body');
+			const personalScheduleDiv = document.getElementById('personal-schedule');
+			const personalList = document.getElementById('personal-list');
+			const rosterPanelDiv = document.getElementById('roster-panel');
+			const rosterList = document.getElementById('roster-list');
+			const attendancePanelDiv = document.getElementById('attendance-panel');
+			const attendanceList = document.getElementById('attendance-list');
+			const attendanceLegend = document.getElementById('attendance-legend');
+			const workSystemPanelDiv = document.getElementById('work-system-panel');
+			const workSystemContent = document.getElementById('work-system-content');
+			const materialsPanelDiv = document.getElementById('materials-panel');
+			const materialsContent = document.getElementById('materials-content');
+			const parentInfoDiv = document.getElementById('parent-info');
+			const parentInfoPanelDiv = document.getElementById('parent-info-panel');
+			const body = document.body;
+			const loginForm = document.getElementById('login-form');
+			const userInfoDiv = document.getElementById('user-info');
+			const loggedNameSpan = document.getElementById('logged-name');
+			const userAvatarSpan = document.getElementById('user-avatar');
+			const logoutBtn = document.getElementById('logout-btn');
+			const loginNameInput = document.getElementById('login-name');
+			const loginPasswordInput = document.getElementById('login-password');
+			const loginBtn = document.getElementById('login-btn');
+			const modalOverlay = document.getElementById('student-card-modal');
+			const modalBody = document.getElementById('modal-body');
+			const modalTitle = document.getElementById('modal-title');
+			const modalCloseBtn = document.getElementById('modal-close-btn');
+			const studentCardBtn = document.getElementById('student-card-btn');
+			const adminBtn = document.getElementById('admin-btn');
+			const notificationsBtn = document.getElementById('notifications-btn');
+			const notificationsBadge = document.getElementById('notifications-badge');
+			const notificationsModal = document.getElementById('notifications-modal');
+			const notificationsList = document.getElementById('notifications-list');
+			// ==================== UTILITY FUNCTIONS ====================
+			function escapeHtml(text) {
+				const div = document.createElement('div');
+				div.textContent = text;
+				return div.innerHTML;
+			}
+			function getText(obj, lang = currentLanguage) {
+				if (!obj) return '';
+				if (lang === 'ar') return obj.ar || obj.nameAr || '';
+				if (lang === 'fr') return obj.fr || obj.nameFr || '';
+				return obj.en || obj.nameEn || '';
+			}
+			function getSectionName(sectionKey) {
+				if (sectionKey === 'reserved') return translations[currentLanguage].reservedName || 'Reserved';
+				const sec = data.sections[sectionKey];
+				return sec ? getText(sec) : sectionKey;
+			}
+			function parseAssignmentKey(key) {
+				const match = key.match(/^(.+?)-g(\d+)$/);
+				if (match) return { section: match[1], group: match[2] };
+				return { section: key, group: null };
+			}
+			function isAssignmentForStudent(assignmentKey, student) {
+				if (student && student.isAdmin) return false;
+				const parsed = parseAssignmentKey(assignmentKey);
+				if (parsed.section !== student.section) return false;
+				if (parsed.group !== null) return student.group !== null && student.group === parsed.group;
+				return true;
+			}
+			function getAssignmentDisplay(assignmentKey) {
+				const parsed = parseAssignmentKey(assignmentKey);
+				if (parsed.section === 'reserved') return getSectionName('reserved');
+				const baseName = getSectionName(parsed.section);
+				if (parsed.group) return `${baseName} (${translations[currentLanguage].groupLabel} ${parsed.group})`;
+				return baseName;
+			}
+
+			// ==================== RENDER FUNCTIONS ====================
+			function rebuildScheduleTable() {
+				let headerHtml = `<tr><th>${translations[currentLanguage].thDay}</th>`;
+				data.timeSlots.forEach(slot => headerHtml += `<th>${escapeHtml(getText(slot))}</th>`);
+				headerHtml += '</tr>';
+				scheduleHead.innerHTML = headerHtml;
+				
+				let bodyHtml = '';
+				data.days.forEach(day => {
+					bodyHtml += `<tr><td class="day-cell">${escapeHtml(getText(day))}</td>`;
+					data.timeSlots.forEach(slot => {
+						const assignment = data.schedule[day.key]?.[slot.id] || 'reserved';
+						let cellContent = '';
+						let hasStudentMatch = false;
+						if (Array.isArray(assignment)) {
+							cellContent = assignment.map(item => {
+								const display = getAssignmentDisplay(item);
+								const match = currentUser && isAssignmentForStudent(item, currentUser);
+								if (match) hasStudentMatch = true;
+								const cls = match ? 'merged-item student-highlight' : 'merged-item';
+								return `<span class="${cls}">${escapeHtml(display)}</span>`;
+							}).join('');
+							} else {
+							const display = getAssignmentDisplay(assignment);
+							const match = currentUser && isAssignmentForStudent(assignment, currentUser);
+							if (match) hasStudentMatch = true;
+							const cls = match ? 'student-highlight' : (assignment === 'reserved' ? 'reserved' : '');
+							cellContent = `<span class="${cls}">${escapeHtml(display)}</span>`;
+						}
+						bodyHtml += `<td class="${hasStudentMatch ? 'student-highlight' : ''}">${cellContent}</td>`;
+					});
+					bodyHtml += '</tr>';
+				});
+				scheduleBody.innerHTML = bodyHtml;
+			}
+
+			function updatePersonalSchedule() {
+				if (!currentUser) {
+					personalScheduleDiv.classList.remove('visible');
+					return;
+				}
+				const personalSessions = [];
+				data.days.forEach(day => {
+					data.timeSlots.forEach(slot => {
+						const assignment = data.schedule[day.key]?.[slot.id] || 'reserved';
+						let matches = false;
+						if (Array.isArray(assignment)) matches = assignment.some(item => isAssignmentForStudent(item, currentUser));
+						else matches = isAssignmentForStudent(assignment, currentUser);
+						if (matches) personalSessions.push({ day, slot });
+					});
+				});
+				if (personalSessions.length === 0) {
+					personalList.innerHTML = `<li>${translations[currentLanguage].noSessions}</li>`;
+					} else {
+					personalList.innerHTML = personalSessions.map(session => {
+						return `<li>${escapeHtml(getText(session.day))} - ${escapeHtml(getText(session.slot))}</li>`;
+					}).join('');
+				}
+				personalScheduleDiv.classList.add('visible');
+			}
+
+			function updateRoster() {
+				if (!currentUser) {
+					rosterPanelDiv.classList.remove('visible');
+					return;
+				}
+				const classmates = data.students.filter(u => {
+					if (u.section !== currentUser.section) return false;
+					if (currentUser.group) return u.group === currentUser.group;
+					return true;
+				});
+				if (classmates.length === 0) {
+					rosterList.innerHTML = `<li>${translations[currentLanguage].noStudents}</li>`;
+					} else {
+					rosterList.innerHTML = classmates.map(u => {
+						const displayName = getText(u) || u.nameAr;
+						const highlight = (u.nameAr === currentUser.nameAr) ? 'student-highlight' : '';
+						let avatarHtml = '';
+						if (u.photo_url) {
+							avatarHtml = `<img class="roster-avatar" src="${escapeHtml(u.photo_url)}" alt="${escapeHtml(displayName)}">`;
+							} else {
+							const initial = displayName.charAt(0).toUpperCase();
+							avatarHtml = `<span class="roster-avatar-placeholder">${escapeHtml(initial)}</span>`;
+						}
+						return `<li class="${highlight}">${avatarHtml} <span>${escapeHtml(displayName)}</span></li>`;
+					}).join('');
+				}
+				rosterPanelDiv.classList.add('visible');
+			}
+
+			function updateAttendance() {
+				if (!currentUser) {
+					attendancePanelDiv.classList.remove('visible');
+					return;
+				}
+				const records = currentUser.attendance || [];
+				if (records.length === 0) {
+					attendanceList.innerHTML = `<li>${translations[currentLanguage].noAttendance}</li>`;
+					} else {
+					attendanceList.innerHTML = records.map(record => {
+						const statusClass = `attendance-${record.status}`;
+						const statusLabel = translations[currentLanguage]['status_' + record.status] || record.status;
+						return `<li class="${statusClass}">
+						<span>${escapeHtml(record.date)}</span>
+						<span class="attendance-status-label">${escapeHtml(statusLabel)}</span>
+						</li>`;
+					}).join('');
+				}
+				const legendHtml = `
+				<span style="display:inline-block; margin-right: 10px;">
+				<span style="display:inline-block; width:12px; height:12px; background-color: var(--attendance-paid-bg); border-radius:3px; margin-left:3px;"></span>
+				${escapeHtml(translations[currentLanguage].status_paid)}
+				</span>
+				<span style="display:inline-block; margin-right: 10px;">
+				<span style="display:inline-block; width:12px; height:12px; background-color: var(--attendance-unpaid-bg); border-radius:3px; margin-left:3px;"></span>
+				${escapeHtml(translations[currentLanguage].status_unpaid)}
+				</span>
+				<span style="display:inline-block; margin-right: 10px;">
+				<span style="display:inline-block; width:12px; height:12px; background-color: var(--attendance-overdue-bg); border-radius:3px; margin-left:3px;"></span>
+				${escapeHtml(translations[currentLanguage].status_overdue)}
+				</span>
+				`;
+				attendanceLegend.innerHTML = legendHtml;
+				attendancePanelDiv.classList.add('visible');
+			}
+
+			function updateWorkSystemPanel() {
+				if (!currentUser) {
+					workSystemPanelDiv.classList.remove('visible');
+					return;
+				}
+				const t = translations[currentLanguage];
+				const labels = { monthly: t.workMonthly, per8sessions: t.workPer8, custom: t.workCustom };
+				const systemLabel = labels[currentUser.workSystem] || currentUser.workSystem;
+				workSystemContent.innerHTML = `<p><strong>${t.workSystemLabel}:</strong> ${escapeHtml(systemLabel)}</p>`;
+				workSystemPanelDiv.classList.add('visible');
+			}
+
+			function updateMaterialsPanel() {
+				if (!currentUser) {
+					materialsPanelDiv.classList.remove('visible');
+					return;
+				}
+				const t = translations[currentLanguage];
+				const subjects = currentUser.subjects;
+				let materialsHtml = '';
+				if (subjects === 'all') {
+					materialsHtml = `<span>${escapeHtml(t.allSubjects)}</span>`;
+					} else if (Array.isArray(subjects) && subjects.length > 0) {
+					materialsHtml = subjects.map(key => {
+						const subj = data.subjectCatalog[key];
+						return `<span>${escapeHtml(subj ? getText(subj) : key)}</span>`;
+					}).join('');
+					} else {
+					materialsHtml = `<span>${escapeHtml(t.noSubjects)}</span>`;
+				}
+				materialsContent.innerHTML = `<div class="materials-list">${materialsHtml}</div>`;
+				materialsPanelDiv.classList.add('visible');
+			}
+
+			function updateParentInfoPanel() {
+				if (!currentUser) {
+					parentInfoPanelDiv.classList.remove('visible');
+					return;
+				}
+				const t = translations[currentLanguage];
+				let parentHtml = '';
+				if (currentUser.parentName || currentUser.parentPhone) {
+					parentHtml += `<div class="info-line"><strong>${t.parentName}:</strong> ${escapeHtml(currentUser.parentName || '—')}</div>`;
+					parentHtml += `<div class="info-line"><strong>${t.parentPhone}:</strong> ${escapeHtml(currentUser.parentPhone || '—')}</div>`;
+					} else {
+					parentHtml += `<div class="info-line">${escapeHtml(t.noParentInfo)}</div>`;
+				}
+				parentInfoDiv.innerHTML = parentHtml;
+				parentInfoPanelDiv.classList.add('visible');
+			}
+			function updateHomeworkPanel() {
+				const panel = document.getElementById('homework-panel');
+				const list = document.getElementById('homework-list');
+				if (!panel || !list) return;
+				if (!currentUser || currentUser.isAdmin) {
+					panel.style.display = 'none';
+					return;
+				}
+				const t = translations[currentLanguage];
+				const homework = Array.isArray(currentUser.homework) ? currentUser.homework : [];
+				if (homework.length === 0) {
+					list.innerHTML = `<li>${escapeHtml(t.noHomework)}</li>`;
+					} else {
+					list.innerHTML = homework.map(hw => {
+						const subjectDisplay = data.subjectCatalog[hw.subject] ? getText(data.subjectCatalog[hw.subject]) : hw.subject;
+						return `<li style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+						<span><strong>${escapeHtml(subjectDisplay)}</strong> - ${escapeHtml(hw.title || '')}</span>
+						<span style="font-size:12px; opacity:0.8;">${escapeHtml(hw.due_date || '')}</span>
+						</li>`;
+					}).join('');
+				}
+				panel.style.display = 'block';
+			}
+			function toast(message) {
+    const toastEl = document.getElementById('toast');
+    if (!toastEl) return;
+    toastEl.textContent = message;
+    toastEl.classList.add('show');
+    setTimeout(() => toastEl.classList.remove('show'), 2000);
 }
-function printAttendance() {
-    window.print();
-}
-function openStudentCardModal() {
-    populateStudentCardModal();
-    modalOverlay.classList.add('show');
-}
-function closeStudentCardModal() {
-    modalOverlay.classList.remove('show');
-}
+window.toast = toast;
+			async function loadNotifications() {
+				if (!currentUser || currentUser.isAdmin) {
+					notificationsBtn.style.display = 'none';
+					notificationsBadge.style.display = 'none';
+					return;
+				}
+				try {
+					const { data, error } = await supabaseClient
+					.from('notifications')
+					.select('*')
+					.eq('user_id', currentUser.id)
+					.order('created_at', { ascending: false });
+					
+					if (error) throw error;
+					
+					currentNotifications = data || [];
+					const unreadCount = currentNotifications.filter(n => !n.read).length;
+					updateNotificationsBadge(unreadCount);
+					notificationsBtn.style.display = 'inline-block';
+					} catch (err) {
+					console.warn('[Notifications]', err.message);
+				}
+			}
 
-// ==================== LOGIN / LOGOUT ====================
-async function handleLogin() {
-    const name = loginNameInput.value.trim();
-    const password = loginPasswordInput.value.trim();
-    if (!name || !password) {
-        alert(translations[currentLanguage].emptyFields);
-        return;
-    }
+			function updateNotificationsBadge(unreadCount) {
+				if (unreadCount > 0) {
+					notificationsBadge.textContent = unreadCount;
+					notificationsBadge.style.display = 'inline-block';
+					} else {
+					notificationsBadge.style.display = 'none';
+				}
+			}
 
-    // Admin login (from student page, gives access to admin panel)
-        // Admin login (from student page, gives access to admin panel)
-    const isAdmin = await verifyAdminCredentials(name, password);
-    if (isAdmin) {
-        currentUser = { isAdmin: true, nameAr: 'Admin', nameEn: 'Admin', nameFr: 'Admin' };
-        loginNameInput.value = '';
-        loginPasswordInput.value = '';
-                localStorage.setItem(STORAGE_KEY_ADMIN, 'true');
-        localStorage.removeItem(STORAGE_KEY_STUDENT_ID);
-        trackInteraction('admin_login');
-        updateAllPanels();
-        loginForm.style.display = 'none';
-        userInfoDiv.style.display = 'flex';
-        return;
-    }
+			function renderNotifications() {
+				if (currentNotifications.length === 0) {
+					notificationsList.innerHTML = `<li>${escapeHtml(translations[currentLanguage].noNotifications)}</li>`;
+					return;
+				}
+				notificationsList.innerHTML = currentNotifications.map(n => {
+					const unreadClass = n.read ? '' : 'unread';
+					return `<li class="${unreadClass}" onclick="markNotificationRead('${n.id}')">
+					<strong>${escapeHtml(n.title)}</strong>
+					<div style="font-size:12px; opacity:0.8;">${escapeHtml(n.body || '')}</div>
+					<div style="font-size:10px; opacity:0.6;">${new Date(n.created_at).toLocaleString()}</div>
+					</li>`;
+				}).join('');
+			}
 
-    // Student login
-    const student = data.students.find(u => {
-        return (u.nameAr === name || u.nameEn === name || u.nameFr === name) && u.password === password;
-    });
-    if (!student) {
-        alert(translations[currentLanguage].invalidCredentials);
-        return;
-    }
-        currentUser = { ...student };
-    localStorage.setItem(STORAGE_KEY_STUDENT_ID, student.id);
-    localStorage.removeItem(STORAGE_KEY_ADMIN);
-trackInteraction('student_login');
-    loginNameInput.value = '';
-    loginPasswordInput.value = '';
-    updateAllPanels();
-    loginForm.style.display = 'none';
-    userInfoDiv.style.display = 'flex';
-}
+			async function markNotificationRead(id) {
+				try {
+					const { error } = await supabaseClient
+					.from('notifications')
+					.update({ read: true })
+					.eq('id', id);
+					
+					if (error) throw error;
+					
+					const notif = currentNotifications.find(n => n.id === id);
+					if (notif) notif.read = true;
+					
+					const unreadCount = currentNotifications.filter(n => !n.read).length;
+					updateNotificationsBadge(unreadCount);
+					renderNotifications();
+					} catch (err) {
+					console.warn('[Notifications]', err.message);
+				}
+			}
 
-function handleLogout() {
-    if (currentUser) {
-        trackInteraction(currentUser.isAdmin ? 'admin_logout' : 'student_logout');
-    }
-    currentUser = null;
-    localStorage.removeItem(STORAGE_KEY_ADMIN);
-    localStorage.removeItem(STORAGE_KEY_STUDENT_ID);
-    loginForm.style.display = 'flex';
-    userInfoDiv.style.display = 'none';
-    closeStudentCardModal();
-    updateAllPanels();
-}
+			function openNotificationsModal() {
+				renderNotifications();
+				notificationsModal.classList.add('show');
+			}
 
-// ==================== TRANSLATIONS ====================
-const translations = {
-    ar: {
-        title: '📅 جدول التلميذ',
-        subtitle: 'من الاثنين إلى الأحد | من 7:00 صباحًا إلى 8:00 مساءً',
-        thDay: 'اليوم',
-        languageLabel: '🌐 اللغة:',
-        themeLabel: '🌓 النمط:',
-        themeNight: '🌙 ليلي',
-        themeDay: '☀️ نهاري',
-		installBtnLabel: '📲 تثبيت التطبيق',
-        personalTitle: '📋 جدولك الخاص',
-        rosterTitle: '👥 مجموعتك',
-        attendanceTitle: '📆 سجل الحضور والدفع',
-        workSystemTitle: '💼 نظام العمل',
-        materialsTitle: '📚 المواد المتناولة',
-parentInfoTitle: '👨‍👩‍👦 بيانات الولي',
-adminSectionsTitle: '🏫 الأقسام',
-		homeworkTitle: '📝 الواجبات المنزلية',
-noHomework: 'لا توجد واجبات منزلية مسجلة',
-        loginNamePlaceholder: 'الاسم الكامل',
-        loginPasswordPlaceholder: 'الرقم السري',
-        loginBtn: 'دخول',
-        logoutBtn: 'تسجيل الخروج',
-        studentCardBtn: 'بطاقة التلميذ',
-        modalTitle: 'بطاقة التلميذ',
-		editProfile: 'تعديل ملفي الشخصي',
-        welcome: 'مرحبا',
-        workSystemLabel: 'نظام العمل',
-        workMonthly: 'شهري',
-        workPer8: 'كل 8 حصص',
-        workCustom: 'مخصص',
-        noStudents: 'لا يوجد تلاميذ في مجموعتك',
-        noSessions: 'لا توجد حصص مسجلة لك',
-        noAttendance: 'لا يوجد سجل حضور',
-        reservedName: 'احتياط / أنشطة',
-        groupLabel: 'مجموعة',
-        noGroup: 'لا مجموعة',
-        emptyFields: 'يرجى إدخال الاسم والرقم السري',
-        invalidCredentials: 'الاسم أو الرقم السري غير صحيح',
-        status_paid: 'مدفوع',
-        status_unpaid: 'غير مدفوع',
-        status_overdue: 'متأخر عن الدفع',
-        parentName: 'اسم الولي',
-        parentPhone: 'رقم هاتف الولي',
-        noParentInfo: 'لا توجد بيانات ولي مسجلة',
-        allSubjects: 'كل المواد',
-        noSubjects: 'لا توجد مواد محددة',
-        subjectsLabel: 'المواد',
-		footerDevelopedBy: 'تم التطوير بواسطة ماجري زياد',
-footerHostedOn: 'مستضاف على Netlify و Github و Supabase',
-footerVersion: 'الإصدار: 0.0.3',
-footerLastUpdate: 'آخر تحديث: 07/08/2026',
-footerContact: 'اتصل بنا',
-footerPrivacyPolicy: 'سياسة الخصوصية',
-printAttendance: 'طباعة الحضور',
-        dayNames: { mon: 'الاثنين', tue: 'الثلاثاء', wed: 'الأربعاء', thu: 'الخميس', fri: 'الجمعة', sat: 'السبت', sun: 'الأحد' },
-        attendanceCalendarTitle: 'تقويم الحضور',
-        monthNames: ['جانفي', 'فيفري', 'مارس', 'أفريل', 'ماي', 'جوان', 'جويلية', 'أوت', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'],
-        weekdayNames: ['أحد', 'اثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت'],
-        notes: `<strong>📌 ملاحظات:</strong><br>
-            • كل حصة مدتها ساعة واحدة.<br>
-            • الأسبوع يبدأ من يوم الاثنين.<br>
-            • قد تكون بعض الحصص مشتركة بين قسمين أو أكثر، أو مقسمة إلى مجموعات.<br>
-            • في سجل الحضور: الأخضر = مدفوع، الأصفر = غير مدفوع، الأحمر = متأخر عن الدفع.<br>
-            • بيانات الدخول للتجربة: أحمد/123.`
-    },
-    fr: {
-        title: '📅 Emploi du temps de l\'élève',
-        subtitle: 'Lundi - Dimanche | De 7h00 à 20h00',
-        thDay: 'Jour',
-        languageLabel: '🌐 Langue :',
-        themeLabel: '🌓 Thème :',
-        themeNight: '🌙 Nuit',
-        themeDay: '☀️ Jour',
-		installBtnLabel: '📲 Installer l\'application',
-        personalTitle: '📋 Votre emploi du temps',
-        rosterTitle: '👥 Votre groupe',
-        attendanceTitle: '📆 Registre de présence et paiement',
-        workSystemTitle: '💼 Système de travail',
-        materialsTitle: '📚 Matières étudiées',
-parentInfoTitle: '👨‍👩‍👦 Informations parentales',
-adminSectionsTitle: '🏫 Sections',
-		homeworkTitle: '📝 Devoirs',
-noHomework: 'Aucun devoir enregistré',
-        loginNamePlaceholder: 'Nom complet',
-        loginPasswordPlaceholder: 'Mot de passe',
-        loginBtn: 'Entrer',
-        logoutBtn: 'Déconnexion',
-        studentCardBtn: 'Carte étudiant',
-        modalTitle: 'Carte étudiant',
-        editProfile: 'Modifier mon profil',
-        welcome: 'Bienvenue',
-        workSystemLabel: 'Système de travail',
-        workMonthly: 'Mensuel',
-        workPer8: 'Toutes les 8 séances',
-        workCustom: 'Personnalisé',
-        noStudents: 'Aucun élève dans votre groupe',
-        noSessions: 'Aucune séance enregistrée',
-        noAttendance: 'Aucun registre de présence',
-        reservedName: 'Réserve / Activités',
-        groupLabel: 'Groupe',
-        noGroup: 'Aucun groupe',
-        emptyFields: 'Veuillez saisir le nom et le mot de passe',
-        invalidCredentials: 'Nom ou mot de passe incorrect',
-        status_paid: 'Payé',
-        status_unpaid: 'Non payé',
-        status_overdue: 'En retard',
-        parentName: 'Nom du parent',
-        parentPhone: 'Téléphone du parent',
-        noParentInfo: 'Aucune information parentale',
-        allSubjects: 'Toutes les matières',
-        noSubjects: 'Aucune matière définie',
-        subjectsLabel: 'Matières',
-		footerDevelopedBy: 'Développé par Mejri Ziad',
-footerHostedOn: 'Hébergé sur Netlify, Github et Supabase',
-footerVersion: 'Version : 0.0.3',
-footerLastUpdate: 'Dernière mise à jour : 07/08/2026',
-footerContact: 'Contact',
-footerPrivacyPolicy: 'Politique de confidentialité',
-printAttendance: 'Imprimer la présence',
-        dayNames: { mon: 'Lundi', tue: 'Mardi', wed: 'Mercredi', thu: 'Jeudi', fri: 'Vendredi', sat: 'Samedi', sun: 'Dimanche' },
-        attendanceCalendarTitle: 'Calendrier de présence',
-        monthNames: ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'],
-        weekdayNames: ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'],
-        notes: `<strong>📌 Remarques :</strong><br>
-            • Chaque séance dure 1 heure.<br>
-            • La semaine commence le lundi.<br>
-            • Certaines séances peuvent être communes à plusieurs sections ou divisées en groupes.<br>
-            • Dans le registre : vert = payé, jaune = non payé, rouge = en retard.<br>
-            • Identifiants de test : Ahmed/123.`
-    },
-    en: {
-        title: '📅 Student Schedule',
-        subtitle: 'Monday - Sunday | From 7:00 AM to 8:00 PM',
-        thDay: 'Day',
-        languageLabel: '🌐 Language:',
-        themeLabel: '🌓 Theme:',
-        themeNight: '🌙 Night',
-        themeDay: '☀️ Day',
-		installBtnLabel: '📲 Install App',
-        personalTitle: '📋 Your Personal Schedule',
-        rosterTitle: '👥 Your Group',
-        attendanceTitle: '📆 Attendance & Payment Record',
-        workSystemTitle: '💼 Work System',
-        materialsTitle: '📚 Subjects Studied',
-parentInfoTitle: '👨‍👩‍👦 Parent Information',
-adminSectionsTitle: '🏫 Sections',
-		homeworkTitle: '📝 Homework',
-noHomework: 'No homework assigned',
-        loginNamePlaceholder: 'Full Name',
-        loginPasswordPlaceholder: 'Password',
-        loginBtn: 'Sign In',
-        logoutBtn: 'Logout',
-        studentCardBtn: 'Student Card',
-        modalTitle: 'Student Card',
-        editProfile: 'Edit my profile',
-        welcome: 'Welcome',
-        workSystemLabel: 'Work System',
-        workMonthly: 'Monthly',
-        workPer8: 'Every 8 sessions',
-        workCustom: 'Custom',
-        noStudents: 'No students in your group',
-        noSessions: 'No sessions scheduled',
-        noAttendance: 'No attendance record',
-        reservedName: 'Reserve / Activities',
-        groupLabel: 'Group',
-        noGroup: 'No group',
-        emptyFields: 'Please enter name and password',
-        invalidCredentials: 'Incorrect name or password',
-        status_paid: 'Paid',
-        status_unpaid: 'Unpaid',
-        status_overdue: 'Overdue',
-        parentName: 'Parent Name',
-        parentPhone: 'Parent Phone',
-        noParentInfo: 'No parent info',
-        allSubjects: 'All Subjects',
-        noSubjects: 'No subjects defined',
-        subjectsLabel: 'Subjects',
-		footerDevelopedBy: 'Developed by Mejri Ziad',
-footerHostedOn: 'Hosted on Netlify, Github and Supabase',
-footerVersion: 'Version : 0.0.3',
-footerLastUpdate: 'Last update : 07/08/2026',
-footerContact: 'Contact',
-footerPrivacyPolicy: 'Privacy Policy',
-printAttendance: 'Print Attendance',
-        dayNames: { mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday', fri: 'Friday', sat: 'Saturday', sun: 'Sunday' },
-        attendanceCalendarTitle: 'Attendance Calendar',
-        monthNames: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
-        weekdayNames: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-        notes: `<strong>📌 Notes:</strong><br>
-            • Each session lasts 1 hour.<br>
-            • The week starts on Monday.<br>
-            • Some sessions may be shared between multiple sections or divided into groups.<br>
-            • In attendance: green = paid, yellow = unpaid, red = overdue.<br>
-            • Test credentials: Ahmed/123.`
-    }
-};
+			function closeNotificationsModal() {
+				notificationsModal.classList.remove('show');
+			}
+			function subscribeToNotifications() {
+				if (!currentUser || currentUser.isAdmin) return;
+				const channel = supabaseClient
+				.channel('notifications-' + currentUser.id)
+				.on(
+					'postgres_changes',
+					{
+						event: 'INSERT',
+						schema: 'public',
+						table: 'notifications',
+						filter: `user_id=eq.${currentUser.id}`
+					},
+					(payload) => {
+						currentNotifications.unshift(payload.new);
+						const unreadCount = currentNotifications.filter(n => !n.read).length;
+						updateNotificationsBadge(unreadCount);
+						toast('لديك إشعار جديد');
+					}
+				)
+				.subscribe();
+			}
+			function renderAdminStudents() {
+				const container = document.getElementById('admin-students-list');
+				if (!container) return;
+				const t = translations[currentLanguage];
+				if (!data.students || data.students.length === 0) {
+					container.innerHTML = `<p>${escapeHtml(t.noStudents)}</p>`;
+					return;
+				}
+				let html = '<ul style="list-style:none; padding:0; max-height:400px; overflow-y:auto;">';
+				data.students.forEach(student => {
+					const name = student.nameAr || student.nameEn || student.nameFr || 'Unnamed';
+					const section = student.section ? getSectionName(student.section) : '—';
+					const group = student.group ? `${t.groupLabel} ${student.group}` : '';
+					html += `<li style="padding:8px; border-bottom:1px solid var(--table-border);">
+					<strong>${escapeHtml(name)}</strong> — ${escapeHtml(section)} ${group ? ' - ' + escapeHtml(group) : ''}
+					</li>`;
+				});
+				html += '</ul>';
+				container.innerHTML = html;
+			}
+			function renderAdminSubjects() {
+				const container = document.getElementById('admin-subjects-list');
+				if (!container) return;
+				const t = translations[currentLanguage];
+				const keys = Object.keys(data.subjectCatalog);
+				if (keys.length === 0) {
+					container.innerHTML = `<p>${escapeHtml(t.noSubjects)}</p>`;
+					return;
+				}
+				let html = '<ul style="list-style:none; padding:0; max-height:400px; overflow-y:auto;">';
+				keys.forEach(key => {
+					const subj = data.subjectCatalog[key];
+					const display = subj ? getText(subj) : key;
+					html += `<li style="padding:8px; border-bottom:1px solid var(--table-border);">${escapeHtml(display)}</li>`;
+				});
+				html += '</ul>';
+				container.innerHTML = html;
+			}
+			function renderAdminSections() {
+				const container = document.getElementById('admin-sections-list');
+				if (!container) return;
+				const t = translations[currentLanguage];
+				const sectionKeys = Object.keys(data.sections);
+				if (sectionKeys.length === 0) {
+					container.innerHTML = `<p>${escapeHtml(t.noSections || 'No sections')}</p>`;
+					return;
+				}
+				let html = '<ul style="list-style:none; padding:0; max-height:400px; overflow-y:auto;">';
+				sectionKeys.forEach(key => {
+					const sec = data.sections[key];
+					const count = data.students.filter(s => s.section === key).length;
+					html += `<li style="padding:8px; border-bottom:1px solid var(--table-border);">
+					<strong>${escapeHtml(key)}</strong> — ${escapeHtml(sec.ar || '')} | ${escapeHtml(sec.en || '')} | ${escapeHtml(sec.fr || '')}
+					<span style="margin-left:10px; font-weight:bold; color:var(--highlight-text);">(${count})</span>
+					</li>`;
+				});
+				html += '</ul>';
+				container.innerHTML = html;
+			}
+			function updateUserInfo() {
+				if (!currentUser) return;
+				const t = translations[currentLanguage];
+				const displayName = getText(currentUser) || currentUser.nameAr;
+				userAvatarSpan.innerHTML = currentUser.photo_url 
+				? `<img src="${currentUser.photo_url}" alt="${escapeHtml(displayName)}" style="width:100%; height:100%; object-fit:cover; border-radius:10px;">` 
+				: displayName.charAt(0).toUpperCase();
+				loggedNameSpan.innerHTML = `${escapeHtml(t.welcome)}، ${escapeHtml(displayName)}`;
+			}
 
-// ==================== EVENT LISTENERS ====================
-languageSelect.addEventListener('change', e => applyLanguage(e.target.value));
-themeToggle.addEventListener('click', () => applyTheme(currentTheme === 'light' ? 'dark' : 'light'));
-loginBtn.addEventListener('click', handleLogin);
-logoutBtn.addEventListener('click', handleLogout);
-studentCardBtn.addEventListener('click', openStudentCardModal);
-modalCloseBtn.addEventListener('click', closeStudentCardModal);
-modalOverlay.addEventListener('click', (e) => {
-    if (e.target === modalOverlay) closeStudentCardModal();
-});
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && modalOverlay.classList.contains('show')) {
-        closeStudentCardModal();
-    }
-});
+			function updateAllPanels() {
+				// Show admin button only if admin is logged in
+				if (adminBtn) {
+					adminBtn.style.display = (currentUser && currentUser.isAdmin) ? 'inline-block' : 'none';
+				}
+				
+				if (currentUser && currentUser.isAdmin) {
+					// Admin: show full schedule and admin panels, hide student panels
+					rebuildScheduleTable();
+					renderAdminStudents();
+					renderAdminSubjects();
+					renderAdminSections();
+					notificationsBtn.style.display = 'none';
+					notificationsBadge.style.display = 'none';
+					document.getElementById('admin-students-panel').style.display = 'block';
+					document.getElementById('admin-subjects-panel').style.display = 'block';
+					document.getElementById('admin-sections-panel').style.display = 'block';
+					document.getElementById('homework-panel').style.display = 'none';
+					personalScheduleDiv.classList.remove('visible');
+					rosterPanelDiv.classList.remove('visible');
+					attendancePanelDiv.classList.remove('visible');
+					workSystemPanelDiv.classList.remove('visible');
+					materialsPanelDiv.classList.remove('visible');
+					parentInfoPanelDiv.classList.remove('visible');
+					studentCardBtn.style.display = 'none';
+					const t = translations[currentLanguage];
+					userAvatarSpan.textContent = 'A';
+					loggedNameSpan.innerHTML = `${escapeHtml(t.welcome)}، Admin`;
+					return;
+					} else {
+					// Hide admin panels when not admin
+					document.getElementById('admin-students-panel').style.display = 'none';
+					document.getElementById('admin-subjects-panel').style.display = 'none';
+					document.getElementById('admin-sections-panel').style.display = 'none';
+				}
+				
+				if (currentUser) {
+					rebuildScheduleTable();
+					updatePersonalSchedule();
+					updateRoster();
+					updateAttendance();
+					updateWorkSystemPanel();
+					updateMaterialsPanel();
+					updateParentInfoPanel();
+					updateHomeworkPanel();
+					updateUserInfo();
+					studentCardBtn.style.display = 'inline-block';
+					} else {
+					rebuildScheduleTable();
+					personalScheduleDiv.classList.remove('visible');
+					rosterPanelDiv.classList.remove('visible');
+					attendancePanelDiv.classList.remove('visible');
+					workSystemPanelDiv.classList.remove('visible');
+					materialsPanelDiv.classList.remove('visible');
+					parentInfoPanelDiv.classList.remove('visible');
+					document.getElementById('homework-panel').style.display = 'none';
+					document.getElementById('admin-sections-panel').style.display = 'none';
+					notificationsBtn.style.display = 'none';
+					notificationsBadge.style.display = 'none';
+					studentCardBtn.style.display = 'inline-block';
+				}
+			}
 
-// ==================== INITIALIZATION ====================
-async function init() {
-    trackInteraction('app_open');
-    const loaded = await loadDataFromSupabase();
-    if (loaded) {
-                // Restore previous login first
-        const adminLogged = localStorage.getItem(STORAGE_KEY_ADMIN);
-        const studentId = localStorage.getItem(STORAGE_KEY_STUDENT_ID);
-        if (adminLogged === 'true') {
-            currentUser = { isAdmin: true, nameAr: 'Admin', nameEn: 'Admin', nameFr: 'Admin' };
-            loginForm.style.display = 'none';
-            userInfoDiv.style.display = 'flex';
-        } else if (studentId) {
-            const student = data.students.find(s => s.id === studentId);
-            if (student) {
-                currentUser = { ...student };
-                loginForm.style.display = 'none';
-                userInfoDiv.style.display = 'flex';
-            } else {
-                localStorage.removeItem(STORAGE_KEY_STUDENT_ID);
-                currentUser = null;
-                loginForm.style.display = 'flex';
-                userInfoDiv.style.display = 'none';
-            }
-        } else {
-            currentUser = null;
-            loginForm.style.display = 'flex';
-            userInfoDiv.style.display = 'none';
-        }
+			// ==================== LANGUAGE & THEME ====================
+			function applyLanguage(lang) {
+				currentLanguage = lang;
+				document.documentElement.lang = lang;
+				document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+				document.body.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
+				const t = translations[lang];
+				document.getElementById('page-title').textContent = t.title;
+				document.getElementById('subtitle').textContent = t.subtitle;
+				document.querySelector('.control-group label[for="language-select"]').textContent = t.languageLabel;
+				document.querySelector('.control-group label[for="theme-toggle"]').textContent = t.themeLabel;
+				document.getElementById('theme-toggle').textContent = currentTheme === 'light' ? t.themeNight : t.themeDay;
+				document.getElementById('install-btn').textContent = t.installBtnLabel;
+				document.getElementById('personal-title').textContent = t.personalTitle;
+				document.getElementById('roster-title').textContent = t.rosterTitle;
+				document.getElementById('attendance-title').textContent = t.attendanceTitle;
+				document.getElementById('work-system-title').textContent = t.workSystemTitle;
+				document.getElementById('materials-title').textContent = t.materialsTitle;
+				document.getElementById('parent-info-title').textContent = t.parentInfoTitle;
+				document.getElementById('admin-sections-title').textContent = t.adminSectionsTitle;
+				document.getElementById('homework-title').textContent = t.homeworkTitle;
+				document.getElementById('notes').innerHTML = t.notes;
+				document.getElementById('student-card-btn').textContent = t.studentCardBtn;
+				document.getElementById('footer-developed-by').textContent = t.footerDevelopedBy;
+				document.getElementById('footer-hosted-on').textContent = t.footerHostedOn;
+				document.getElementById('footer-version').textContent = t.footerVersion;
+				document.getElementById('footer-last-update').textContent = t.footerLastUpdate;
+				document.getElementById('footer-contact').textContent = t.footerContact;
+				document.getElementById('footer-privacy-policy').textContent = t.footerPrivacyPolicy;
+				modalTitle.textContent = t.modalTitle;
+				loginNameInput.placeholder = t.loginNamePlaceholder;
+				loginPasswordInput.placeholder = t.loginPasswordPlaceholder;
+				loginBtn.textContent = t.loginBtn;
+				logoutBtn.textContent = t.logoutBtn;
+				updateAllPanels();
+			}
 
-        applyLanguage('ar');
-        applyTheme('light');
-        rebuildScheduleTable();
-    } else {
-        // Show error or fallback (optional)
-        document.getElementById('notes').innerHTML = '<strong>⚠️ Failed to load data. Please try again later.</strong>';
-    }
-}
-// Register Service Worker
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js')
-      .then(reg => console.log('Service Worker registered', reg))
-      .catch(err => console.log('Service Worker registration failed', err));
-  });
-}
-init();
-// Install Prompt Logic
-let deferredPrompt;
-const installBtn = document.getElementById('install-btn');
-function isAppInstalled() {
-    return window.matchMedia('(display-mode: standalone)').matches
-        || window.navigator.standalone === true;
-}
+			function applyTheme(theme) {
+				currentTheme = theme;
+				body.classList.toggle('dark', theme === 'dark');
+				const t = translations[currentLanguage];
+				themeToggle.textContent = theme === 'light' ? t.themeNight : t.themeDay;
+			}
 
-if (isAppInstalled()) {
-    installBtn.style.display = 'none';
-}
-window.addEventListener('beforeinstallprompt', (e) => {
-  // Prevent Chrome 67 and earlier from automatically showing the prompt
-  e.preventDefault();
-  // Stash the event so it can be triggered later
-  deferredPrompt = e;
-  // Show the install button
-  installBtn.style.display = 'inline-block';
-});
+			// ==================== MODAL FUNCTIONS ====================
+			function parseAttendanceDate(dateStr) {
+				const parts = dateStr.split('/');
+				if (parts.length !== 3) return null;
+				const day = parseInt(parts[0], 10);
+				const month = parseInt(parts[1], 10) - 1;
+				const year = parseInt(parts[2], 10);
+				if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
+				return new Date(year, month, day);
+			}
 
-installBtn.addEventListener('click', async () => {
-    if (deferredPrompt) {
-        // Show the native install prompt
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        console.log(`User response to the install prompt: ${outcome}`);
-        deferredPrompt = null;
-        installBtn.style.display = 'none';
-    } else {
-        // Fallback instructions
-        alert('To install this app, use your browser menu:\n\n- Chrome: Tap ⋮ then "Add to Home screen"\n- Safari (iOS): Tap the Share icon then "Add to Home Screen"');
-    }
-});
+			function getAttendanceStatusForDate(date) {
+				if (!currentUser || !currentUser.attendance) return null;
+				const target = date.toDateString();
+				for (const att of currentUser.attendance) {
+					const attDate = parseAttendanceDate(att.date);
+					if (attDate && attDate.toDateString() === target) {
+						return att.status;
+					}
+				}
+				return null;
+			}
 
-// Hide the button once the app is installed
-window.addEventListener('appinstalled', () => {
-  console.log('PWA was installed');
-    trackInteraction('pwa_install');
-  deferredPrompt = null;
-  installBtn.style.display = 'none';
-});
+			function renderAttendanceCalendar() {
+				const container = document.getElementById('attendance-calendar');
+				if (!container) return;
+				const t = translations[currentLanguage];
+				const year = attendanceCalendarMonth.getFullYear();
+				const month = attendanceCalendarMonth.getMonth();
+				const firstDay = new Date(year, month, 1);
+				const lastDay = new Date(year, month + 1, 0);
+				const daysInMonth = lastDay.getDate();
+				const startWeekday = firstDay.getDay();
+				const monthNames = t.monthNames;
+				const weekdayNames = t.weekdayNames;
+				let html = `<div class="calendar-header">
+				<button type="button" onclick="changeAttendanceMonth(-1)">‹</button>
+				<span>${monthNames[month]} ${year}</span>
+				<button type="button" onclick="changeAttendanceMonth(1)">›</button>
+				</div>`;
+				html += `<table class="attendance-calendar-table"><thead><tr>`;
+				weekdayNames.forEach(w => html += `<th>${w}</th>`);
+				html += `</tr></thead><tbody><tr>`;
+				for (let i = 0; i < startWeekday; i++) html += `<td></td>`;
+				for (let day = 1; day <= daysInMonth; day++) {
+					const date = new Date(year, month, day);
+					const status = getAttendanceStatusForDate(date);
+					const statusClass = status ? `attendance-${status}` : '';
+					html += `<td class="calendar-day ${statusClass}">${day}</td>`;
+					if ((startWeekday + day) % 7 === 0) html += `</tr><tr>`;
+				}
+				const totalCells = startWeekday + daysInMonth;
+				const remainder = totalCells % 7;
+				if (remainder !== 0) {
+					for (let i = remainder; i < 7; i++) html += `<td></td>`;
+				}
+				html += `</tr></tbody></table>`;
+				container.innerHTML = html;
+			}
+
+			function changeAttendanceMonth(delta) {
+				attendanceCalendarMonth.setMonth(attendanceCalendarMonth.getMonth() + delta);
+				renderAttendanceCalendar();
+			}
+			window.changeAttendanceMonth = changeAttendanceMonth;
+
+			function populateStudentCardModal() {
+				if (!currentUser) return;
+				const t = translations[currentLanguage];
+				const displayName = getText(currentUser) || currentUser.nameAr;
+				const sectionName = getSectionName(currentUser.section);
+				const group = currentUser.group ? `${t.groupLabel} ${currentUser.group}` : t.noGroup;
+				const workSystemLabels = { monthly: t.workMonthly, per8sessions: t.workPer8, custom: t.workCustom };
+				const workSystem = workSystemLabels[currentUser.workSystem] || currentUser.workSystem;
+				let subjectsHtml = '';
+				if (currentUser.subjects === 'all') {
+					subjectsHtml = `<span class="subject-tag">${escapeHtml(t.allSubjects)}</span>`;
+					} else if (Array.isArray(currentUser.subjects) && currentUser.subjects.length > 0) {
+					subjectsHtml = currentUser.subjects.map(key => {
+						const subj = data.subjectCatalog[key];
+						return `<span class="subject-tag">${escapeHtml(subj ? getText(subj) : key)}</span>`;
+					}).join('');
+					} else {
+					subjectsHtml = `<span>${escapeHtml(t.noSubjects)}</span>`;
+				}
+				const parentInfo = (currentUser.parentName || currentUser.parentPhone)
+				? `<div class="detail-item"><strong>${t.parentName}</strong><span class="value">${escapeHtml(currentUser.parentName || '—')}</span></div>
+				<div class="detail-item"><strong>${t.parentPhone}</strong><span class="value">${escapeHtml(currentUser.parentPhone || '—')}</span></div>`
+				: `<div class="detail-item"><strong>${t.parentName}</strong><span class="value">${escapeHtml(t.noParentInfo)}</span></div>`;
+				const cardHtml = `
+				<div class="student-card-profile">
+				<div class="student-card-avatar">
+				${currentUser.photo_url 
+				? `<img src="${currentUser.photo_url}" alt="${escapeHtml(displayName)}" style="width:100%; height:100%; object-fit:cover; border-radius:50%;">` 
+				: escapeHtml(displayName.charAt(0).toUpperCase())}
+				</div>
+				<div>
+				<div class="student-card-name">${escapeHtml(displayName)}</div>
+				<div class="student-card-section">${escapeHtml(sectionName)}${currentUser.group ? ' - ' + escapeHtml(group) : ''}</div>
+				</div>
+				</div>
+				<div class="student-card-details">
+				<div class="detail-item"><strong>${t.workSystemLabel}</strong><span class="value">${escapeHtml(workSystem)}</span></div>
+				<div class="detail-item"><strong>${t.subjectsLabel}</strong><div class="subjects-tags">${subjectsHtml}</div></div>
+				${parentInfo}
+				</div>
+				<div class="attendance-calendar-section">
+				<h4>${t.attendanceCalendarTitle}</h4>
+				<div id="attendance-calendar"></div>
+				<button type="button" id="print-attendance-btn" onclick="printAttendance()">🖨️ ${t.printAttendance}</button>
+				</div>
+				`;
+				modalBody.innerHTML = cardHtml;
+				if (currentUser.attendance && currentUser.attendance.length > 0) {
+					const latestDateStr = currentUser.attendance[currentUser.attendance.length - 1].date;
+					const latestDate = parseAttendanceDate(latestDateStr);
+					if (latestDate) {
+						attendanceCalendarMonth = new Date(latestDate.getFullYear(), latestDate.getMonth(), 1);
+						} else {
+						attendanceCalendarMonth = new Date();
+					}
+					} else {
+					attendanceCalendarMonth = new Date();
+				}
+				renderAttendanceCalendar();
+				document.getElementById('modal-footer').innerHTML = 
+				`<a href="profile.html" class="edit-profile-link">${escapeHtml(translations[currentLanguage].editProfile)}</a>`;
+			}
+			function printAttendance() {
+				window.print();
+			}
+			function openStudentCardModal() {
+				populateStudentCardModal();
+				modalOverlay.classList.add('show');
+			}
+			function closeStudentCardModal() {
+				modalOverlay.classList.remove('show');
+			}
+
+			// ==================== LOGIN / LOGOUT ====================
+			async function handleLogin() {
+				const name = loginNameInput.value.trim();
+				const password = loginPasswordInput.value.trim();
+				if (!name || !password) {
+					alert(translations[currentLanguage].emptyFields);
+					return;
+				}
+				
+				// Admin login (from student page, gives access to admin panel)
+				// Admin login (from student page, gives access to admin panel)
+				const isAdmin = await verifyAdminCredentials(name, password);
+				if (isAdmin) {
+					currentUser = { isAdmin: true, nameAr: 'Admin', nameEn: 'Admin', nameFr: 'Admin' };
+					loginNameInput.value = '';
+					loginPasswordInput.value = '';
+					localStorage.setItem(STORAGE_KEY_ADMIN, 'true');
+					localStorage.removeItem(STORAGE_KEY_STUDENT_ID);
+					trackInteraction('admin_login');
+					updateAllPanels();
+					loginForm.style.display = 'none';
+					userInfoDiv.style.display = 'flex';
+					return;
+				}
+				
+				// Student login
+				const student = data.students.find(u => {
+					return (u.nameAr === name || u.nameEn === name || u.nameFr === name) && u.password === password;
+				});
+				if (!student) {
+					alert(translations[currentLanguage].invalidCredentials);
+					return;
+				}
+				currentUser = { ...student };
+				localStorage.setItem(STORAGE_KEY_STUDENT_ID, student.id);
+				localStorage.removeItem(STORAGE_KEY_ADMIN);
+				trackInteraction('student_login');
+				loginNameInput.value = '';
+				loginPasswordInput.value = '';
+				updateAllPanels();
+    subscribeToNotifications();
+    loadNotifications();
+				loginForm.style.display = 'none';
+				userInfoDiv.style.display = 'flex';
+			}
+
+			function handleLogout() {
+				if (currentUser) {
+					trackInteraction(currentUser.isAdmin ? 'admin_logout' : 'student_logout');
+				}
+				currentUser = null;
+				localStorage.removeItem(STORAGE_KEY_ADMIN);
+				localStorage.removeItem(STORAGE_KEY_STUDENT_ID);
+				loginForm.style.display = 'flex';
+				userInfoDiv.style.display = 'none';
+				closeStudentCardModal();
+				updateAllPanels();
+			}
+
+			// ==================== TRANSLATIONS ====================
+			const translations = {
+				ar: {
+					title: '📅 جدول التلميذ',
+					subtitle: 'من الاثنين إلى الأحد | من 7:00 صباحًا إلى 8:00 مساءً',
+					thDay: 'اليوم',
+					languageLabel: '🌐 اللغة:',
+					themeLabel: '🌓 النمط:',
+					themeNight: '🌙 ليلي',
+					themeDay: '☀️ نهاري',
+					installBtnLabel: '📲 تثبيت التطبيق',
+					noNotifications: 'لا توجد إشعارات',
+					personalTitle: '📋 جدولك الخاص',
+					rosterTitle: '👥 مجموعتك',
+					attendanceTitle: '📆 سجل الحضور والدفع',
+					workSystemTitle: '💼 نظام العمل',
+					materialsTitle: '📚 المواد المتناولة',
+					parentInfoTitle: '👨‍👩‍👦 بيانات الولي',
+					adminSectionsTitle: '🏫 الأقسام',
+					homeworkTitle: '📝 الواجبات المنزلية',
+					noHomework: 'لا توجد واجبات منزلية مسجلة',
+					loginNamePlaceholder: 'الاسم الكامل',
+					loginPasswordPlaceholder: 'الرقم السري',
+					loginBtn: 'دخول',
+					logoutBtn: 'تسجيل الخروج',
+					studentCardBtn: 'بطاقة التلميذ',
+					modalTitle: 'بطاقة التلميذ',
+					editProfile: 'تعديل ملفي الشخصي',
+					welcome: 'مرحبا',
+					workSystemLabel: 'نظام العمل',
+					workMonthly: 'شهري',
+					workPer8: 'كل 8 حصص',
+					workCustom: 'مخصص',
+					noStudents: 'لا يوجد تلاميذ في مجموعتك',
+					noSessions: 'لا توجد حصص مسجلة لك',
+					noAttendance: 'لا يوجد سجل حضور',
+					reservedName: 'احتياط / أنشطة',
+					groupLabel: 'مجموعة',
+					noGroup: 'لا مجموعة',
+					emptyFields: 'يرجى إدخال الاسم والرقم السري',
+					invalidCredentials: 'الاسم أو الرقم السري غير صحيح',
+					status_paid: 'مدفوع',
+					status_unpaid: 'غير مدفوع',
+					status_overdue: 'متأخر عن الدفع',
+					parentName: 'اسم الولي',
+					parentPhone: 'رقم هاتف الولي',
+					noParentInfo: 'لا توجد بيانات ولي مسجلة',
+					allSubjects: 'كل المواد',
+					noSubjects: 'لا توجد مواد محددة',
+					subjectsLabel: 'المواد',
+					footerDevelopedBy: 'تم التطوير بواسطة ماجري زياد',
+					footerHostedOn: 'مستضاف على Netlify و Github و Supabase',
+					footerVersion: 'الإصدار: 0.0.3',
+					footerLastUpdate: 'آخر تحديث: 07/08/2026',
+					footerContact: 'اتصل بنا',
+					footerPrivacyPolicy: 'سياسة الخصوصية',
+					printAttendance: 'طباعة الحضور',
+					dayNames: { mon: 'الاثنين', tue: 'الثلاثاء', wed: 'الأربعاء', thu: 'الخميس', fri: 'الجمعة', sat: 'السبت', sun: 'الأحد' },
+					attendanceCalendarTitle: 'تقويم الحضور',
+					monthNames: ['جانفي', 'فيفري', 'مارس', 'أفريل', 'ماي', 'جوان', 'جويلية', 'أوت', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'],
+					weekdayNames: ['أحد', 'اثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت'],
+					notes: `<strong>📌 ملاحظات:</strong><br>
+					• كل حصة مدتها ساعة واحدة.<br>
+					• الأسبوع يبدأ من يوم الاثنين.<br>
+					• قد تكون بعض الحصص مشتركة بين قسمين أو أكثر، أو مقسمة إلى مجموعات.<br>
+					• في سجل الحضور: الأخضر = مدفوع، الأصفر = غير مدفوع، الأحمر = متأخر عن الدفع.<br>
+					• بيانات الدخول للتجربة: أحمد/123.`
+				},
+				fr: {
+					title: '📅 Emploi du temps de l\'élève',
+					subtitle: 'Lundi - Dimanche | De 7h00 à 20h00',
+					thDay: 'Jour',
+					languageLabel: '🌐 Langue :',
+					themeLabel: '🌓 Thème :',
+					themeNight: '🌙 Nuit',
+					themeDay: '☀️ Jour',
+					installBtnLabel: '📲 Installer l\'application',
+					noNotifications: 'Aucune notification',
+					personalTitle: '📋 Votre emploi du temps',
+					rosterTitle: '👥 Votre groupe',
+					attendanceTitle: '📆 Registre de présence et paiement',
+					workSystemTitle: '💼 Système de travail',
+					materialsTitle: '📚 Matières étudiées',
+					parentInfoTitle: '👨‍👩‍👦 Informations parentales',
+					adminSectionsTitle: '🏫 Sections',
+					homeworkTitle: '📝 Devoirs',
+					noHomework: 'Aucun devoir enregistré',
+					loginNamePlaceholder: 'Nom complet',
+					loginPasswordPlaceholder: 'Mot de passe',
+					loginBtn: 'Entrer',
+					logoutBtn: 'Déconnexion',
+					studentCardBtn: 'Carte étudiant',
+					modalTitle: 'Carte étudiant',
+					editProfile: 'Modifier mon profil',
+					welcome: 'Bienvenue',
+					workSystemLabel: 'Système de travail',
+					workMonthly: 'Mensuel',
+					workPer8: 'Toutes les 8 séances',
+					workCustom: 'Personnalisé',
+					noStudents: 'Aucun élève dans votre groupe',
+					noSessions: 'Aucune séance enregistrée',
+					noAttendance: 'Aucun registre de présence',
+					reservedName: 'Réserve / Activités',
+					groupLabel: 'Groupe',
+					noGroup: 'Aucun groupe',
+					emptyFields: 'Veuillez saisir le nom et le mot de passe',
+					invalidCredentials: 'Nom ou mot de passe incorrect',
+					status_paid: 'Payé',
+					status_unpaid: 'Non payé',
+					status_overdue: 'En retard',
+					parentName: 'Nom du parent',
+					parentPhone: 'Téléphone du parent',
+					noParentInfo: 'Aucune information parentale',
+					allSubjects: 'Toutes les matières',
+					noSubjects: 'Aucune matière définie',
+					subjectsLabel: 'Matières',
+					footerDevelopedBy: 'Développé par Mejri Ziad',
+					footerHostedOn: 'Hébergé sur Netlify, Github et Supabase',
+					footerVersion: 'Version : 0.0.3',
+					footerLastUpdate: 'Dernière mise à jour : 07/08/2026',
+					footerContact: 'Contact',
+					footerPrivacyPolicy: 'Politique de confidentialité',
+					printAttendance: 'Imprimer la présence',
+					dayNames: { mon: 'Lundi', tue: 'Mardi', wed: 'Mercredi', thu: 'Jeudi', fri: 'Vendredi', sat: 'Samedi', sun: 'Dimanche' },
+					attendanceCalendarTitle: 'Calendrier de présence',
+					monthNames: ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'],
+					weekdayNames: ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'],
+					notes: `<strong>📌 Remarques :</strong><br>
+					• Chaque séance dure 1 heure.<br>
+					• La semaine commence le lundi.<br>
+					• Certaines séances peuvent être communes à plusieurs sections ou divisées en groupes.<br>
+					• Dans le registre : vert = payé, jaune = non payé, rouge = en retard.<br>
+					• Identifiants de test : Ahmed/123.`
+				},
+				en: {
+					title: '📅 Student Schedule',
+					subtitle: 'Monday - Sunday | From 7:00 AM to 8:00 PM',
+					thDay: 'Day',
+					languageLabel: '🌐 Language:',
+					themeLabel: '🌓 Theme:',
+					themeNight: '🌙 Night',
+					themeDay: '☀️ Day',
+					installBtnLabel: '📲 Install App',
+					noNotifications: 'No notifications',
+					personalTitle: '📋 Your Personal Schedule',
+					rosterTitle: '👥 Your Group',
+					attendanceTitle: '📆 Attendance & Payment Record',
+					workSystemTitle: '💼 Work System',
+					materialsTitle: '📚 Subjects Studied',
+					parentInfoTitle: '👨‍👩‍👦 Parent Information',
+					adminSectionsTitle: '🏫 Sections',
+					homeworkTitle: '📝 Homework',
+					noHomework: 'No homework assigned',
+					loginNamePlaceholder: 'Full Name',
+					loginPasswordPlaceholder: 'Password',
+					loginBtn: 'Sign In',
+					logoutBtn: 'Logout',
+					studentCardBtn: 'Student Card',
+					modalTitle: 'Student Card',
+					editProfile: 'Edit my profile',
+					welcome: 'Welcome',
+					workSystemLabel: 'Work System',
+					workMonthly: 'Monthly',
+					workPer8: 'Every 8 sessions',
+					workCustom: 'Custom',
+					noStudents: 'No students in your group',
+					noSessions: 'No sessions scheduled',
+					noAttendance: 'No attendance record',
+					reservedName: 'Reserve / Activities',
+					groupLabel: 'Group',
+					noGroup: 'No group',
+					emptyFields: 'Please enter name and password',
+					invalidCredentials: 'Incorrect name or password',
+					status_paid: 'Paid',
+					status_unpaid: 'Unpaid',
+					status_overdue: 'Overdue',
+					parentName: 'Parent Name',
+					parentPhone: 'Parent Phone',
+					noParentInfo: 'No parent info',
+					allSubjects: 'All Subjects',
+					noSubjects: 'No subjects defined',
+					subjectsLabel: 'Subjects',
+					footerDevelopedBy: 'Developed by Mejri Ziad',
+					footerHostedOn: 'Hosted on Netlify, Github and Supabase',
+					footerVersion: 'Version : 0.0.3',
+					footerLastUpdate: 'Last update : 07/08/2026',
+					footerContact: 'Contact',
+					footerPrivacyPolicy: 'Privacy Policy',
+					printAttendance: 'Print Attendance',
+					dayNames: { mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday', fri: 'Friday', sat: 'Saturday', sun: 'Sunday' },
+					attendanceCalendarTitle: 'Attendance Calendar',
+					monthNames: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+					weekdayNames: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+					notes: `<strong>📌 Notes:</strong><br>
+					• Each session lasts 1 hour.<br>
+					• The week starts on Monday.<br>
+					• Some sessions may be shared between multiple sections or divided into groups.<br>
+					• In attendance: green = paid, yellow = unpaid, red = overdue.<br>
+					• Test credentials: Ahmed/123.`
+				}
+			};
+
+			// ==================== EVENT LISTENERS ====================
+			languageSelect.addEventListener('change', e => applyLanguage(e.target.value));
+			themeToggle.addEventListener('click', () => applyTheme(currentTheme === 'light' ? 'dark' : 'light'));
+			loginBtn.addEventListener('click', handleLogin);
+			logoutBtn.addEventListener('click', handleLogout);
+			studentCardBtn.addEventListener('click', openStudentCardModal);
+			modalCloseBtn.addEventListener('click', closeStudentCardModal);
+			modalOverlay.addEventListener('click', (e) => {
+				if (e.target === modalOverlay) closeStudentCardModal();
+			});
+			document.addEventListener('keydown', (e) => {
+				if (e.key === 'Escape' && modalOverlay.classList.contains('show')) {
+					closeStudentCardModal();
+				}
+			});
+			notificationsBtn.addEventListener('click', openNotificationsModal);
+			notificationsModal.addEventListener('click', (e) => {
+				if (e.target === notificationsModal) closeNotificationsModal();
+			});
+			// ==================== INITIALIZATION ====================
+			async function init() {
+				trackInteraction('app_open');
+				const loaded = await loadDataFromSupabase();
+				if (loaded) {
+					// Restore previous login first
+					const adminLogged = localStorage.getItem(STORAGE_KEY_ADMIN);
+					const studentId = localStorage.getItem(STORAGE_KEY_STUDENT_ID);
+					if (adminLogged === 'true') {
+						currentUser = { isAdmin: true, nameAr: 'Admin', nameEn: 'Admin', nameFr: 'Admin' };
+						loginForm.style.display = 'none';
+						userInfoDiv.style.display = 'flex';
+						} else if (studentId) {
+						const student = data.students.find(s => s.id === studentId);
+						if (student) {
+							currentUser = { ...student };
+							loginForm.style.display = 'none';
+							userInfoDiv.style.display = 'flex';
+							subscribeToNotifications();
+							loadNotifications();
+							} else {
+							localStorage.removeItem(STORAGE_KEY_STUDENT_ID);
+							currentUser = null;
+							loginForm.style.display = 'flex';
+							userInfoDiv.style.display = 'none';
+						}
+						} else {
+						currentUser = null;
+						loginForm.style.display = 'flex';
+						userInfoDiv.style.display = 'none';
+					}
+					
+					applyLanguage('ar');
+					applyTheme('light');
+					rebuildScheduleTable();
+					} else {
+					// Show error or fallback (optional)
+					document.getElementById('notes').innerHTML = '<strong>⚠️ Failed to load data. Please try again later.</strong>';
+				}
+			}
+			// Register Service Worker
+			if ('serviceWorker' in navigator) {
+				window.addEventListener('load', () => {
+					navigator.serviceWorker.register('./sw.js')
+					.then(reg => console.log('Service Worker registered', reg))
+					.catch(err => console.log('Service Worker registration failed', err));
+				});
+			}
+			init();
+			// Install Prompt Logic
+			let deferredPrompt;
+			const installBtn = document.getElementById('install-btn');
+			function isAppInstalled() {
+				return window.matchMedia('(display-mode: standalone)').matches
+				|| window.navigator.standalone === true;
+			}
+
+			if (isAppInstalled()) {
+				installBtn.style.display = 'none';
+			}
+			window.addEventListener('beforeinstallprompt', (e) => {
+				// Prevent Chrome 67 and earlier from automatically showing the prompt
+				e.preventDefault();
+				// Stash the event so it can be triggered later
+				deferredPrompt = e;
+				// Show the install button
+				installBtn.style.display = 'inline-block';
+			});
+
+			installBtn.addEventListener('click', async () => {
+				if (deferredPrompt) {
+					// Show the native install prompt
+					deferredPrompt.prompt();
+					const { outcome } = await deferredPrompt.userChoice;
+					console.log(`User response to the install prompt: ${outcome}`);
+					deferredPrompt = null;
+					installBtn.style.display = 'none';
+					} else {
+					// Fallback instructions
+					alert('To install this app, use your browser menu:\n\n- Chrome: Tap ⋮ then "Add to Home screen"\n- Safari (iOS): Tap the Share icon then "Add to Home Screen"');
+				}
+			});
+
+			// Hide the button once the app is installed
+			window.addEventListener('appinstalled', () => {
+				console.log('PWA was installed');
+				trackInteraction('pwa_install');
+				deferredPrompt = null;
+				installBtn.style.display = 'none';
+			});
 </script>
 </body>
 </html>

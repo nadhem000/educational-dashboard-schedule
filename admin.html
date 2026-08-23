@@ -347,11 +347,12 @@
         <!-- Editor (hidden initially) -->
         <div class="editor" id="editor">
             <div class="tabs">
-                <div class="tab active" data-tab="students">👥 Students</div>
-                <div class="tab" data-tab="schedule">📅 Schedule</div>
-                <div class="tab" data-tab="sections">🏫 Sections</div>
-                <div class="tab" data-tab="subjects">📚 Subjects</div>
-            </div>
+    <div class="tab active" data-tab="students">👥 Students</div>
+    <div class="tab" data-tab="schedule">📅 Schedule</div>
+    <div class="tab" data-tab="sections">🏫 Sections</div>
+    <div class="tab" data-tab="subjects">📚 Subjects</div>
+    <div class="tab" data-tab="notifications">🔔 Notifications</div>
+</div>
             <div class="tab-content active" id="tab-students">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-wrap:wrap; gap:10px;">
     <h3>Student List</h3>
@@ -380,6 +381,34 @@
                     <button class="btn btn-success" id="add-subject-btn">+ Add Subject</button>
                 </div>
                 <div id="subjects-list"></div>
+            </div>
+                        <div class="tab-content" id="tab-notifications">
+                <h3>Send Notification</h3>
+                <div class="form-group">
+                    <label>Target Type</label>
+                    <select id="notif-target-type" onchange="updateNotifTargetOptions()">
+                        <option value="all">All Students</option>
+                        <option value="student">Individual Student</option>
+                        <option value="group">Whole Group</option>
+                        <option value="section">Whole Section</option>
+                        <option value="day">By Day</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Target Value</label>
+                    <select id="notif-target-value">
+                        <option value="">Select target type first</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" id="notif-title" placeholder="Notification title">
+                </div>
+                <div class="form-group">
+                    <label>Body</label>
+                    <textarea id="notif-body" rows="3" placeholder="Notification body"></textarea>
+                </div>
+                <button class="btn btn-success" onclick="sendNotification()">Send Notification</button>
             </div>
             <div class="export-btns">
                 <button class="btn" id="copy-html-btn">📄 Copy Full HTML</button>
@@ -1742,6 +1771,58 @@ async function saveAssignedHomework() {
         alert('Error assigning homework: ' + err.message);
     }
 }
+function updateNotifTargetOptions() {
+    const type = document.getElementById('notif-target-type').value;
+    const select = document.getElementById('notif-target-value');
+    let options = '<option value="">Select target</option>';
+    if (type === 'all') {
+        options = '<option value="all">All Students</option>';
+    } else if (type === 'student') {
+        options = adminData.students.map(s => {
+            const name = s.nameAr || s.nameEn || s.nameFr || 'Unnamed';
+            return `<option value="${s.id}">${escapeHtml(name)}</option>`;
+        }).join('');
+    } else if (type === 'group') {
+        options = getUniqueGroups().map(g => `<option value="${g}">${escapeHtml(getAssignmentDisplay(g))}</option>`).join('');
+        if (!options) options = '<option value="">No groups available</option>';
+    } else if (type === 'section') {
+        options = Object.keys(adminData.sections).map(key => `<option value="${key}">${escapeHtml(key)}</option>`).join('');
+    } else if (type === 'day') {
+        options = DAYS.map(d => `<option value="${d.key}">${escapeHtml(d.en || d.key)}</option>`).join('');
+    }
+    select.innerHTML = options;
+}
+
+async function sendNotification() {
+    const targetType = document.getElementById('notif-target-type').value;
+    const targetValue = document.getElementById('notif-target-value').value;
+    const title = document.getElementById('notif-title').value.trim();
+    const body = document.getElementById('notif-body').value.trim();
+
+    if (!title) {
+        alert('Title is required');
+        return;
+    }
+    if (targetType !== 'all' && !targetValue) {
+        alert('Please select a target');
+        return;
+    }
+
+    const { error } = await supabaseClient.rpc('send_notification', {
+        p_title: title,
+        p_body: body,
+        p_target_type: targetType,
+        p_target_value: targetType === 'all' ? null : targetValue
+    });
+
+    if (error) {
+        alert('Error sending notification: ' + error.message);
+        return;
+    }
+    document.getElementById('notif-title').value = '';
+    document.getElementById('notif-body').value = '';
+    toast('Notification sent');
+}
 // ==================== Export (Optional Backup) ====================
 function generateDataObject() {
     return {
@@ -1887,6 +1968,8 @@ window.openAssignHomeworkModal = openAssignHomeworkModal;
 window.updateHomeworkTargetOptions = updateHomeworkTargetOptions;
 window.saveAssignedHomework = saveAssignedHomework;
 window.deleteHomeworkFromEdit = deleteHomeworkFromEdit;
+window.updateNotifTargetOptions = updateNotifTargetOptions;
+window.sendNotification = sendNotification;
 window.closeModal = closeModal;
 </script>
 </body>
