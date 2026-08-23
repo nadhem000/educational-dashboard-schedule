@@ -391,3 +391,148 @@ on conflict (username) do nothing;
 **Extracting admin data:**
 ```sql
 select id, username, created_at from public.admins order by created_at asc;
+## Notifications System
+------------------------------------------------------------
+Run in Supabase SQL Editor:
+------------------------------------------------------------
+-- Create notifications table
+create table if not exists public.notifications (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  title text not null,
+  body text,
+  created_at timestamptz not null default now(),
+  read boolean not null default false
+);
+
+-- Grant access
+grant select, insert, update, delete on public.notifications to anon, authenticated;
+
+-- Function to send notifications
+create or replace function public.send_notification(
+  p_title text,
+  p_body text,
+  p_target_type text,
+  p_target_value text default null
+)
+returns void
+language plpgsql
+as $$
+declare
+  v_user_id uuid;
+begin
+  if p_target_type = 'all' then
+    for v_user_id in select id from public.profiles loop
+      insert into public.notifications (user_id, title, body)
+      values (v_user_id, p_title, p_body);
+    end loop;
+
+  elsif p_target_type = 'student' then
+    insert into public.notifications (user_id, title, body)
+    values (p_target_value::uuid, p_title, p_body);
+
+  elsif p_target_type = 'group' then
+    for v_user_id in
+      select id
+      from public.profiles
+      where section_key || '-g' || group_number = p_target_value
+    loop
+      insert into public.notifications (user_id, title, body)
+      values (v_user_id, p_title, p_body);
+    end loop;
+
+  elsif p_target_type = 'section' then
+    for v_user_id in
+      select id
+      from public.profiles
+      where section_key = p_target_value
+    loop
+      insert into public.notifications (user_id, title, body)
+      values (v_user_id, p_title, p_body);
+    end loop;
+
+  elsif p_target_type = 'day' then
+    for v_user_id in
+      select p.id
+      from public.profiles p
+      where exists (
+        select 1
+        from public.schedule_slots s
+        where s.day_key = p_target_value
+          and (
+            s.assignment ? p.section_key
+            or (p.group_number is not null and s.assignment ? (p.section_key || '-g' || p.group_number))
+          )
+      )
+    loop
+      insert into public.notifications (user_id, title, body)
+      values (v_user_id, p_title, p_body);
+    end loop;
+  end if;
+end;
+$$;
+
+-- Grant execute
+grant execute on function public.send_notification(text, text, text, text) to anon, authenticated;
+
+-- Enable Realtime for notifications table
+alter publication supabase_realtime add table public.notifications;
+
+Purpose:
+
+Stores in-app notifications for students.
+
+send_notification RPC sends to all, single, group, section, or by day.
+
+The index.html page uses Supabase Realtime to receive live notification inserts.
+
+Extracting notifications:
+select * from public.notifications order by created_at desc limit 100;
+
+## Send Notifications via SQL
+------------------------------------------------------------
+Direct SQL examples to insert notifications without using the admin UI.
+
+### 1. Send to all students
+insert into public.notifications (user_id, title, body)
+select id, 'إشعار عام', 'رسالة لجميع التلاميذ'
+from public.profiles;
+
+### 2. Send to a single student (by profile UUID)
+-- Replace 'STUDENT_UUID' with the actual profile id
+insert into public.notifications (user_id, title, body)
+values ('STUDENT_UUID', 'إشعار خاص', 'رسالة خاصة بتلميذ واحد');
+
+### 3. Send to a whole group (e.g., 6base-g1)
+insert into public.notifications (user_id, title, body)
+select id, 'إشعار مجموعة', 'رسالة لمجموعة 6base-g1'
+from public.profiles
+where section_key || '-g' || group_number = '6base-g1';
+
+### 4. Send to a whole section (e.g., 6base)
+insert into public.notifications (user_id, title, body)
+select id, 'إشعار قسم', 'رسالة لقسم 6base'
+from public.profiles
+where section_key = '6base';
+
+### 5. Send by day (e.g., Monday 'mon')
+insert into public.notifications (user_id, title, body)
+select p.id, 'إشعار يوم الاثنين', 'رسالة لمن لديهم حصص يوم الاثنين'
+from public.profiles p
+where exists (
+  select 1
+  from public.schedule_slots s
+  where s.day_key = 'mon'
+    and (
+      s.assignment ? p.section_key
+      or (p.group_number is not null and s.assignment ? (p.section_key || '-g' || p.group_number))
+    )
+);
+
+### Using the RPC function
+select public.send_notification(
+  'Title here',
+  'Body here',
+  'all'                  -- target_type: 'all', 'student', 'group', 'section', 'day'
+  --, 'target_value'     -- optional, required for non-'all' targets
+);

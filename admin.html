@@ -408,6 +408,33 @@
                     <label>Body</label>
                     <textarea id="notif-body" rows="3" placeholder="Notification body"></textarea>
                 </div>
+				                <details style="margin-bottom:15px;">
+                    <summary>🌐 Optional Translations</summary>
+                    <div class="form-group">
+                        <label>Title (Arabic)</label>
+                        <input type="text" id="notif-title-ar" placeholder="عنوان عربي">
+                    </div>
+                    <div class="form-group">
+                        <label>Title (English)</label>
+                        <input type="text" id="notif-title-en" placeholder="English title">
+                    </div>
+                    <div class="form-group">
+                        <label>Title (French)</label>
+                        <input type="text" id="notif-title-fr" placeholder="Titre français">
+                    </div>
+                    <div class="form-group">
+                        <label>Body (Arabic)</label>
+                        <textarea id="notif-body-ar" rows="2" placeholder="نص عربي"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Body (English)</label>
+                        <textarea id="notif-body-en" rows="2" placeholder="English body"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Body (French)</label>
+                        <textarea id="notif-body-fr" rows="2" placeholder="Texte français"></textarea>
+                    </div>
+                </details>
                 <button class="btn btn-success" onclick="sendNotification()">Send Notification</button>
             </div>
             <div class="export-btns">
@@ -1799,6 +1826,13 @@ async function sendNotification() {
     const title = document.getElementById('notif-title').value.trim();
     const body = document.getElementById('notif-body').value.trim();
 
+    const titleAr = document.getElementById('notif-title-ar').value.trim() || null;
+    const titleEn = document.getElementById('notif-title-en').value.trim() || null;
+    const titleFr = document.getElementById('notif-title-fr').value.trim() || null;
+    const bodyAr = document.getElementById('notif-body-ar').value.trim() || null;
+    const bodyEn = document.getElementById('notif-body-en').value.trim() || null;
+    const bodyFr = document.getElementById('notif-body-fr').value.trim() || null;
+
     if (!title) {
         alert('Title is required');
         return;
@@ -1812,7 +1846,13 @@ async function sendNotification() {
         p_title: title,
         p_body: body,
         p_target_type: targetType,
-        p_target_value: targetType === 'all' ? null : targetValue
+        p_target_value: targetType === 'all' ? null : targetValue,
+        p_title_ar: titleAr,
+        p_title_en: titleEn,
+        p_title_fr: titleFr,
+        p_body_ar: bodyAr,
+        p_body_en: bodyEn,
+        p_body_fr: bodyFr
     });
 
     if (error) {
@@ -1821,6 +1861,12 @@ async function sendNotification() {
     }
     document.getElementById('notif-title').value = '';
     document.getElementById('notif-body').value = '';
+    document.getElementById('notif-title-ar').value = '';
+    document.getElementById('notif-title-en').value = '';
+    document.getElementById('notif-title-fr').value = '';
+    document.getElementById('notif-body-ar').value = '';
+    document.getElementById('notif-body-en').value = '';
+    document.getElementById('notif-body-fr').value = '';
     toast('Notification sent');
 }
 // ==================== Export (Optional Backup) ====================

@@ -1469,19 +1469,21 @@ window.toast = toast;
 			}
 
 			function renderNotifications() {
-				if (currentNotifications.length === 0) {
-					notificationsList.innerHTML = `<li>${escapeHtml(translations[currentLanguage].noNotifications)}</li>`;
-					return;
-				}
-				notificationsList.innerHTML = currentNotifications.map(n => {
-					const unreadClass = n.read ? '' : 'unread';
-					return `<li class="${unreadClass}" onclick="markNotificationRead('${n.id}')">
-					<strong>${escapeHtml(n.title)}</strong>
-					<div style="font-size:12px; opacity:0.8;">${escapeHtml(n.body || '')}</div>
-					<div style="font-size:10px; opacity:0.6;">${new Date(n.created_at).toLocaleString()}</div>
-					</li>`;
-				}).join('');
-			}
+    if (currentNotifications.length === 0) {
+        notificationsList.innerHTML = `<li>${escapeHtml(translations[currentLanguage].noNotifications)}</li>`;
+        return;
+    }
+    notificationsList.innerHTML = currentNotifications.map(n => {
+        const unreadClass = n.read ? '' : 'unread';
+        const title = n['title_' + currentLanguage] || n.title;
+        const body = n['body_' + currentLanguage] || n.body;
+        return `<li class="${unreadClass}" onclick="markNotificationRead('${n.id}')">
+            <strong>${escapeHtml(title)}</strong>
+            <div style="font-size:12px; opacity:0.8;">${escapeHtml(body || '')}</div>
+            <div style="font-size:10px; opacity:0.6;">${new Date(n.created_at).toLocaleString()}</div>
+        </li>`;
+    }).join('');
+}
 
 			async function markNotificationRead(id) {
 				try {
@@ -1492,12 +1494,14 @@ window.toast = toast;
 					
 					if (error) throw error;
 					
-					const notif = currentNotifications.find(n => n.id === id);
-					if (notif) notif.read = true;
-					
-					const unreadCount = currentNotifications.filter(n => !n.read).length;
-					updateNotificationsBadge(unreadCount);
-					renderNotifications();
+					        const notif = currentNotifications.find(n => n.id === id);
+        if (notif) notif.read = true;
+
+        const unreadCount = currentNotifications.filter(n => !n.read).length;
+        updateNotificationsBadge(unreadCount);
+        renderNotifications();
+
+        trackInteraction('notification_opened');
 					} catch (err) {
 					console.warn('[Notifications]', err.message);
 				}
@@ -1523,12 +1527,13 @@ window.toast = toast;
 						table: 'notifications',
 						filter: `user_id=eq.${currentUser.id}`
 					},
-					(payload) => {
-						currentNotifications.unshift(payload.new);
-						const unreadCount = currentNotifications.filter(n => !n.read).length;
-						updateNotificationsBadge(unreadCount);
-						toast('لديك إشعار جديد');
-					}
+            (payload) => {
+                currentNotifications.unshift(payload.new);
+                const unreadCount = currentNotifications.filter(n => !n.read).length;
+                updateNotificationsBadge(unreadCount);
+                toast(translations[currentLanguage].newNotification);
+                trackInteraction('notification_received');
+            }
 				)
 				.subscribe();
 			}
@@ -1918,6 +1923,7 @@ window.toast = toast;
 					themeDay: '☀️ نهاري',
 					installBtnLabel: '📲 تثبيت التطبيق',
 					noNotifications: 'لا توجد إشعارات',
+					newNotification: 'لديك إشعار جديد',
 					personalTitle: '📋 جدولك الخاص',
 					rosterTitle: '👥 مجموعتك',
 					attendanceTitle: '📆 سجل الحضور والدفع',
@@ -1984,6 +1990,7 @@ window.toast = toast;
 					themeDay: '☀️ Jour',
 					installBtnLabel: '📲 Installer l\'application',
 					noNotifications: 'Aucune notification',
+					newNotification: 'Nouvelle notification',
 					personalTitle: '📋 Votre emploi du temps',
 					rosterTitle: '👥 Votre groupe',
 					attendanceTitle: '📆 Registre de présence et paiement',
@@ -2050,6 +2057,7 @@ window.toast = toast;
 					themeDay: '☀️ Day',
 					installBtnLabel: '📲 Install App',
 					noNotifications: 'No notifications',
+					newNotification: 'New notification',
 					personalTitle: '📋 Your Personal Schedule',
 					rosterTitle: '👥 Your Group',
 					attendanceTitle: '📆 Attendance & Payment Record',
