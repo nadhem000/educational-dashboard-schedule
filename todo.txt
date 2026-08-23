@@ -1,5 +1,7 @@
 # Security Hardening Plan for EDSchedule – Todo List
 
+## 1. Security Hardening Plan
+
 ## 1. Implement Secure Authentication
 - [ ] Replace custom admin/student password tables with Supabase Auth (email/password).
 - [ ] Create admin user in Supabase Auth and assign admin role.
@@ -44,3 +46,72 @@
 - [ ] Verify student login via Supabase Auth.
 - [ ] Verify RLS policies prevent unauthorized access.
 - [ ] Verify no plaintext passwords remain in code or database.
+---
+
+## 2. Forum-like Space
+- [ ] Create `forum_posts` table in Supabase:
+  - id uuid primary key
+  - title text
+  - content text
+  - author_id uuid references profiles(id)
+  - created_at timestamptz
+  - updated_at timestamptz
+  - is_pinned boolean default false
+  - is_locked boolean default false
+- [ ] Create `forum_comments` table in Supabase:
+  - id uuid primary key
+  - post_id uuid references forum_posts(id) on delete cascade
+  - author_id uuid references profiles(id)
+  - content text
+  - created_at timestamptz
+- [ ] Grant anon/authenticated access to forum tables (or set RLS later).
+- [ ] Add a new page (`forum.html`) or a new tab/section in `index.html` to list posts.
+- [ ] Add a form to create a new post (only logged‑in users).
+- [ ] Add a detail view for a post with its comments.
+- [ ] Add a comment form.
+- [ ] Use existing login session to identify authors.
+- [ ] Show author names and avatars next to posts/comments.
+- [ ] Add basic moderation controls in `admin.html` (delete/edit posts, delete comments).
+- [ ] Optional: enable Supabase Realtime for live updates on new posts/comments.
+- [ ] Add translations (ar/fr/en) for forum UI strings.
+
+---
+
+## 3. Notification System
+
+### 3.1 In-app notifications (simpler)
+- [ ] Create `notifications` table:
+  - id uuid primary key
+  - user_id uuid references profiles(id)
+  - title text
+  - body text
+  - created_at timestamptz
+  - read boolean default false
+- [ ] Grant anon/authenticated access to `notifications` table.
+- [ ] Add a UI element (bell icon) in `index.html` header to show unread count.
+- [ ] Use Supabase Realtime to listen for new notifications for the logged‑in user.
+- [ ] Show a toast/banner when a new notification arrives.
+- [ ] Add a notifications list panel (modal or page) to view all notifications.
+- [ ] Mark notifications as read when clicked.
+- [ ] Add a simple admin interface to send notifications to specific users/groups/classes.
+
+### 3.2 Web push notifications (browser-level)
+- [ ] Generate VAPID keys (public/private).
+- [ ] Update service worker (`sw.js`) to handle `push` event and show notification.
+- [ ] Request user permission via `Notification.requestPermission()`.
+- [ ] Store push subscriptions in a new table `push_subscriptions`:
+  - id uuid primary key
+  - user_id uuid references profiles(id)
+  - subscription jsonb
+  - created_at timestamptz
+- [ ] Create a Supabase Edge Function to send push notifications using Web Push protocol.
+- [ ] Store VAPID private key securely (environment variable, not in frontend).
+- [ ] Create a UI or admin action to trigger push notifications.
+- [ ] Test on supported browsers and mobile devices.
+
+---
+
+## 4. General Improvements (optional)
+- [ ] Improve admin UI for managing forum and notifications.
+- [ ] Add pagination for forum posts and notifications.
+- [ ] Add email or external notification service for production.

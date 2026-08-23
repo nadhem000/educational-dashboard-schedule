@@ -75,212 +75,400 @@
             padding: 20px;
             color: var(--text-color);
         }
-        .container { max-width: 1400px; margin: 0 auto; background: var(--container-bg); padding: 30px; border-radius: 16px; box-shadow: var(--shadow); }
-        h1 { text-align: center; color: var(--text-color); margin-bottom: 5px; font-size: 28px; }
-        .subtitle { text-align: center; color: var(--text-color); opacity: 0.8; margin-bottom: 25px; font-size: 14px; }
-        .auth-section, .controls, .info-panel { background: var(--notes-bg); border-radius: 12px; padding: 20px; margin-bottom: 25px; border: 1px solid var(--table-border); }
-        .auth-form { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; align-items: center; }
-        .auth-form input { padding: 10px 15px; border-radius: 8px; border: 1px solid var(--table-border); background: var(--container-bg); color: var(--text-color); font-size: 14px; min-width: 160px; }
-        .auth-form button, .controls button { background: var(--table-header-bg); color: var(--table-header-text); border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px; }
-        .logout-btn { background: #e74c3c; color: white; border: none; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; }
-        .student-card-btn { background: #3498db; color: white; border: none; padding: 8px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; }
-        .controls { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; }
-        .control-group { display: flex; align-items: center; gap: 8px; font-weight: 600; }
-        .table-wrapper { overflow-x: auto; margin-top: 10px; }
-        table { width: 100%; border-collapse: collapse; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); min-width: 1000px; }
-        th, td { padding: 10px 8px; text-align: center; border: 1px solid var(--table-border); font-size: 13px; }
-        th { background-color: var(--table-header-bg); color: var(--table-header-text); font-weight: 600; font-size: 14px; white-space: nowrap; }
-        td { background-color: var(--table-row-odd); color: var(--text-color); vertical-align: top; }
-        tr:nth-child(even) td { background-color: var(--table-row-even); }
-        .highlight { background-color: var(--highlight-bg) !important; font-weight: bold; color: var(--highlight-text); }
-        .reserved { background-color: var(--reserved-bg) !important; color: var(--reserved-text); font-style: italic; }
-        .student-highlight { background-color: #d4edda !important; color: #155724; font-weight: bold; }
-        .merged-item { display: block; margin: 2px 0; padding: 2px 4px; border-radius: 4px; }
-        .merged-item.student-highlight { background-color: #d4edda; color: #155724; }
-        .personal-schedule, .roster-panel, .attendance-panel, .work-system-panel, .materials-panel, .parent-info-panel { margin-top: 30px; background: var(--notes-bg); padding: 20px; border-radius: 12px; border-right: 5px solid var(--notes-border); display: none; }
-        .personal-schedule.visible, .roster-panel.visible, .attendance-panel.visible, .work-system-panel.visible, .materials-panel.visible, .parent-info-panel.visible { display: block; }
-        .personal-schedule h2, .roster-panel h2, .attendance-panel h2, .work-system-panel h2, .materials-panel h2, .parent-info-panel h2 { margin-top: 0; color: var(--text-color); }
-        .personal-schedule ul, .roster-panel ul, .attendance-panel ul { list-style: none; padding: 0; max-height: 300px; overflow-y: auto; }
-        .personal-schedule li, .roster-panel li, .attendance-panel li { padding: 8px 12px; background: var(--container-bg); margin-bottom: 6px; border-radius: 8px; border: 1px solid var(--table-border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
-        .attendance-paid { background-color: var(--attendance-paid-bg) !important; color: var(--attendance-paid-text); }
-        .attendance-unpaid { background-color: var(--attendance-unpaid-bg) !important; color: var(--attendance-unpaid-text); }
-        .attendance-overdue { background-color: var(--attendance-overdue-bg) !important; color: var(--attendance-overdue-text); }
-        .attendance-status-label { font-size: 12px; font-weight: bold; }
-        .info-line { margin: 5px 0; }
-        .hidden { display: none; }
-        body[dir="ltr"] { direction: ltr; }
-        body[dir="rtl"] { direction: rtl; }
-        /* Avatar in header */
-        .avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            background-color: var(--table-header-bg);
-            color: var(--table-header-text);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 20px;
-        }
-        .welcome-user {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        /* Materials list */
-        .materials-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 10px;
-        }
-        .materials-list span {
-            background: var(--container-bg);
-            border: 1px solid var(--table-border);
-            border-radius: 20px;
-            padding: 4px 12px;
-            font-size: 13px;
-        }
-        .parent-info {
-            font-size: 14px;
-            margin-top: 10px;
-        }
-        /* Modal styles */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.6);
-            backdrop-filter: blur(4px);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            padding: 20px;
-        }
-        .modal-overlay.show {
-            display: flex;
-        }
-        .modal-content {
-            background: var(--modal-bg);
-            color: var(--modal-text);
-            border-radius: 16px;
-            max-width: 600px; /* Increased width for calendar */
-            width: 100%;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-            overflow: hidden;
-            animation: modalFadeIn 0.3s ease;
-        }
-        @keyframes modalFadeIn {
-            from { opacity: 0; transform: translateY(-30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .modal-header {
-            background: var(--modal-header-bg);
-            color: var(--modal-header-text);
-            padding: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--table-border);
-        }
-        .modal-header h3 {
-            margin: 0;
-            font-size: 1.5rem;
-        }
-        .modal-close-btn {
-            background: transparent;
-            border: none;
-            color: var(--modal-header-text);
-            font-size: 2rem;
-            cursor: pointer;
-            line-height: 1;
-            padding: 0;
-            opacity: 0.8;
-            transition: opacity 0.2s;
-        }
-        .modal-close-btn:hover {
-            opacity: 1;
-        }
-        .modal-body {
-            padding: 25px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            max-height: 70vh;
-            overflow-y: auto;
-        }
-        .student-card-profile {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-        .student-card-avatar {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #3498db, #2c3e50);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2.5rem;
-            font-weight: bold;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-        }
-        .student-card-name {
-            font-size: 1.8rem;
-            font-weight: bold;
-        }
-        .student-card-section {
-            font-size: 1rem;
-            opacity: 0.8;
-        }
-        .student-card-details {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 10px;
-        }
-        .detail-item {
-            background: var(--container-bg);
-            padding: 12px 15px;
-            border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
-        .detail-item strong {
-            display: block;
-            font-size: 0.85rem;
-            opacity: 0.7;
-            margin-bottom: 4px;
-        }
-        .detail-item .value {
-            font-size: 1rem;
-        }
-        .subjects-tags {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-        }
-        .subject-tag {
-            background: var(--highlight-bg);
-            color: var(--highlight-text);
-            padding: 2px 10px;
-            border-radius: 12px;
-            font-size: 0.85rem;
-        }
-        .modal-footer {
-            padding: 15px 25px;
-            text-align: center;
-            border-top: 1px solid var(--table-border);
-            font-size: 0.9rem;
-            opacity: 0.7;
-        }
+        .container {
+	max-width: 1400px;
+	margin: 0 auto;
+	background: var(--container-bg);
+	padding: 30px;
+	border-radius: 16px;
+	box-shadow: var(--shadow);
+}
+h1 {
+	text-align: center;
+	color: var(--text-color);
+	margin-bottom: 5px;
+	font-size: 28px;
+}
+.subtitle {
+	text-align: center;
+	color: var(--text-color);
+	opacity: 0.8;
+	margin-bottom: 25px;
+	font-size: 14px;
+}
+.auth-section, .controls, .info-panel {
+	background: var(--notes-bg);
+	border-radius: 12px;
+	padding: 20px;
+	margin-bottom: 25px;
+	border: 1px solid var(--table-border);
+}
+.auth-form {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+	justify-content: center;
+	align-items: center;
+}
+.auth-form input {
+	padding: 10px 15px;
+	border-radius: 8px;
+	border: 1px solid var(--table-border);
+	background: var(--container-bg);
+	color: var(--text-color);
+	font-size: 14px;
+	min-width: 160px;
+}
+.auth-form button, .controls button {
+	background: var(--table-header-bg);
+	color: var(--table-header-text);
+	border: none;
+	padding: 10px 20px;
+	border-radius: 8px;
+	font-weight: 600;
+	cursor: pointer;
+	font-size: 14px;
+}
+.logout-btn {
+	background: #e74c3c;
+	color: white;
+	border: none;
+	padding: 8px 20px;
+	border-radius: 8px;
+	cursor: pointer;
+	font-weight: 600;
+}
+.student-card-btn {
+	background: #3498db;
+	color: white;
+	border: none;
+	padding: 8px 20px;
+	border-radius: 8px;
+	cursor: pointer;
+	font-weight: 600;
+}
+.controls {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 15px;
+	justify-content: center;
+}
+.control-group {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-weight: 600;
+}
+/* Ensure selects and options are visible in both themes */
+select {
+    background-color: var(--container-bg);
+    color: var(--text-color);
+    border: 1px solid var(--table-border);
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-size: 14px;
+}
+select option {
+    background-color: var(--container-bg);
+    color: var(--text-color);
+}
+.table-wrapper {
+	overflow-x: auto;
+	margin-top: 10px;
+}
+table {
+	width: 100%;
+	border-collapse: collapse;
+	border-radius: 12px;
+	overflow: hidden;
+	box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+	min-width: 1000px;
+}
+th, td {
+	padding: 10px 8px;
+	text-align: center;
+	border: 1px solid var(--table-border);
+	font-size: 13px;
+}
+th {
+	background-color: var(--table-header-bg);
+	color: var(--table-header-text);
+	font-weight: 600;
+	font-size: 14px;
+	white-space: nowrap;
+}
+td {
+	background-color: var(--table-row-odd);
+	color: var(--text-color);
+	vertical-align: top;
+}
+tr:nth-child(even) td {
+	background-color: var(--table-row-even);
+}
+.highlight {
+	background-color: var(--highlight-bg) !important;
+	font-weight: bold;
+	color: var(--highlight-text);
+}
+.reserved {
+	background-color: var(--reserved-bg) !important;
+	color: var(--reserved-text);
+	font-style: italic;
+}
+.student-highlight {
+	background-color: #d4edda !important;
+	color: #155724;
+	font-weight: bold;
+}
+.merged-item {
+	display: block;
+	margin: 2px 0;
+	padding: 2px 4px;
+	border-radius: 4px;
+}
+.merged-item.student-highlight {
+	background-color: #d4edda;
+	color: #155724;
+}
+.personal-schedule, .roster-panel, .attendance-panel, .work-system-panel, .materials-panel, .parent-info-panel {
+	margin-top: 30px;
+	background: var(--notes-bg);
+	padding: 20px;
+	border-radius: 12px;
+	border-right: 5px solid var(--notes-border);
+	display: none;
+}
+.personal-schedule.visible, .roster-panel.visible, .attendance-panel.visible, .work-system-panel.visible, .materials-panel.visible, .parent-info-panel.visible {
+	display: block;
+}
+.personal-schedule h2, .roster-panel h2, .attendance-panel h2, .work-system-panel h2, .materials-panel h2, .parent-info-panel h2 {
+	margin-top: 0;
+	color: var(--text-color);
+}
+.personal-schedule ul, .roster-panel ul, .attendance-panel ul {
+	list-style: none;
+	padding: 0;
+	max-height: 300px;
+	overflow-y: auto;
+}
+.personal-schedule li, .roster-panel li, .attendance-panel li {
+	padding: 8px 12px;
+	background: var(--container-bg);
+	margin-bottom: 6px;
+	border-radius: 8px;
+	border: 1px solid var(--table-border);
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+.attendance-paid {
+	background-color: var(--attendance-paid-bg) !important;
+	color: var(--attendance-paid-text);
+}
+.attendance-unpaid {
+	background-color: var(--attendance-unpaid-bg) !important;
+	color: var(--attendance-unpaid-text);
+}
+.attendance-overdue {
+	background-color: var(--attendance-overdue-bg) !important;
+	color: var(--attendance-overdue-text);
+}
+.attendance-status-label {
+	font-size: 12px;
+	font-weight: bold;
+}
+.info-line {
+	margin: 5px 0;
+}
+.hidden {
+	display: none;
+}
+body[dir="ltr"] {
+	direction: ltr;
+}
+body[dir="rtl"] {
+	direction: rtl;
+}
+/* Avatar in header */
+.avatar {
+	width: 40px;
+	height: 40px;
+	border-radius: 10px;
+	background-color: var(--table-header-bg);
+	color: var(--table-header-text);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-weight: bold;
+	font-size: 20px;
+}
+.welcome-user {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+/* Materials list */
+.materials-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-bottom: 10px;
+}
+.materials-list span {
+	background: var(--container-bg);
+	border: 1px solid var(--table-border);
+	border-radius: 20px;
+	padding: 4px 12px;
+	font-size: 13px;
+}
+.parent-info {
+	font-size: 14px;
+	margin-top: 10px;
+}
+/* Modal styles */
+.modal-overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(0,0,0,0.6);
+	backdrop-filter: blur(4px);
+	display: none;
+	justify-content: center;
+	align-items: center;
+	z-index: 1000;
+	padding: 20px;
+}
+.modal-overlay.show {
+	display: flex;
+}
+.modal-content {
+	background: var(--modal-bg);
+	color: var(--modal-text);
+	border-radius: 16px;
+	max-width: 600px;
+	/* Increased width for calendar */
+	width: 100%;
+	box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+	overflow: hidden;
+	animation: modalFadeIn 0.3s ease;
+}
+@keyframes modalFadeIn {
+	from {
+		opacity: 0;
+        transform: translateY(-30px);
+	}
+	to {
+		opacity: 1;
+        transform: translateY(0);
+	}
+}
+.modal-header {
+	background: var(--modal-header-bg);
+	color: var(--modal-header-text);
+	padding: 20px;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	border-bottom: 1px solid var(--table-border);
+}
+.modal-header h3 {
+	margin: 0;
+	font-size: 1.5rem;
+}
+.modal-close-btn {
+	background: transparent;
+	border: none;
+	color: var(--modal-header-text);
+	font-size: 2rem;
+	cursor: pointer;
+	line-height: 1;
+	padding: 0;
+	opacity: 0.8;
+	transition: opacity 0.2s;
+}
+.modal-close-btn:hover {
+	opacity: 1;
+}
+.modal-body {
+	padding: 25px;
+	display: flex;
+	flex-direction: column;
+	gap: 15px;
+	max-height: 70vh;
+	overflow-y: auto;
+}
+.student-card-profile {
+	display: flex;
+	align-items: center;
+	gap: 20px;
+}
+.student-card-avatar {
+	width: 80px;
+	height: 80px;
+	border-radius: 50%;
+	background: linear-gradient(135deg, #3498db, #2c3e50);
+	color: white;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 2.5rem;
+	font-weight: bold;
+	box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+.student-card-name {
+	font-size: 1.8rem;
+	font-weight: bold;
+}
+.student-card-section {
+	font-size: 1rem;
+	opacity: 0.8;
+}
+.student-card-details {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+	gap: 15px;
+	margin-top: 10px;
+}
+.detail-item {
+	background: var(--container-bg);
+	padding: 12px 15px;
+	border-radius: 10px;
+	box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+.detail-item strong {
+	display: block;
+	font-size: 0.85rem;
+	opacity: 0.7;
+	margin-bottom: 4px;
+}
+.detail-item .value {
+	font-size: 1rem;
+}
+.subjects-tags {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+.subject-tag {
+	background: var(--highlight-bg);
+	color: var(--highlight-text);
+	padding: 2px 10px;
+	border-radius: 12px;
+	font-size: 0.85rem;
+}
+.modal-footer {
+	padding: 15px 25px;
+	text-align: center;
+	border-top: 1px solid var(--table-border);
+	font-size: 0.9rem;
+	opacity: 0.7;
+}
 
-        /* Attendance Calendar in Modal */
+/* Attendance Calendar in Modal */
 .attendance-calendar-section {
     margin-top: 10px;
     border-top: 1px solid var(--table-border);
@@ -307,25 +495,23 @@
     font-size: 14px;
 }
 .attendance-calendar-table {
-    width: 100%;
+    width: auto;
+    max-width: 100%;
+    margin: 0 auto;
     border-collapse: collapse;
-    table-layout: fixed;
 }
 .attendance-calendar-table th,
 .attendance-calendar-table td {
     border: 1px solid var(--table-border);
-    padding: 3px 2px;
+    padding: 2px 3px;
     text-align: center;
     font-size: 10px;
-    overflow: hidden;
-    text-overflow: ellipsis;
     white-space: nowrap;
 }
 .attendance-calendar-table th {
     background: var(--table-header-bg);
     color: var(--table-header-text);
 }
-
 /* Print button styling */
 #print-attendance-btn {
     display: block;
@@ -344,95 +530,149 @@
 #print-attendance-btn:hover {
     opacity: 0.9;
 }
-        .calendar-day.attendance-paid {
-            background-color: var(--attendance-paid-bg);
-            color: var(--attendance-paid-text);
-            font-weight: bold;
-        }
-        .calendar-day.attendance-unpaid {
-            background-color: var(--attendance-unpaid-bg);
-            color: var(--attendance-unpaid-text);
-            font-weight: bold;
-        }
-        .calendar-day.attendance-overdue {
-            background-color: var(--attendance-overdue-bg);
-            color: var(--attendance-overdue-text);
-            font-weight: bold;
-        }
+.calendar-day.attendance-paid {
+	background-color: var(--attendance-paid-bg);
+	color: var(--attendance-paid-text);
+	font-weight: bold;
+}
+.calendar-day.attendance-unpaid {
+	background-color: var(--attendance-unpaid-bg);
+	color: var(--attendance-unpaid-text);
+	font-weight: bold;
+}
+.calendar-day.attendance-overdue {
+	background-color: var(--attendance-overdue-bg);
+	color: var(--attendance-overdue-text);
+	font-weight: bold;
+}
 
-        /* Responsive modal */
-        /* Responsive modal */
+/* Responsive modal */
+/* Responsive modal */
 @media (max-width: 480px) {
     .modal-content {
         max-width: 95%;
-    }
+	}
     .student-card-profile {
         flex-direction: column;
         text-align: center;
-    }
+	}
     .student-card-avatar {
         width: 60px;
         height: 60px;
         font-size: 2rem;
-    }
+	}
     .student-card-name {
         font-size: 1.5rem;
-    }
+	}
     .attendance-calendar-table th,
     .attendance-calendar-table td {
         padding: 2px 1px;
         font-size: 8px;
-    }
+	}
     .calendar-header button {
         padding: 3px 8px;
         font-size: 12px;
-    }
+	}
     #print-attendance-btn {
         width: 100%;
         padding: 8px 0;
-    }
+	}
 }
-        /* Responsive general */
-        @media (max-width: 768px) {
-            body { padding: 10px; }
-            .container { padding: 15px; border-radius: 12px; }
-            h1 { font-size: 22px; }
-            .subtitle { font-size: 12px; margin-bottom: 15px; }
-            .auth-section, .controls, .info-panel, .personal-schedule, .roster-panel, .attendance-panel, .work-system-panel, .materials-panel, .parent-info-panel { padding: 15px; margin-bottom: 15px; }
-            .auth-form { flex-direction: column; align-items: stretch; }
-            .auth-form input { width: 100%; min-width: auto; }
-            .controls { flex-direction: column; gap: 10px; }
-            .control-group { justify-content: space-between; }
-            .table-wrapper { overflow-x: auto; }
-            table { min-width: 800px; font-size: 11px; }
-            th, td { padding: 6px 4px; font-size: 10px; }
-            .auth-form button, .controls button { width: 100%; }
-            #user-info { flex-direction: column; align-items: center; }
-            .welcome-user { justify-content: center; }
-            .logout-btn, .student-card-btn { width: auto; }
-            .avatar { width: 35px; height: 35px; font-size: 18px; }
-        }
-        @media (max-width: 480px) {
-            h1 { font-size: 20px; }
-            .subtitle { font-size: 11px; }
-            th, td { font-size: 9px; padding: 4px 2px; }
-            table { min-width: 700px; }
-        }
-        .install-btn {
-            background: linear-gradient(135deg, #3498db, #2c3e50);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 14px;
-            transition: opacity 0.2s;
-        }
-        .install-btn:hover {
-            opacity: 0.9;
-        }
-		.edit-profile-link {
+/* Responsive general */
+@media (max-width: 768px) {
+	body {
+		padding: 10px;
+	}
+	.container {
+		padding: 15px;
+        border-radius: 12px;
+	}
+	h1 {
+		font-size: 22px;
+	}
+	.subtitle {
+		font-size: 12px;
+        margin-bottom: 15px;
+	}
+	.auth-section, .controls, .info-panel, .personal-schedule, .roster-panel, .attendance-panel, .work-system-panel, .materials-panel, .parent-info-panel {
+		padding: 15px;
+        margin-bottom: 15px;
+	}
+	.auth-form {
+		flex-direction: column;
+        align-items: stretch;
+	}
+	.auth-form input {
+		width: 100%;
+        min-width: auto;
+	}
+	.controls {
+		flex-direction: column;
+        gap: 10px;
+	}
+	.control-group {
+		justify-content: space-between;
+	}
+	.table-wrapper {
+		overflow-x: auto;
+	}
+	table {
+		min-width: 800px;
+        font-size: 11px;
+	}
+	th, td {
+		padding: 6px 4px;
+        font-size: 10px;
+	}
+	.auth-form button, .controls button {
+		width: 100%;
+	}
+	#user-info {
+		flex-direction: column;
+        align-items: center;
+	}
+	.welcome-user {
+		justify-content: center;
+	}
+	.logout-btn, .student-card-btn {
+		width: auto;
+	}
+	.avatar {
+		width: 35px;
+        height: 35px;
+        font-size: 18px;
+	}
+}
+@media (max-width: 480px) {
+	h1 {
+		font-size: 20px;
+	}
+	.subtitle {
+		font-size: 11px;
+	}
+	th, td {
+		font-size: 9px;
+        padding: 4px 2px;
+	}
+	table {
+		min-width: 700px;
+	}
+}
+.install-btn {
+	background: linear-gradient(135deg, #3498db, #2c3e50);
+	color: white;
+	border: none;
+	padding: 10px 20px;
+	border-radius: 8px;
+	font-weight: 600;
+	cursor: pointer;
+	font-size: 14px;
+	transition: opacity 0.2s;
+}
+.install-btn:hover {
+	opacity: 0.9;
+}
+.edit-profile-link {
     display: inline-block;
     background: var(--table-header-bg);
     color: var(--table-header-text);
@@ -476,61 +716,86 @@
     /* Hide everything on the page initially */
     body * {
         visibility: hidden;
-    }
-
+	}
+	
     /* Make the modal overlay static and visible */
     .modal-overlay {
         position: static;
         background: none;
         display: block;
         visibility: visible;
-    }
-
+	}
+	
     /* Show the modal content and all its children */
     .modal-content {
         visibility: visible;
         box-shadow: none;
         max-width: 100%;
         border: none;
-    }
-
+	}
+	
     .modal-content * {
         visibility: visible;
-    }
-
+	}
+	
     /* Hide interactive elements that should not be printed */
     .modal-close-btn,
     #print-attendance-btn,
     .calendar-header button,
     .modal-footer {
         display: none !important;
-    }
-
+	}
+	
     /* Remove scroll constraints so full content is printed */
     .modal-body {
         max-height: none;
         overflow: visible;
-    }
-
+	}
+	
     /* Optional: make the calendar black & white for clarity */
     .attendance-calendar-table th,
     .attendance-calendar-table td {
         background: #fff !important;
         color: #000 !important;
         border: 1px solid #000 !important;
-    }
-
+	}
+	
     .attendance-calendar-table th {
         background: #eee !important;
-    }
-
+	}
+	
     .calendar-day.attendance-paid,
     .calendar-day.attendance-unpaid,
     .calendar-day.attendance-overdue {
         background: #fff !important;
         color: #000 !important;
         font-weight: bold;
-    }
+	}
+}
+.roster-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    vertical-align: middle;
+    border: 1px solid var(--table-border);
+    flex-shrink: 0;
+}
+.roster-avatar-placeholder {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background-color: var(--highlight-bg);
+    color: var(--highlight-text);
+    font-weight: bold;
+    font-size: 20px;
+    flex-shrink: 0;
+}
+.roster-panel li {
+    justify-content: flex-start;
 }
     </style>
 </head>
@@ -571,7 +836,7 @@
                 <label for="theme-toggle">🌓 النمط:</label>
                 <button id="theme-toggle">🌙 ليلي</button>
             </div>
-            <button id="install-btn" style="display:none;" class="install-btn">📲 تثبيت التطبيق</button>
+            <button id="install-btn" class="install-btn">📲 تثبيت التطبيق</button>
         </div>
         <!-- Main Schedule Table -->
         <div class="table-wrapper">
@@ -823,6 +1088,8 @@ async function loadDataFromSupabase() {
 let currentLanguage = 'ar';
 let currentTheme = 'light';
 let currentUser = null;
+const STORAGE_KEY_ADMIN = 'edschedule_admin_logged';
+const STORAGE_KEY_STUDENT_ID = 'edschedule_student_id';
 let attendanceCalendarMonth = new Date();
 
 // ==================== DOM REFS ====================
@@ -970,10 +1237,17 @@ function updateRoster() {
     if (classmates.length === 0) {
         rosterList.innerHTML = `<li>${translations[currentLanguage].noStudents}</li>`;
     } else {
-        rosterList.innerHTML = classmates.map(u => {
+                rosterList.innerHTML = classmates.map(u => {
             const displayName = getText(u) || u.nameAr;
             const highlight = (u.nameAr === currentUser.nameAr) ? 'student-highlight' : '';
-            return `<li class="${highlight}">${escapeHtml(displayName)}</li>`;
+            let avatarHtml = '';
+            if (u.photo_url) {
+                avatarHtml = `<img class="roster-avatar" src="${escapeHtml(u.photo_url)}" alt="${escapeHtml(displayName)}">`;
+            } else {
+                const initial = displayName.charAt(0).toUpperCase();
+                avatarHtml = `<span class="roster-avatar-placeholder">${escapeHtml(initial)}</span>`;
+            }
+            return `<li class="${highlight}">${avatarHtml} <span>${escapeHtml(displayName)}</span></li>`;
         }).join('');
     }
     rosterPanelDiv.classList.add('visible');
@@ -1228,6 +1502,7 @@ function applyLanguage(lang) {
     document.querySelector('.control-group label[for="language-select"]').textContent = t.languageLabel;
     document.querySelector('.control-group label[for="theme-toggle"]').textContent = t.themeLabel;
     document.getElementById('theme-toggle').textContent = currentTheme === 'light' ? t.themeNight : t.themeDay;
+    document.getElementById('install-btn').textContent = t.installBtnLabel;
     document.getElementById('personal-title').textContent = t.personalTitle;
     document.getElementById('roster-title').textContent = t.rosterTitle;
     document.getElementById('attendance-title').textContent = t.attendanceTitle;
@@ -1414,7 +1689,8 @@ async function handleLogin() {
         currentUser = { isAdmin: true, nameAr: 'Admin', nameEn: 'Admin', nameFr: 'Admin' };
         loginNameInput.value = '';
         loginPasswordInput.value = '';
-        sessionStorage.setItem('adminLoggedIn', 'true');
+                localStorage.setItem(STORAGE_KEY_ADMIN, 'true');
+        localStorage.removeItem(STORAGE_KEY_STUDENT_ID);
         trackInteraction('admin_login');
         updateAllPanels();
         loginForm.style.display = 'none';
@@ -1430,7 +1706,9 @@ async function handleLogin() {
         alert(translations[currentLanguage].invalidCredentials);
         return;
     }
-    currentUser = { ...student };
+        currentUser = { ...student };
+    localStorage.setItem(STORAGE_KEY_STUDENT_ID, student.id);
+    localStorage.removeItem(STORAGE_KEY_ADMIN);
 trackInteraction('student_login');
     loginNameInput.value = '';
     loginPasswordInput.value = '';
@@ -1444,6 +1722,8 @@ function handleLogout() {
         trackInteraction(currentUser.isAdmin ? 'admin_logout' : 'student_logout');
     }
     currentUser = null;
+    localStorage.removeItem(STORAGE_KEY_ADMIN);
+    localStorage.removeItem(STORAGE_KEY_STUDENT_ID);
     loginForm.style.display = 'flex';
     userInfoDiv.style.display = 'none';
     closeStudentCardModal();
@@ -1460,6 +1740,7 @@ const translations = {
         themeLabel: '🌓 النمط:',
         themeNight: '🌙 ليلي',
         themeDay: '☀️ نهاري',
+		installBtnLabel: '📲 تثبيت التطبيق',
         personalTitle: '📋 جدولك الخاص',
         rosterTitle: '👥 مجموعتك',
         attendanceTitle: '📆 سجل الحضور والدفع',
@@ -1524,6 +1805,7 @@ printAttendance: 'طباعة الحضور',
         themeLabel: '🌓 Thème :',
         themeNight: '🌙 Nuit',
         themeDay: '☀️ Jour',
+		installBtnLabel: '📲 Installer l\'application',
         personalTitle: '📋 Votre emploi du temps',
         rosterTitle: '👥 Votre groupe',
         attendanceTitle: '📆 Registre de présence et paiement',
@@ -1588,6 +1870,7 @@ printAttendance: 'Imprimer la présence',
         themeLabel: '🌓 Theme:',
         themeNight: '🌙 Night',
         themeDay: '☀️ Day',
+		installBtnLabel: '📲 Install App',
         personalTitle: '📋 Your Personal Schedule',
         rosterTitle: '👥 Your Group',
         attendanceTitle: '📆 Attendance & Payment Record',
@@ -1667,11 +1950,33 @@ async function init() {
     trackInteraction('app_open');
     const loaded = await loadDataFromSupabase();
     if (loaded) {
+                // Restore previous login first
+        const adminLogged = localStorage.getItem(STORAGE_KEY_ADMIN);
+        const studentId = localStorage.getItem(STORAGE_KEY_STUDENT_ID);
+        if (adminLogged === 'true') {
+            currentUser = { isAdmin: true, nameAr: 'Admin', nameEn: 'Admin', nameFr: 'Admin' };
+            loginForm.style.display = 'none';
+            userInfoDiv.style.display = 'flex';
+        } else if (studentId) {
+            const student = data.students.find(s => s.id === studentId);
+            if (student) {
+                currentUser = { ...student };
+                loginForm.style.display = 'none';
+                userInfoDiv.style.display = 'flex';
+            } else {
+                localStorage.removeItem(STORAGE_KEY_STUDENT_ID);
+                currentUser = null;
+                loginForm.style.display = 'flex';
+                userInfoDiv.style.display = 'none';
+            }
+        } else {
+            currentUser = null;
+            loginForm.style.display = 'flex';
+            userInfoDiv.style.display = 'none';
+        }
+
         applyLanguage('ar');
         applyTheme('light');
-        currentUser = null;
-        loginForm.style.display = 'flex';
-        userInfoDiv.style.display = 'none';
         rebuildScheduleTable();
     } else {
         // Show error or fallback (optional)
@@ -1690,7 +1995,14 @@ init();
 // Install Prompt Logic
 let deferredPrompt;
 const installBtn = document.getElementById('install-btn');
+function isAppInstalled() {
+    return window.matchMedia('(display-mode: standalone)').matches
+        || window.navigator.standalone === true;
+}
 
+if (isAppInstalled()) {
+    installBtn.style.display = 'none';
+}
 window.addEventListener('beforeinstallprompt', (e) => {
   // Prevent Chrome 67 and earlier from automatically showing the prompt
   e.preventDefault();
@@ -1701,16 +2013,17 @@ window.addEventListener('beforeinstallprompt', (e) => {
 });
 
 installBtn.addEventListener('click', async () => {
-  if (!deferredPrompt) return;
-  // Show the install prompt
-  deferredPrompt.prompt();
-  // Wait for the user to respond
-  const { outcome } = await deferredPrompt.userChoice;
-  console.log(`User response to the install prompt: ${outcome}`);
-  // Clear the saved prompt
-  deferredPrompt = null;
-  // Hide the button again
-  installBtn.style.display = 'none';
+    if (deferredPrompt) {
+        // Show the native install prompt
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log(`User response to the install prompt: ${outcome}`);
+        deferredPrompt = null;
+        installBtn.style.display = 'none';
+    } else {
+        // Fallback instructions
+        alert('To install this app, use your browser menu:\n\n- Chrome: Tap ⋮ then "Add to Home screen"\n- Safari (iOS): Tap the Share icon then "Add to Home Screen"');
+    }
 });
 
 // Hide the button once the app is installed
