@@ -1442,11 +1442,12 @@ window.toast = toast;
 					return;
 				}
 				try {
-					const { data, error } = await supabaseClient
-					.from('notifications')
-					.select('*')
-					.eq('user_id', currentUser.id)
-					.order('created_at', { ascending: false });
+					        const { data, error } = await supabaseClient
+            .from('notifications')
+            .select('*')
+            .eq('user_id', currentUser.id)
+            .order('created_at', { ascending: false })
+            .limit(20);
 					
 					if (error) throw error;
 					
@@ -1682,6 +1683,7 @@ window.toast = toast;
 				document.querySelector('.control-group label[for="theme-toggle"]').textContent = t.themeLabel;
 				document.getElementById('theme-toggle').textContent = currentTheme === 'light' ? t.themeNight : t.themeDay;
 				document.getElementById('install-btn').textContent = t.installBtnLabel;
+				document.getElementById('notifications-modal-title').textContent = t.notificationsModalTitle;
 				document.getElementById('personal-title').textContent = t.personalTitle;
 				document.getElementById('roster-title').textContent = t.rosterTitle;
 				document.getElementById('attendance-title').textContent = t.attendanceTitle;
@@ -1922,6 +1924,7 @@ window.toast = toast;
 					themeNight: '🌙 ليلي',
 					themeDay: '☀️ نهاري',
 					installBtnLabel: '📲 تثبيت التطبيق',
+					notificationsModalTitle: '🔔 الإشعارات',
 					noNotifications: 'لا توجد إشعارات',
 					newNotification: 'لديك إشعار جديد',
 					personalTitle: '📋 جدولك الخاص',
@@ -1989,6 +1992,7 @@ window.toast = toast;
 					themeNight: '🌙 Nuit',
 					themeDay: '☀️ Jour',
 					installBtnLabel: '📲 Installer l\'application',
+					notificationsModalTitle: '🔔 Notifications',
 					noNotifications: 'Aucune notification',
 					newNotification: 'Nouvelle notification',
 					personalTitle: '📋 Votre emploi du temps',
@@ -2056,6 +2060,7 @@ window.toast = toast;
 					themeNight: '🌙 Night',
 					themeDay: '☀️ Day',
 					installBtnLabel: '📲 Install App',
+					notificationsModalTitle: '🔔 Notifications',
 					noNotifications: 'No notifications',
 					newNotification: 'New notification',
 					personalTitle: '📋 Your Personal Schedule',

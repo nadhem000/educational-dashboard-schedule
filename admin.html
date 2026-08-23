@@ -436,6 +436,10 @@
                     </div>
                 </details>
                 <button class="btn btn-success" onclick="sendNotification()">Send Notification</button>
+				<hr style="margin:20px 0;">
+<h4>📜 Notification History</h4>
+<button class="btn btn-outline" onclick="loadNotificationHistory()">Load History</button>
+<div id="notif-history-list" style="margin-top:15px;"></div>
             </div>
             <div class="export-btns">
                 <button class="btn" id="copy-html-btn">📄 Copy Full HTML</button>
@@ -1869,6 +1873,37 @@ async function sendNotification() {
     document.getElementById('notif-body-fr').value = '';
     toast('Notification sent');
 }
+async function loadNotificationHistory() {
+    const container = document.getElementById('notif-history-list');
+    container.innerHTML = '<p>Loading...</p>';
+    const { data, error } = await supabaseClient
+        .from('notification_batches')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+    if (error) {
+        container.innerHTML = `<p style="color:red;">Error: ${error.message}</p>`;
+        return;
+    }
+    if (!data || data.length === 0) {
+        container.innerHTML = '<p>No notifications sent yet.</p>';
+        return;
+    }
+
+    let html = '<ul style="list-style:none; padding:0;">';
+    data.forEach(batch => {
+        const targetLabel = batch.target_type === 'all' ? 'All' : (batch.target_value || batch.target_type);
+        html += `
+        <li style="padding:10px; border:1px solid var(--border); border-radius:6px; margin-bottom:8px;">
+            <strong>${escapeHtml(batch.title)}</strong> — <span style="opacity:0.7;">${escapeHtml(batch.target_type)}: ${escapeHtml(targetLabel)}</span>
+            <div style="font-size:12px; opacity:0.8;">${escapeHtml(batch.body || '')}</div>
+            <div style="font-size:10px; opacity:0.6;">${new Date(batch.created_at).toLocaleString()}</div>
+        </li>`;
+    });
+    html += '</ul>';
+    container.innerHTML = html;
+}
 // ==================== Export (Optional Backup) ====================
 function generateDataObject() {
     return {
@@ -2016,6 +2051,7 @@ window.saveAssignedHomework = saveAssignedHomework;
 window.deleteHomeworkFromEdit = deleteHomeworkFromEdit;
 window.updateNotifTargetOptions = updateNotifTargetOptions;
 window.sendNotification = sendNotification;
+window.loadNotificationHistory = loadNotificationHistory;
 window.closeModal = closeModal;
 </script>
 </body>

@@ -536,3 +536,93 @@ select public.send_notification(
   'all'                  -- target_type: 'all', 'student', 'group', 'section', 'day'
   --, 'target_value'     -- optional, required for non-'all' targets
 );
+
+## Notifications Optional Translation Columns
+------------------------------------------------------------
+Run in Supabase SQL Editor:
+------------------------------------------------------------
+-- Add optional translation columns for title and body
+alter table public.notifications
+add column if not exists title_ar text,
+add column if not exists title_en text,
+add column if not exists title_fr text,
+add column if not exists body_ar text,
+add column if not exists body_en text,
+add column if not exists body_fr text;
+
+**Purpose:**  
+- `title` and `body` remain mandatory default texts.  
+- Optional columns allow per-language overrides in Arabic, English, and French.  
+- The frontend falls back to `title`/`body` when translation columns are null.
+
+**Updated `send_notification` function with translations:**
+------------------------------------------------------------
+create or replace function public.send_notification(
+  p_title text,
+  p_body text,
+  p_target_type text,
+  p_target_value text default null,
+  p_title_ar text default null,
+  p_title_en text default null,
+  p_title_fr text default null,
+  p_body_ar text default null,
+  p_body_en text default null,
+  p_body_fr text default null
+)
+returns void
+language plpgsql
+as $$
+declare
+  v_user_id uuid;
+begin
+  if p_target_type = 'all' then
+    for v_user_id in select id from public.profiles loop
+      insert into public.notifications (user_id, title, body, title_ar, title_en, title_fr, body_ar, body_en, body_fr)
+      values (v_user_id, p_title, p_body, p_title_ar, p_title_en, p_title_fr, p_body_ar, p_body_en, p_body_fr);
+    end loop;
+
+  elsif p_target_type = 'student' then
+    insert into public.notifications (user_id, title, body, title_ar, title_en, title_fr, body_ar, body_en, body_fr)
+    values (p_target_value::uuid, p_title, p_body, p_title_ar, p_title_en, p_title_fr, p_body_ar, p_body_en, p_body_fr);
+
+  elsif p_target_type = 'group' then
+    for v_user_id in
+      select id from public.profiles
+      where section_key || '-g' || group_number = p_target_value
+    loop
+      insert into public.notifications (user_id, title, body, title_ar, title_en, title_fr, body_ar, body_en, body_fr)
+      values (v_user_id, p_title, p_body, p_title_ar, p_title_en, p_title_fr, p_body_ar, p_body_en, p_body_fr);
+    end loop;
+
+  elsif p_target_type = 'section' then
+    for v_user_id in
+      select id from public.profiles
+      where section_key = p_target_value
+    loop
+      insert into public.notifications (user_id, title, body, title_ar, title_en, title_fr, body_ar, body_en, body_fr)
+      values (v_user_id, p_title, p_body, p_title_ar, p_title_en, p_title_fr, p_body_ar, p_body_en, p_body_fr);
+    end loop;
+
+  elsif p_target_type = 'day' then
+    for v_user_id in
+      select p.id
+      from public.profiles p
+      where exists (
+        select 1
+        from public.schedule_slots s
+        where s.day_key = p_target_value
+          and (
+            s.assignment ? p.section_key
+            or (p.group_number is not null and s.assignment ? (p.section_key || '-g' || p.group_number))
+          )
+      )
+    loop
+      insert into public.notifications (user_id, title, body, title_ar, title_en, title_fr, body_ar, body_en, body_fr)
+      values (v_user_id, p_title, p_body, p_title_ar, p_title_en, p_title_fr, p_body_ar, p_body_en, p_body_fr);
+    end loop;
+  end if;
+end;
+$$;
+
+grant execute on function public.send_notification(text, text, text, text, text, text, text, text, text, text) to anon, authenticated;
+
