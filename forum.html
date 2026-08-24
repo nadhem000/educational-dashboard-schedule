@@ -218,6 +218,9 @@
 
         <!-- Post list -->
         <div id="post-list" class="post-list"></div>
+		<div style="text-align:center; margin-top:15px;">
+    <button id="load-more-posts-btn" class="btn btn-outline" style="display:none;">📄 عرض المزيد</button>
+</div>
     </div>
 
     <!-- New Post Modal -->
@@ -254,9 +257,17 @@
             <div id="detail-content" style="white-space:pre-wrap; margin-bottom:15px;"></div>
             <div id="detail-comments"></div>
             <div class="form-group" style="margin-top:20px;">
-                <label id="comment-label">أضف تعليق</label>
-                <textarea id="comment-input" placeholder="اكتب تعليقك..."></textarea>
-            </div>
+    <label id="comment-label">أضف تعليق</label>
+    <textarea id="comment-input" placeholder="اكتب تعليقك..."></textarea>
+</div>
+<div class="form-group">
+    <label id="comment-attachments-label">📎 مرفقات التعليق</label>
+    <input type="file" id="comment-files" accept="image/*" webkitdirectory directory multiple style="display:none;">
+    <button type="button" class="btn btn-outline" id="comment-choose-folder">📁 اختر مجلد الصور</button>
+    <small id="comment-attachments-hint">اختر مجلدًا يحتوي على الصور لعرضها واختيار بعضها.</small>
+    <div id="comment-files-info" style="margin-top:5px; font-size:0.9rem;"></div>
+    <div id="comment-thumbnails" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin:15px 0;"></div>
+</div>
             <div style="display:flex; gap:10px; justify-content:flex-end;">
                 <button class="btn btn-success" id="add-comment-btn" onclick="addComment()">تعليق</button>
                 <button class="btn btn-danger" id="close-btn" onclick="closePostDetailModal()">إغلاق</button>
@@ -317,6 +328,12 @@
         let profilesMap = new Map();
         let currentNotifications = [];
 let selectedPostAttachments = [];
+let selectedCommentAttachments = [];
+let postOffset = 0;
+const POSTS_PER_PAGE = 20;
+let hasMorePosts = true;
+
+
         const translations = {
             ar: {
                 forumTitle: '💬 المنتدى',
@@ -350,6 +367,8 @@ attachmentsHint: 'اختر مجلدًا يحتوي على الصور لعرضه�
 uploadingFiles: 'جاري الرفع...',
 filesSelected: '{count} صورة مختارة',
 noImages: 'لا توجد صور في المجلد',
+commentAttachmentsLabel: '📎 مرفقات التعليق',
+loadMore: '📄 عرض المزيد',
                 adminName: 'المدير',
                 studentCardBtn: 'بطاقة التلميذ',
                 logoutBtn: 'تسجيل الخروج',
@@ -411,6 +430,8 @@ attachmentsHint: 'Choisissez un dossier contenant des images pour les afficher e
 uploadingFiles: 'Téléversement...',
 filesSelected: '{count} images sélectionnées',
 noImages: 'Aucune image dans le dossier',
+commentAttachmentsLabel: '📎 Pièces jointes du commentaire',
+loadMore: '📄 Voir plus',
                 adminName: 'Admin',
                 studentCardBtn: 'Carte étudiant',
                 logoutBtn: 'Déconnexion',
@@ -472,6 +493,8 @@ attachmentsHint: 'Choose a folder containing images to preview and select.',
 uploadingFiles: 'Uploading...',
 filesSelected: '{count} images selected',
 noImages: 'No images in folder',
+commentAttachmentsLabel: '📎 Comment Attachments',
+loadMore: '📄 Load More',
                 adminName: 'Admin',
                 studentCardBtn: 'Student Card',
                 logoutBtn: 'Logout',
@@ -563,38 +586,70 @@ function renderAttachments(attachments) {
             (profiles || []).forEach(p => profilesMap.set(p.id, p));
         }
 
-        async function loadPosts() {
-            const { data: posts, error } = await supabaseClient
-                .from('forum_posts')
-                .select('id, title, content, author_id, created_at, is_pinned')
-                .order('is_pinned', { ascending: false })
-                .order('created_at', { ascending: false });
+        async function loadPosts(reset = true) {
+    if (reset) {
+        postOffset = 0;
+        hasMorePosts = true;
+        document.getElementById('post-list').innerHTML = '';
+    }
 
-            if (error) {
-                console.warn('[Forum] Load posts error', error.message);
-                return;
-            }
+    if (!hasMorePosts) return;
 
-            const list = document.getElementById('post-list');
-            const t = translations[currentLanguage];
-            if (!posts || posts.length === 0) {
-                list.innerHTML = `<p>${t.noPosts}</p>`;
-                return;
-            }
+    const from = postOffset;
+    const to = postOffset + POSTS_PER_PAGE - 1;
 
-            list.innerHTML = posts.map(post => {
-                const authorName = getDisplayName(post.author_id);
-                const avatarHtml = getAvatarHtml(post.author_id);
-                return `
-                <div class="post-item" onclick="openPostDetail('${post.id}')">
-                    <div class="post-title">${post.title}</div>
-                    <div class="post-meta">
-                        ${avatarHtml} <span style="margin-left:5px;">${authorName}</span> · ${new Date(post.created_at).toLocaleString()}
-                    </div>
-                    <div class="post-content">${post.content.substring(0, 200)}...</div>
-                </div>`;
-            }).join('');
-        }
+    const { data: posts, error } = await supabaseClient
+        .from('forum_posts')
+        .select('id, title, content, author_id, created_at, is_pinned, attachments')
+        .order('is_pinned', { ascending: false })
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
+    if (error) {
+        console.warn('[Forum] Load posts error', error.message);
+        return;
+    }
+
+    const list = document.getElementById('post-list');
+    const t = translations[currentLanguage];
+
+    if (!posts || posts.length === 0) {
+        if (reset) list.innerHTML = `<p>${t.noPosts}</p>`;
+        hasMorePosts = false;
+        document.getElementById('load-more-posts-btn').style.display = 'none';
+        return;
+    }
+
+    const postsHtml = posts.map(post => {
+        const authorName = getDisplayName(post.author_id);
+        const avatarHtml = getAvatarHtml(post.author_id);
+        const attachmentCount = Array.isArray(post.attachments) ? post.attachments.length : 0;
+        const attachmentBadge = attachmentCount > 0
+            ? `<span style="margin-left:5px; font-size:12px; opacity:0.8;">📎 ${attachmentCount}</span>`
+            : '';
+        return `
+        <div class="post-item" onclick="openPostDetail('${post.id}')">
+            <div class="post-title">${post.title}${attachmentBadge}</div>
+            <div class="post-meta">
+                ${avatarHtml} <span style="margin-left:5px;">${authorName}</span> · ${new Date(post.created_at).toLocaleString()}
+            </div>
+            <div class="post-content">${post.content.substring(0, 200)}...</div>
+        </div>`;
+    }).join('');
+
+    if (reset) {
+        list.innerHTML = postsHtml;
+    } else {
+        list.insertAdjacentHTML('beforeend', postsHtml);
+    }
+
+    postOffset += posts.length;
+    if (posts.length < POSTS_PER_PAGE) {
+        hasMorePosts = false;
+    }
+
+    document.getElementById('load-more-posts-btn').style.display = hasMorePosts ? 'inline-block' : 'none';
+}
 
         function openNewPostModal() {
     selectedPostAttachments = [];
@@ -727,9 +782,73 @@ async function uploadForumFile(file) {
 
     return data.publicUrl;
 }
+function openCommentFolderPicker() {
+    document.getElementById('comment-files').click();
+}
+
+function handleCommentFolderSelection(event) {
+    const files = Array.from(event.target.files || []);
+    const container = document.getElementById('comment-thumbnails');
+    const filesInfo = document.getElementById('comment-files-info');
+    const t = translations[currentLanguage];
+
+    container.innerHTML = '';
+    filesInfo.textContent = '';
+    selectedCommentAttachments = [];
+
+    if (files.length === 0) return;
+
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+    if (imageFiles.length === 0) {
+        filesInfo.textContent = t.noImages;
+        return;
+    }
+
+    filesInfo.textContent = t.uploadingFiles;
+
+    imageFiles.forEach(file => {
+        uploadForumFile(file)
+            .then(async (url) => {
+                try {
+                    await supabaseClient.rpc('append_forum_file_backup', {
+                        p_user_id: currentUser.id,
+                        p_file_name: file.name,
+                        p_file_url: url
+                    });
+                } catch (backupErr) {
+                    console.warn('[Forum Backup]', backupErr.message);
+                }
+
+                const img = document.createElement('img');
+                img.src = url;
+                img.className = 'forum-thumbnail';
+                img.dataset.url = url;
+                img.dataset.name = file.name;
+                img.addEventListener('click', () => {
+                    img.classList.toggle('selected');
+                    const existingIndex = selectedCommentAttachments.findIndex(a => a.url === url);
+                    if (existingIndex >= 0) {
+                        selectedCommentAttachments.splice(existingIndex, 1);
+                    } else {
+                        selectedCommentAttachments.push({ file_name: file.name, url });
+                    }
+                    filesInfo.textContent = t.filesSelected.replace('{count}', selectedCommentAttachments.length);
+                });
+                container.appendChild(img);
+            })
+            .catch(err => {
+                console.warn('[Forum Upload]', err.message);
+                filesInfo.textContent = 'Upload failed for ' + file.name;
+            });
+    });
+}
         async function openPostDetail(postId) {
             currentPostId = postId;
             const t = translations[currentLanguage];
+			selectedCommentAttachments = [];
+document.getElementById('comment-thumbnails').innerHTML = '';
+document.getElementById('comment-files-info').textContent = '';
+document.getElementById('comment-files').value = '';
             const { data: post, error } = await supabaseClient.from('forum_posts').select('*').eq('id', postId).single();
             if (error) { console.warn('[Forum] Post detail error', error.message); return; }
 
@@ -765,15 +884,18 @@ async function uploadForumFile(file) {
                     const deleteButton = canDelete ? `<button class="btn btn-danger" style="padding:2px 8px; margin-left:auto;" onclick="deleteComment('${comment.id}')">🗑️</button>` : '';
                     return `
     <div class="comment-item">
-        ${commentAvatar}
-        <div style="flex:1;">
-            <div class="comment-author">${commentAuthor}</div>
-            <div class="comment-content">${comment.content}</div>
-            ${renderAttachments(comment.attachments)}
-            <div class="comment-time">${new Date(comment.created_at).toLocaleString()}</div>
-        </div>
-        ${deleteButton}
-    </div>`;
+    ${commentAvatar}
+    <div style="flex:1;">
+        <div class="comment-author">${commentAuthor}</div>
+        <div class="comment-content">${comment.content}</div>
+        ${renderAttachments(comment.attachments)}
+        ${Array.isArray(comment.attachments) && comment.attachments.length > 0 
+            ? `<div style="font-size:12px; opacity:0.8;">📎 ${comment.attachments.length}</div>` 
+            : ''}
+        <div class="comment-time">${new Date(comment.created_at).toLocaleString()}</div>
+    </div>
+    ${deleteButton}
+</div>`;
                 }).join('')
                 : `<p>${t.noComments}</p>`;
 
@@ -787,17 +909,31 @@ async function uploadForumFile(file) {
         }
 
         async function addComment() {
-            const content = document.getElementById('comment-input').value.trim();
-            const t = translations[currentLanguage];
-            if (!currentPostId || !content) { alert(t.commentRequired); return; }
-            const userId = currentUser ? currentUser.id : null;
-            if (!userId || userId === 'admin') { alert(t.loginRequired); return; }
-            const { error } = await supabaseClient.from('forum_comments').insert({ post_id: currentPostId, author_id: userId, content });
-            if (error) { alert('Error: ' + error.message); return; }
-            document.getElementById('comment-input').value = '';
-            openPostDetail(currentPostId);
-            toast(t.commentAdded);
-        }
+    const content = document.getElementById('comment-input').value.trim();
+    const t = translations[currentLanguage];
+    if (!currentPostId || !content) { alert(t.commentRequired); return; }
+    const userId = currentUser ? currentUser.id : null;
+    if (!userId || userId === 'admin') { alert(t.loginRequired); return; }
+
+    const attachments = selectedCommentAttachments;
+
+    const { error } = await supabaseClient.from('forum_comments').insert({
+        post_id: currentPostId,
+        author_id: userId,
+        content,
+        attachments
+    });
+
+    if (error) { alert('Error: ' + error.message); return; }
+
+    document.getElementById('comment-input').value = '';
+    document.getElementById('comment-files').value = '';
+    document.getElementById('comment-thumbnails').innerHTML = '';
+    document.getElementById('comment-files-info').textContent = '';
+    selectedCommentAttachments = [];
+    openPostDetail(currentPostId);
+    toast(t.commentAdded);
+}
 
         async function deleteComment(commentId) {
             if (!currentUser) return;
@@ -943,6 +1079,10 @@ async function uploadForumFile(file) {
 			document.getElementById('post-attachments-label').textContent = t.postAttachmentsLabel;
 document.getElementById('new-post-choose-folder').textContent = t.chooseFolder;
 document.getElementById('post-attachments-hint').textContent = t.attachmentsHint;
+document.getElementById('comment-attachments-label').textContent = t.commentAttachmentsLabel;
+document.getElementById('comment-choose-folder').textContent = t.chooseFolder;
+document.getElementById('comment-attachments-hint').textContent = t.attachmentsHint;
+document.getElementById('load-more-posts-btn').textContent = t.loadMore;
             updateUserInfo();
             loadPosts();
             if (currentUser && !currentUser.isAdmin) loadNotifications();
@@ -1020,6 +1160,9 @@ document.getElementById('post-attachments-hint').textContent = t.attachmentsHint
         document.getElementById('student-card-modal').addEventListener('click', function(e) { if (e.target === this) closeStudentCardModal(); });
 document.getElementById('new-post-choose-folder').addEventListener('click', openNewPostFolderPicker);
 document.getElementById('new-post-files').addEventListener('change', handleNewPostFolderSelection);
+document.getElementById('comment-choose-folder').addEventListener('click', openCommentFolderPicker);
+document.getElementById('comment-files').addEventListener('change', handleCommentFolderSelection);
+document.getElementById('load-more-posts-btn').addEventListener('click', () => loadPosts(false));
         // Expose delete functions globally
         window.deleteComment = deleteComment;
         window.deletePost = deletePost;

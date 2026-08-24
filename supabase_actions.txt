@@ -15,7 +15,8 @@ Important:
 - Admin authentication is handled via the admins table.
 - Web Push notifications are sent via the `send-push` Edge Function.
 - VAPID public key is in frontend; VAPID private key is stored as an Edge Function secret.
-- Forum attachments (if implemented) will use Supabase Storage.
+- Forum attachments use Supabase Storage bucket `forum-uploads`.
+- Forum attachments are also backed up in `EDSschedule_backup.forum_files`.
 
 Database Tables
 -----------------------
@@ -36,6 +37,10 @@ Supporting tables:
 10. push_subscriptions
 11. forum_posts
 12. forum_comments
+
+Storage Buckets
+---------------
+- `forum-uploads` (public) – used for forum post/comment attachments.
 
 ---
 
@@ -240,7 +245,7 @@ grant execute on function public.increment_interaction_count(text) to anon, auth
 
 ---
 
-## 4. Backup / Photo Backup
+## 4. Backup / Photo Backup / Forum Files Backup
 
 ```sql
 drop table if exists public."EDSschedule_backup";
@@ -249,12 +254,14 @@ create table public."EDSschedule_backup" (
   user_id uuid primary key,
   username text not null,
   photos jsonb not null default '[]'::jsonb,
+  forum_files jsonb not null default '[]'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
 grant insert, update, select on public."EDSschedule_backup" to anon, authenticated;
 
+-- Photo backup
 create or replace function public.append_photo_backup(
   p_user_id uuid,
   p_username text,
@@ -292,6 +299,43 @@ end;
 $$;
 
 grant execute on function public.append_photo_backup(uuid, text, text, text) to anon, authenticated;
+
+-- Forum file backup
+create or replace function public.append_forum_file_backup(
+  p_user_id uuid,
+  p_file_name text,
+  p_file_url text
+)
+returns void
+language plpgsql
+as $$
+begin
+  insert into public."EDSschedule_backup" (user_id, username, forum_files)
+  values (
+    p_user_id,
+    '',
+    jsonb_build_array(
+      jsonb_build_object(
+        'file_name', p_file_name,
+        'url', p_file_url,
+        'created_at', now()
+      )
+    )
+  )
+  on conflict (user_id)
+  do update set
+    forum_files = coalesce(public."EDSschedule_backup".forum_files, '[]'::jsonb) || jsonb_build_array(
+      jsonb_build_object(
+        'file_name', p_file_name,
+        'url', p_file_url,
+        'created_at', now()
+      )
+    ),
+    updated_at = now();
+end;
+$$;
+
+grant execute on function public.append_forum_file_backup(uuid, text, text) to anon, authenticated;
 ```
 
 ---
@@ -469,7 +513,8 @@ create table if not exists public.forum_posts (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   is_pinned boolean not null default false,
-  is_locked boolean not null default false
+  is_locked boolean not null default false,
+  attachments jsonb not null default '[]'::jsonb
 );
 
 -- Forum comments table
@@ -479,21 +524,42 @@ create table if not exists public.forum_comments (
   author_id uuid not null references public.profiles(id) on delete cascade,
   content text not null,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  attachments jsonb not null default '[]'::jsonb
 );
 
--- Disable RLS for simplicity
 alter table public.forum_posts disable row level security;
 alter table public.forum_comments disable row level security;
 
--- Grant access to anon and authenticated
 grant select, insert, update, delete on public.forum_posts to anon, authenticated;
 grant select, insert, update, delete on public.forum_comments to anon, authenticated;
 ```
 
 ---
 
-## 8. VAPID Keys (for Web Push)
+## 8. Storage Bucket
+
+```sql
+insert into storage.buckets (id, name, public)
+values ('forum-uploads', 'forum-uploads', true)
+on conflict (id) do update set public = true;
+
+create policy "Allow uploads to forum-uploads"
+on storage.objects
+for insert
+to authenticated, anon
+with check (bucket_id = 'forum-uploads');
+
+create policy "Allow public read from forum-uploads"
+on storage.objects
+for select
+to public
+using (bucket_id = 'forum-uploads');
+```
+
+---
+
+## 9. VAPID Keys (for Web Push)
 
 - Public key (in frontend `index.html`):
   ```
@@ -510,7 +576,7 @@ grant select, insert, update, delete on public.forum_comments to anon, authentic
 
 ---
 
-## 9. Edge Function: `send-push`
+## 10. Edge Function: `send-push`
 
 Deploy a Supabase Edge Function named `send-push` with the following code. It includes CORS support.
 
@@ -658,7 +724,7 @@ Deno.serve(async (req) => {
 
 ---
 
-## 10. Verification Queries
+## 11. Verification Queries
 
 ```sql
 select 'sections' as table_name, count(*) as rows from public.sections
@@ -685,5 +751,3 @@ select 'forum_posts', count(*) from public.forum_posts
 union all
 select 'forum_comments', count(*) from public.forum_comments;
 ```
-```
-

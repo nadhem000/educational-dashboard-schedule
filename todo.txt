@@ -16,9 +16,13 @@
 - [x] Add delete permissions (students own comments, admin posts/comments).
 - [x] Add language/theme persistence and header/footer.
 - [x] Add return to schedule button.
-- [ ] Add file/image uploads to posts and comments.
-- [ ] Add pagination or infinite scroll for posts.
+- [x] Add file/image uploads to posts (folder picker + Storage + backup).
+- [x] Add file/image uploads to comments (folder picker + Storage + backup).
+- [x] Add attachment count badges to posts and comments.
+- [x] Add pagination for posts (20 per page, Load More button).
+- [ ] Support all file types (video, audio, PDF, etc.) in attachments.
 - [ ] Add admin moderation UI (pin, lock posts).
+- [ ] Add post/comment edit functionality.
 
 ## 3. Notification System
 - [x] In-app notifications table and RPC.
@@ -35,14 +39,15 @@
 - [x] Add admin sections panel with student counts.
 - [x] Add profile photo upload with folder selection and backup.
 - [x] Add interaction counters for app open, login, etc.
-- [x] Add backup table for photos.
+- [x] Add backup table for photos and forum files.
 - [x] Persistent login with localStorage.
 - [x] Install button improvements.
-- [ ] Add forum file uploads (images) to posts/comments.
+- [x] Forum file uploads (images) to posts/comments.
+- [x] Forum post pagination.
+- [ ] Support non-image attachments in forum.
 - [ ] Add forum post/comment edit functionality.
 - [ ] Add email or external notification service.
 
 ## 5. Documentation
 - [x] Keep supabase_actions.txt updated with all SQL.
 - [ ] Update README with new features and setup instructions.
-```
