@@ -1,6 +1,6 @@
 // EDSchedule Service Worker – development-friendly caching
 // Version bumped to v4 to clear old cache that might contain Supabase responses
-const CACHE_NAME = 'edschedule-cache-v39b';
+const CACHE_NAME = 'edschedule-cache-v39c';
 
 // Core assets to pre-cache on install
 const CORE_ASSETS = [

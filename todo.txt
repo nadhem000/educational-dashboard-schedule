@@ -1,117 +1,48 @@
-# Security Hardening Plan for EDSchedule – Todo List
+# EDSchedule – Development Todo List
 
-## 1. Security Hardening Plan
+## 1. Security Hardening (pending)
+- [ ] Replace custom admin/student password tables with Supabase Auth.
+- [ ] Enable Row Level Security on all tables.
+- [ ] Add rate limiting for login attempts.
+- [ ] Move authentication to Supabase Auth or secure RPC.
+- [ ] Protect admin.html by checking session.
+- [ ] Update documentation.
 
-## 1. Implement Secure Authentication
-- [ ] Replace custom admin/student password tables with Supabase Auth (email/password).
-- [ ] Create admin user in Supabase Auth and assign admin role.
-- [ ] Update `index.html` admin login to use `supabase.auth.signInWithPassword()`.
-- [ ] Update `admin.html` login to use Supabase Auth (or a serverless function).
-- [ ] Remove all plaintext password fields from database and frontend.
-- [ ] Ensure passwords are hashed (bcrypt) automatically via Supabase Auth.
-
-## 2. Enable Row Level Security (RLS)
-- [ ] Enable RLS on all tables: sections, subjects, profiles, schedule_slots, admins, interactions, backup.
-- [ ] Create policies:
-  - Students: read own profile, own schedule, own attendance.
-  - Admin: full access to all tables.
-  - Anonymous: no access (except maybe public schedule if needed).
-- [ ] Test policies with different roles to ensure data isolation.
-
-## 3. Add Rate Limiting and Brute‑Force Protection
-- [ ] Use Supabase Auth's built‑in rate limiting for login attempts.
-- [ ] If custom tables remain, implement a counter in the database to throttle failed logins.
-
-## 4. Secure API Keys and Environment
-- [ ] Store Supabase anon key in environment variables (if using a build step).
-- [ ] Use HTTPS for all deployments (Netlify already provides this).
-- [ ] Never expose service_role key in frontend.
-
-## 5. Remove Client‑Side Password Verification
-- [ ] Delete `verifyAdminCredentials` functions that fetch and compare passwords client‑side.
-- [ ] Move authentication logic to Supabase Auth or a secure RPC function.
-- [ ] Update `handleLogin()` in `index.html` and `attemptAdminLogin()` in `admin.html`.
-
-## 6. Session Management
-- [ ] Replace `sessionStorage` admin flag with Supabase Auth session (`supabase.auth.getSession()`).
-- [ ] Implement logout using `supabase.auth.signOut()`.
-- [ ] Protect admin.html by checking session and role on load.
-
-## 7. Update Documentation
-- [ ] Modify `supabase_actions.txt` to reflect auth changes.
-- [ ] Update README with new security setup instructions.
-
-## 8. Testing
-- [ ] Verify admin login via Supabase Auth.
-- [ ] Verify student login via Supabase Auth.
-- [ ] Verify RLS policies prevent unauthorized access.
-- [ ] Verify no plaintext passwords remain in code or database.
----
-
-## 2. Forum-like Space
-- [ ] Create `forum_posts` table in Supabase:
-  - id uuid primary key
-  - title text
-  - content text
-  - author_id uuid references profiles(id)
-  - created_at timestamptz
-  - updated_at timestamptz
-  - is_pinned boolean default false
-  - is_locked boolean default false
-- [ ] Create `forum_comments` table in Supabase:
-  - id uuid primary key
-  - post_id uuid references forum_posts(id) on delete cascade
-  - author_id uuid references profiles(id)
-  - content text
-  - created_at timestamptz
-- [ ] Grant anon/authenticated access to forum tables (or set RLS later).
-- [ ] Add a new page (`forum.html`) or a new tab/section in `index.html` to list posts.
-- [ ] Add a form to create a new post (only logged‑in users).
-- [ ] Add a detail view for a post with its comments.
-- [ ] Add a comment form.
-- [ ] Use existing login session to identify authors.
-- [ ] Show author names and avatars next to posts/comments.
-- [ ] Add basic moderation controls in `admin.html` (delete/edit posts, delete comments).
-- [ ] Optional: enable Supabase Realtime for live updates on new posts/comments.
-- [ ] Add translations (ar/fr/en) for forum UI strings.
-
----
+## 2. Forum-like Space (in progress)
+- [x] Create forum_posts table.
+- [x] Create forum_comments table.
+- [x] Add forum.html page with post list, create post, comments.
+- [x] Add author names and avatars.
+- [x] Add delete permissions (students own comments, admin posts/comments).
+- [x] Add language/theme persistence and header/footer.
+- [x] Add return to schedule button.
+- [ ] Add file/image uploads to posts and comments.
+- [ ] Add pagination or infinite scroll for posts.
+- [ ] Add admin moderation UI (pin, lock posts).
 
 ## 3. Notification System
+- [x] In-app notifications table and RPC.
+- [x] Admin UI to send notifications.
+- [x] Student notification bell and modal.
+- [x] Realtime updates.
+- [x] Web push notifications with VAPID and Edge Function.
+- [x] Separate in-app and web push sending with checkbox.
+- [x] History view for sent notifications.
+- [ ] Add notification preferences for users (opt-out).
 
-### 3.1 In-app notifications (simpler)
-- [ ] Create `notifications` table:
-  - id uuid primary key
-  - user_id uuid references profiles(id)
-  - title text
-  - body text
-  - created_at timestamptz
-  - read boolean default false
-- [ ] Grant anon/authenticated access to `notifications` table.
-- [ ] Add a UI element (bell icon) in `index.html` header to show unread count.
-- [ ] Use Supabase Realtime to listen for new notifications for the logged‑in user.
-- [ ] Show a toast/banner when a new notification arrives.
-- [ ] Add a notifications list panel (modal or page) to view all notifications.
-- [ ] Mark notifications as read when clicked.
-- [ ] Add a simple admin interface to send notifications to specific users/groups/classes.
+## 4. General Improvements
+- [x] Add homework feature (assign, display, delete).
+- [x] Add admin sections panel with student counts.
+- [x] Add profile photo upload with folder selection and backup.
+- [x] Add interaction counters for app open, login, etc.
+- [x] Add backup table for photos.
+- [x] Persistent login with localStorage.
+- [x] Install button improvements.
+- [ ] Add forum file uploads (images) to posts/comments.
+- [ ] Add forum post/comment edit functionality.
+- [ ] Add email or external notification service.
 
-### 3.2 Web push notifications (browser-level)
-- [ ] Generate VAPID keys (public/private).
-- [ ] Update service worker (`sw.js`) to handle `push` event and show notification.
-- [ ] Request user permission via `Notification.requestPermission()`.
-- [ ] Store push subscriptions in a new table `push_subscriptions`:
-  - id uuid primary key
-  - user_id uuid references profiles(id)
-  - subscription jsonb
-  - created_at timestamptz
-- [ ] Create a Supabase Edge Function to send push notifications using Web Push protocol.
-- [ ] Store VAPID private key securely (environment variable, not in frontend).
-- [ ] Create a UI or admin action to trigger push notifications.
-- [ ] Test on supported browsers and mobile devices.
-
----
-
-## 4. General Improvements (optional)
-- [ ] Improve admin UI for managing forum and notifications.
-- [ ] Add pagination for forum posts and notifications.
-- [ ] Add email or external notification service for production.
+## 5. Documentation
+- [x] Keep supabase_actions.txt updated with all SQL.
+- [ ] Update README with new features and setup instructions.
+```

@@ -162,6 +162,19 @@
             .container { padding: 15px; }
             .footer { padding: 15px; }
         }
+		.forum-thumbnail {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 8px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.forum-thumbnail.selected {
+    border-color: var(--highlight-text);
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.5);
+}
     </style>
 </head>
 <body>
@@ -219,6 +232,14 @@
                 <label id="post-content-label">المحتوى</label>
                 <textarea id="new-post-content" placeholder="اكتب هنا..."></textarea>
             </div>
+			<div class="form-group">
+    <label id="post-attachments-label">📎 مرفقات</label>
+    <input type="file" id="new-post-files" accept="image/*" webkitdirectory directory multiple style="display:none;">
+    <button type="button" class="btn btn-outline" id="new-post-choose-folder">📁 اختر مجلد الصور</button>
+    <small id="post-attachments-hint">اختر مجلدًا يحتوي على الصور لعرضها واختيار بعضها.</small>
+    <div id="new-post-files-info" style="margin-top:5px; font-size:0.9rem;"></div>
+    <div id="new-post-thumbnails" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin:15px 0;"></div>
+</div>
             <div style="display:flex; gap:10px; justify-content:flex-end;">
                 <button class="btn btn-success" id="publish-btn" onclick="createPost()">نشر</button>
                 <button class="btn btn-danger" id="cancel-btn" onclick="closeNewPostModal()">إلغاء</button>
@@ -295,7 +316,7 @@
         let currentPostId = null;
         let profilesMap = new Map();
         let currentNotifications = [];
-
+let selectedPostAttachments = [];
         const translations = {
             ar: {
                 forumTitle: '💬 المنتدى',
@@ -323,6 +344,12 @@
                 commentRequired: 'التعليق مطلوب',
                 postPublished: 'تم نشر المنشور',
                 commentAdded: 'تم إضافة التعليق',
+				postAttachmentsLabel: '📎 مرفقات',
+				chooseFolder: '📁 اختر مجلد الصور',
+attachmentsHint: 'اختر مجلدًا يحتوي على الصور لعرضها واختيار بعضها.',
+uploadingFiles: 'جاري الرفع...',
+filesSelected: '{count} صورة مختارة',
+noImages: 'لا توجد صور في المجلد',
                 adminName: 'المدير',
                 studentCardBtn: 'بطاقة التلميذ',
                 logoutBtn: 'تسجيل الخروج',
@@ -338,7 +365,19 @@
                 delete: 'حذف',
 				notificationsModalTitle: '🔔 الإشعارات',
                 noNotifications: 'لا توجد إشعارات',
-                studentCardTitle: 'بطاقة التلميذ'
+                studentCardTitle: 'بطاقة التلميذ',
+				workSystemLabel: 'نظام العمل',
+workMonthly: 'شهري',
+workPer8: 'كل 8 حصص',
+workCustom: 'مخصص',
+subjectsLabel: 'المواد',
+parentName: 'اسم الولي',
+parentPhone: 'رقم هاتف الولي',
+noParentInfo: 'لا توجد بيانات ولي مسجلة',
+allSubjects: 'كل المواد',
+noSubjects: 'لا توجد مواد محددة',
+groupLabel: 'مجموعة',
+editProfile: 'تعديل ملفي الشخصي'
             },
             fr: {
                 forumTitle: '💬 Forum',
@@ -366,6 +405,12 @@
                 commentRequired: 'Le commentaire est requis',
                 postPublished: 'Message publié',
                 commentAdded: 'Commentaire ajouté',
+				postAttachmentsLabel: '📎 Pièces jointes',
+				chooseFolder: '📁 Choisir un dossier',
+attachmentsHint: 'Choisissez un dossier contenant des images pour les afficher et en choisir.',
+uploadingFiles: 'Téléversement...',
+filesSelected: '{count} images sélectionnées',
+noImages: 'Aucune image dans le dossier',
                 adminName: 'Admin',
                 studentCardBtn: 'Carte étudiant',
                 logoutBtn: 'Déconnexion',
@@ -381,7 +426,19 @@
                 delete: 'Supprimer',
 				notificationsModalTitle: '🔔 Notifications',
                 noNotifications: 'Aucune notification',
-                studentCardTitle: 'Carte étudiant'
+                studentCardTitle: 'Carte étudiant',
+				workSystemLabel: 'Système de travail',
+workMonthly: 'Mensuel',
+workPer8: 'Toutes les 8 séances',
+workCustom: 'Personnalisé',
+subjectsLabel: 'Matières',
+parentName: 'Nom du parent',
+parentPhone: 'Téléphone du parent',
+noParentInfo: 'Aucune information parentale',
+allSubjects: 'Toutes les matières',
+noSubjects: 'Aucune matière définie',
+groupLabel: 'Groupe',
+editProfile: 'Modifier mon profil'
             },
             en: {
                 forumTitle: '💬 Forum',
@@ -409,6 +466,12 @@
                 commentRequired: 'Comment is required',
                 postPublished: 'Post published',
                 commentAdded: 'Comment added',
+				postAttachmentsLabel: '📎 Attachments',
+				chooseFolder: '📁 Choose Folder',
+attachmentsHint: 'Choose a folder containing images to preview and select.',
+uploadingFiles: 'Uploading...',
+filesSelected: '{count} images selected',
+noImages: 'No images in folder',
                 adminName: 'Admin',
                 studentCardBtn: 'Student Card',
                 logoutBtn: 'Logout',
@@ -424,7 +487,19 @@
                 delete: 'Delete',
 				notificationsModalTitle: '🔔 Notifications',
                 noNotifications: 'No notifications',
-                studentCardTitle: 'Student Card'
+                studentCardTitle: 'Student Card',
+				workSystemLabel: 'Work System',
+workMonthly: 'Monthly',
+workPer8: 'Every 8 sessions',
+workCustom: 'Custom',
+subjectsLabel: 'Subjects',
+parentName: 'Parent Name',
+parentPhone: 'Parent Phone',
+noParentInfo: 'No parent info',
+allSubjects: 'All Subjects',
+noSubjects: 'No subjects defined',
+groupLabel: 'Group',
+editProfile: 'Edit my profile'
             }
         };
 
@@ -459,7 +534,23 @@
                 return `<span class="author-avatar-placeholder">${initial}</span>`;
             }
         }
-
+function renderAttachments(attachments) {
+    if (!Array.isArray(attachments) || attachments.length === 0) return '';
+    return `
+        <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:10px;">
+            ${attachments.map(att => {
+                if (!att.url) return '';
+                // If it's an image, show thumbnail; otherwise show link
+                const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(att.url) || att.url.startsWith('data:image/');
+                if (isImage) {
+                    return `<a href="${att.url}" target="_blank"><img src="${att.url}" alt="${att.file_name || ''}" style="max-width:120px; max-height:120px; border-radius:8px; border:1px solid var(--table-border); object-fit:cover;"></a>`;
+                } else {
+                    return `<a href="${att.url}" target="_blank" style="font-size:14px;">📎 ${att.file_name || 'Attachment'}</a>`;
+                }
+            }).join('')}
+        </div>
+    `;
+}
         async function loadProfilesMap() {
             const { data: profiles, error } = await supabaseClient
                 .from('profiles')
@@ -505,25 +596,137 @@
             }).join('');
         }
 
-        function openNewPostModal() { document.getElementById('new-post-modal').classList.add('show'); }
+        function openNewPostModal() {
+    selectedPostAttachments = [];
+    document.getElementById('new-post-thumbnails').innerHTML = '';
+    document.getElementById('new-post-files-info').textContent = '';
+    document.getElementById('new-post-modal').classList.add('show');
+}
         function closeNewPostModal() { document.getElementById('new-post-modal').classList.remove('show'); }
+function handleNewPostFolderSelection(event) {
+    const files = Array.from(event.target.files || []);
+    const container = document.getElementById('new-post-thumbnails');
+    const filesInfo = document.getElementById('new-post-files-info');
+    const t = translations[currentLanguage];
 
+    container.innerHTML = '';
+    filesInfo.textContent = '';
+    selectedPostAttachments = [];
+
+    if (files.length === 0) return;
+
+    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+    if (imageFiles.length === 0) {
+        filesInfo.textContent = t.noImages;
+        return;
+    }
+
+    filesInfo.textContent = t.uploadingFiles;
+
+    imageFiles.forEach(file => {
+        // Upload immediately
+        uploadForumFile(file)
+            .then(async (url) => {
+                // Append to backup table
+                try {
+                    await supabaseClient.rpc('append_forum_file_backup', {
+                        p_user_id: currentUser.id,
+                        p_file_name: file.name,
+                        p_file_url: url
+                    });
+                } catch (backupErr) {
+                    console.warn('[Forum Backup]', backupErr.message);
+                }
+
+                // Create thumbnail
+                const img = document.createElement('img');
+                img.src = url;
+                img.className = 'forum-thumbnail';
+                img.dataset.url = url;
+                img.dataset.name = file.name;
+                img.addEventListener('click', () => {
+                    img.classList.toggle('selected');
+                    const existingIndex = selectedPostAttachments.findIndex(a => a.url === url);
+                    if (existingIndex >= 0) {
+                        selectedPostAttachments.splice(existingIndex, 1);
+                    } else {
+                        selectedPostAttachments.push({ file_name: file.name, url });
+                    }
+                    filesInfo.textContent = t.filesSelected.replace('{count}', selectedPostAttachments.length);
+                });
+                container.appendChild(img);
+            })
+            .catch(err => {
+                console.warn('[Forum Upload]', err.message);
+                filesInfo.textContent = 'Upload failed for ' + file.name;
+            });
+    });
+}
+
+function openNewPostFolderPicker() {
+    document.getElementById('new-post-files').click();
+}
         async function createPost() {
-            const title = document.getElementById('new-post-title').value.trim();
-            const content = document.getElementById('new-post-content').value.trim();
-            const t = translations[currentLanguage];
-            if (!title || !content) { alert(t.titleContentRequired); return; }
-            const userId = currentUser ? currentUser.id : null;
-            if (!userId || userId === 'admin') { alert(t.loginRequired); return; }
-            const { error } = await supabaseClient.from('forum_posts').insert({ title, content, author_id: userId });
-            if (error) { alert('Error: ' + error.message); return; }
-            closeNewPostModal();
-            document.getElementById('new-post-title').value = '';
-            document.getElementById('new-post-content').value = '';
-            loadPosts();
-            toast(t.postPublished);
-        }
+    const title = document.getElementById('new-post-title').value.trim();
+    const content = document.getElementById('new-post-content').value.trim();
+    const t = translations[currentLanguage];
 
+    if (!title || !content) {
+        alert(t.titleContentRequired);
+        return;
+    }
+    const userId = currentUser ? currentUser.id : null;
+    if (!userId || userId === 'admin') {
+        alert(t.loginRequired);
+        return;
+    }
+
+    const attachments = selectedPostAttachments; // already [{file_name, url}]
+
+    const { error } = await supabaseClient
+        .from('forum_posts')
+        .insert({ title, content, author_id: userId, attachments });
+
+    if (error) {
+        alert('Error: ' + error.message);
+        return;
+    }
+
+    closeNewPostModal();
+    document.getElementById('new-post-title').value = '';
+    document.getElementById('new-post-content').value = '';
+    document.getElementById('new-post-files').value = '';
+    document.getElementById('new-post-thumbnails').innerHTML = '';
+    document.getElementById('new-post-files-info').textContent = '';
+    selectedPostAttachments = [];
+    loadPosts();
+    toast(t.postPublished);
+}
+async function uploadForumFile(file) {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+    const filePath = `${currentUser.id}/${fileName}`;
+
+    const { error } = await supabaseClient
+        .storage
+        .from('forum-uploads')
+        .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: false
+        });
+
+    if (error) {
+        console.warn('[Forum Upload]', error.message);
+        throw error;
+    }
+
+    const { data } = supabaseClient
+        .storage
+        .from('forum-uploads')
+        .getPublicUrl(filePath);
+
+    return data.publicUrl;
+}
         async function openPostDetail(postId) {
             currentPostId = postId;
             const t = translations[currentLanguage];
@@ -534,23 +737,24 @@
             const avatarHtml = getAvatarHtml(post.author_id);
             document.getElementById('detail-title').textContent = post.title;
             let detailHtml = `
-                <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
-                    ${avatarHtml}
-                    <span style="font-weight:bold;">${authorName}</span>
-                    <span style="font-size:12px; opacity:0.7;">${new Date(post.created_at).toLocaleString()}</span>
-                </div>
-                ${post.content}
-            `;
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+        ${avatarHtml}
+        <span style="font-weight:bold;">${authorName}</span>
+        <span style="font-size:12px; opacity:0.7;">${new Date(post.created_at).toLocaleString()}</span>
+    </div>
+    ${post.content}
+    ${renderAttachments(post.attachments)}
+`;
             if (currentUser && currentUser.isAdmin) {
                 detailHtml += `<button class="btn btn-danger" style="margin-top:10px;" onclick="deletePost('${post.id}')">${t.delete}</button>`;
             }
             document.getElementById('detail-content').innerHTML = detailHtml;
 
             const { data: comments, error: commentsError } = await supabaseClient
-                .from('forum_comments')
-                .select('id, content, author_id, created_at')
-                .eq('post_id', postId)
-                .order('created_at', { ascending: true });
+    .from('forum_comments')
+    .select('id, content, author_id, created_at, attachments')
+    .eq('post_id', postId)
+    .order('created_at', { ascending: true });
             if (commentsError) { console.warn('[Forum] Comments error', commentsError.message); return; }
 
             const commentsHtml = comments.length
@@ -560,15 +764,16 @@
                     const canDelete = (currentUser && (currentUser.isAdmin || comment.author_id === currentUser.id));
                     const deleteButton = canDelete ? `<button class="btn btn-danger" style="padding:2px 8px; margin-left:auto;" onclick="deleteComment('${comment.id}')">🗑️</button>` : '';
                     return `
-                    <div class="comment-item">
-                        ${commentAvatar}
-                        <div style="flex:1;">
-                            <div class="comment-author">${commentAuthor}</div>
-                            <div class="comment-content">${comment.content}</div>
-                            <div class="comment-time">${new Date(comment.created_at).toLocaleString()}</div>
-                        </div>
-                        ${deleteButton}
-                    </div>`;
+    <div class="comment-item">
+        ${commentAvatar}
+        <div style="flex:1;">
+            <div class="comment-author">${commentAuthor}</div>
+            <div class="comment-content">${comment.content}</div>
+            ${renderAttachments(comment.attachments)}
+            <div class="comment-time">${new Date(comment.created_at).toLocaleString()}</div>
+        </div>
+        ${deleteButton}
+    </div>`;
                 }).join('')
                 : `<p>${t.noComments}</p>`;
 
@@ -735,6 +940,9 @@
             document.getElementById('notifications-modal-title').textContent = t.notificationsModalTitle;
             document.getElementById('student-card-modal-title').textContent = t.studentCardTitle;
 			document.getElementById('backHome').textContent = t.backHome;
+			document.getElementById('post-attachments-label').textContent = t.postAttachmentsLabel;
+document.getElementById('new-post-choose-folder').textContent = t.chooseFolder;
+document.getElementById('post-attachments-hint').textContent = t.attachmentsHint;
             updateUserInfo();
             loadPosts();
             if (currentUser && !currentUser.isAdmin) loadNotifications();
@@ -810,7 +1018,8 @@
         document.getElementById('notifications-btn').addEventListener('click', openNotificationsModal);
         document.getElementById('notifications-modal').addEventListener('click', function(e) { if (e.target === this) closeNotificationsModal(); });
         document.getElementById('student-card-modal').addEventListener('click', function(e) { if (e.target === this) closeStudentCardModal(); });
-
+document.getElementById('new-post-choose-folder').addEventListener('click', openNewPostFolderPicker);
+document.getElementById('new-post-files').addEventListener('change', handleNewPostFolderSelection);
         // Expose delete functions globally
         window.deleteComment = deleteComment;
         window.deletePost = deletePost;
