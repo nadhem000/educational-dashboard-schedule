@@ -52,194 +52,111 @@
             border-radius: 16px;
             box-shadow: var(--shadow);
         }
-        h1 {
-            text-align: center;
-            margin-bottom: 5px;
-            font-size: 28px;
-        }
-        .subtitle {
-            text-align: center;
-            opacity: 0.8;
-            margin-bottom: 25px;
-            font-size: 14px;
-        }
-        .controls {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-        .btn {
-            display: inline-block;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 14px;
-            text-decoration: none;
-            color: #fff;
-            background: var(--table-header-bg);
-            transition: background-color 0.2s;
-        }
+        h1 { text-align: center; margin-bottom: 5px; font-size: 28px; }
+        .subtitle { text-align: center; opacity: 0.8; margin-bottom: 25px; font-size: 14px; }
+        .auth-section { background: var(--notes-bg); border-radius: 12px; padding: 20px; margin-bottom: 25px; border: 1px solid var(--table-border); }
+        .auth-form { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; align-items: center; }
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; margin-bottom: 25px; }
+        .control-group { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+        select { background-color: var(--container-bg); color: var(--text-color); border: 1px solid var(--table-border); padding: 5px 10px; border-radius: 6px; font-size: 14px; }
+        select option { background-color: var(--container-bg); color: var(--text-color); }
+        .btn { display: inline-block; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 14px; text-decoration: none; color: #fff; background: var(--table-header-bg); transition: background-color 0.2s; }
         .btn:hover { background: var(--primary-hover, #1a252f); }
-        .btn-outline {
-            background: transparent;
-            border: 2px solid var(--table-header-bg);
-            color: var(--table-header-bg);
-        }
+        .btn-outline { background: transparent; border: 2px solid var(--table-header-bg); color: var(--table-header-bg); }
         .btn-outline:hover { background: var(--table-header-bg); color: #fff; }
         .btn-danger { background: var(--danger); }
         .btn-danger:hover { background: #c0392b; }
-        .post-list {
-            margin-top: 20px;
-        }
-        .post-item {
-            border: 1px solid var(--table-border);
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 15px;
-            cursor: pointer;
-            transition: transform 0.1s;
-        }
+        .post-list { margin-top: 20px; }
+        .post-item { border: 1px solid var(--table-border); border-radius: 12px; padding: 15px; margin-bottom: 15px; cursor: pointer; transition: transform 0.1s; }
         .post-item:hover { background: var(--notes-bg); }
-        .post-title {
-            font-size: 1.2rem;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        .post-meta {
-            font-size: 12px;
-            opacity: 0.7;
-            margin-top: 5px;
-        }
-        .post-content {
-            margin-top: 10px;
-            white-space: pre-wrap;
-        }
-        .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.5);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            padding: 20px;
-        }
+        .post-title { font-size: 1.2rem; font-weight: bold; margin-bottom: 5px; }
+        .post-meta { font-size: 12px; opacity: 0.7; margin-top: 5px; }
+        .post-content { margin-top: 10px; white-space: pre-wrap; }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 20px; }
         .modal-overlay.show { display: flex; }
-        .modal {
-            background: var(--container-bg);
-            color: var(--text-color);
-            border-radius: 12px;
-            max-width: 600px;
-            width: 100%;
-            max-height: 90vh;
-            overflow-y: auto;
-            padding: 25px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-        }
-        .modal h2 {
-            margin-bottom: 15px;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .form-group label {
-            display: block;
-            font-weight: 600;
-            margin-bottom: 5px;
-        }
-        .form-group input, .form-group textarea {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid var(--table-border);
-            border-radius: 6px;
-            background: var(--notes-bg);
-            color: var(--text-color);
-        }
-        .form-group textarea {
-            min-height: 80px;
-        }
-        .comment-item {
-            border-bottom: 1px solid var(--table-border);
-            padding: 10px 0;
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-        }
-        .comment-author {
-            font-weight: bold;
-            font-size: 14px;
-        }
-        .comment-content {
-            margin-top: 5px;
-            white-space: pre-wrap;
-        }
-        .comment-time {
-            font-size: 11px;
-            opacity: 0.7;
-        }
-        .author-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            object-fit: cover;
-            flex-shrink: 0;
-            border: 1px solid var(--table-border);
-        }
-        .author-avatar-placeholder {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: var(--highlight-bg);
-            color: var(--highlight-text);
-            font-weight: bold;
-            font-size: 18px;
-            flex-shrink: 0;
-        }
-        .toast {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #333;
-            color: #fff;
-            padding: 10px 20px;
-            border-radius: 6px;
-            opacity: 0;
-            transition: opacity 0.3s;
-            pointer-events: none;
-            z-index: 2000;
-        }
+        .modal { background: var(--container-bg); color: var(--text-color); border-radius: 12px; max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 25px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+        .modal h2 { margin-bottom: 15px; }
+		.modal-content {
+    background: var(--container-bg);
+    color: var(--text-color);
+    border-radius: 16px;
+    max-width: 600px;
+    width: 100%;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    overflow: hidden;
+    animation: modalFadeIn 0.3s ease;
+}
+@keyframes modalFadeIn {
+    from { opacity: 0; transform: translateY(-30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.modal-header {
+    background: var(--table-header-bg);
+    color: var(--table-header-text);
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--table-border);
+}
+.modal-header h3 {
+    margin: 0;
+    font-size: 1.5rem;
+}
+.modal-close-btn {
+    background: transparent;
+    border: none;
+    color: var(--table-header-text);
+    font-size: 2rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0;
+    opacity: 0.8;
+}
+.modal-body {
+    padding: 25px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+.modal-footer {
+    padding: 15px 25px;
+    text-align: center;
+    border-top: 1px solid var(--table-border);
+    font-size: 0.9rem;
+    opacity: 0.7;
+}
+#notifications-list li {
+    padding: 10px 12px;
+    background: var(--container-bg);
+    border: 1px solid var(--table-border);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    cursor: pointer;
+}
+#notifications-list li.unread {
+    background: var(--highlight-bg);
+    font-weight: bold;
+}
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-weight: 600; margin-bottom: 5px; }
+        .form-group input, .form-group textarea { width: 100%; padding: 10px; border: 1px solid var(--table-border); border-radius: 6px; background: var(--notes-bg); color: var(--text-color); }
+        .form-group textarea { min-height: 80px; }
+        .comment-item { border-bottom: 1px solid var(--table-border); padding: 10px 0; display: flex; align-items: flex-start; gap: 10px; }
+        .comment-author { font-weight: bold; font-size: 14px; }
+        .comment-content { margin-top: 5px; white-space: pre-wrap; }
+        .comment-time { font-size: 11px; opacity: 0.7; }
+        .author-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 1px solid var(--table-border); }
+        .author-avatar-placeholder { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; background: var(--highlight-bg); color: var(--highlight-text); font-weight: bold; font-size: 18px; flex-shrink: 0; }
+        .avatar { width: 40px; height: 40px; border-radius: 10px; background-color: var(--table-header-bg); color: var(--table-header-text); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 20px; }
+        .toast { position: fixed; bottom: 20px; right: 20px; background: #333; color: #fff; padding: 10px 20px; border-radius: 6px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 2000; }
         .toast.show { opacity: 1; }
-        .footer {
-            max-width: 800px;
-            margin: 20px auto;
-            background: var(--container-bg);
-            border-radius: 12px;
-            box-shadow: var(--shadow);
-            padding: 20px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            color: var(--text-color);
-        }
-        .footer-column {
-            flex: 1;
-            min-width: 150px;
-        }
-        .footer-column p {
-            margin: 5px 0;
-            line-height: 1.6;
-        }
-        .footer a {
-            color: var(--text-color);
-            text-decoration: none;
-        }
+        .footer { max-width: 800px; margin: 20px auto; background: var(--container-bg); border-radius: 12px; box-shadow: var(--shadow); padding: 20px; display: flex; flex-wrap: wrap; gap: 20px; color: var(--text-color); }
+        .footer-column { flex: 1; min-width: 150px; }
+        .footer-column p { margin: 5px 0; line-height: 1.6; }
+        .footer a { color: var(--text-color); text-decoration: none; }
         .footer a:hover { text-decoration: underline; }
         @media (max-width: 768px) {
             .container { padding: 15px; }
@@ -251,18 +168,42 @@
     <div class="container">
         <h1 id="forum-title">💬 المنتدى</h1>
         <p class="subtitle" id="forum-subtitle">مجتمع التلاميذ</p>
-        <div class="controls">
-            <select id="language-select">
-                <option value="ar">العربية</option>
-                <option value="fr">Français</option>
-                <option value="en">English</option>
-            </select>
-            <button id="theme-toggle">🌙</button>
+
+        <!-- User Info Header -->
+        <div class="auth-section">
+            <div class="auth-form" id="user-info">
+                <span id="user-avatar" class="avatar"></span>
+                <span id="logged-name"></span>
+                <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center;">
+    <button id="backHome" class="btn" onclick="window.location.href='index.html'">📅 الجدول</button>
+                    <button id="notifications-btn" class="btn">🔔</button>
+                    <button id="student-card-btn" class="btn">بطاقة التلميذ</button>
+                    <button id="logout-btn" class="btn btn-danger">تسجيل الخروج</button>
+                </div>
+            </div>
         </div>
-        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-            <a href="index.html" class="btn btn-outline" id="back-home-link">العودة للرئيسية</a>
+
+        <!-- Controls -->
+        <div class="controls">
+            <div class="control-group">
+                <label id="language-label" for="language-select">🌐 اللغة:</label>
+                <select id="language-select">
+                    <option value="ar">العربية</option>
+                    <option value="fr">Français</option>
+                    <option value="en">English</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label id="theme-label" for="theme-toggle">🌓 النمط:</label>
+                <button id="theme-toggle" class="btn">🌙</button>
+            </div>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; margin-bottom:15px;">
             <button id="new-post-btn" class="btn">+ منشور جديد</button>
         </div>
+
+        <!-- Post list -->
         <div id="post-list" class="post-list"></div>
     </div>
 
@@ -302,6 +243,33 @@
         </div>
     </div>
 
+    <!-- Notifications Modal -->
+       <!-- Notifications Modal -->
+    <div class="modal-overlay" id="notifications-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="notifications-modal-title">🔔 الإشعارات</h3>
+                <button class="modal-close-btn" onclick="closeNotificationsModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <ul id="notifications-list" style="list-style:none; padding:0; max-height:300px; overflow-y:auto;"></ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Student Card Modal -->
+       <!-- Student Card Modal -->
+    <div class="modal-overlay" id="student-card-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="student-card-modal-title">بطاقة التلميذ</h3>
+                <button class="modal-close-btn" onclick="closeStudentCardModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="student-card-content"></div>
+            <div class="modal-footer" id="student-card-footer"></div>
+        </div>
+    </div>
+
     <footer class="footer" id="footer">
         <div class="footer-column">
             <p><span id="footer-developed-by"></span><br><span id="footer-hosted-on"></span></p>
@@ -325,7 +293,8 @@
         let currentUser = null;
         let currentLanguage = localStorage.getItem('edschedule_language') || 'ar';
         let currentPostId = null;
-        let profilesMap = new Map(); // id -> profile object
+        let profilesMap = new Map();
+        let currentNotifications = [];
 
         const translations = {
             ar: {
@@ -354,7 +323,22 @@
                 commentRequired: 'التعليق مطلوب',
                 postPublished: 'تم نشر المنشور',
                 commentAdded: 'تم إضافة التعليق',
-                adminName: 'المدير'
+                adminName: 'المدير',
+                studentCardBtn: 'بطاقة التلميذ',
+                logoutBtn: 'تسجيل الخروج',
+                welcome: 'مرحبا',
+                languageLabel: '🌐 اللغة:',
+                themeLabel: '🌓 النمط:',
+                themeNight: '🌙 ليلي',
+                themeDay: '☀️ نهاري',
+                deletePostConfirm: 'هل تريد حذف هذا المنشور؟',
+                deleteCommentConfirm: 'هل تريد حذف هذا التعليق؟',
+                postDeleted: 'تم حذف المنشور',
+                commentDeleted: 'تم حذف التعليق',
+                delete: 'حذف',
+				notificationsModalTitle: '🔔 الإشعارات',
+                noNotifications: 'لا توجد إشعارات',
+                studentCardTitle: 'بطاقة التلميذ'
             },
             fr: {
                 forumTitle: '💬 Forum',
@@ -382,7 +366,22 @@
                 commentRequired: 'Le commentaire est requis',
                 postPublished: 'Message publié',
                 commentAdded: 'Commentaire ajouté',
-                adminName: 'Admin'
+                adminName: 'Admin',
+                studentCardBtn: 'Carte étudiant',
+                logoutBtn: 'Déconnexion',
+                welcome: 'Bienvenue',
+                languageLabel: '🌐 Langue :',
+                themeLabel: '🌓 Thème :',
+                themeNight: '🌙 Nuit',
+                themeDay: '☀️ Jour',
+                deletePostConfirm: 'Voulez-vous supprimer ce message ?',
+                deleteCommentConfirm: 'Voulez-vous supprimer ce commentaire ?',
+                postDeleted: 'Message supprimé',
+                commentDeleted: 'Commentaire supprimé',
+                delete: 'Supprimer',
+				notificationsModalTitle: '🔔 Notifications',
+                noNotifications: 'Aucune notification',
+                studentCardTitle: 'Carte étudiant'
             },
             en: {
                 forumTitle: '💬 Forum',
@@ -410,7 +409,22 @@
                 commentRequired: 'Comment is required',
                 postPublished: 'Post published',
                 commentAdded: 'Comment added',
-                adminName: 'Admin'
+                adminName: 'Admin',
+                studentCardBtn: 'Student Card',
+                logoutBtn: 'Logout',
+                welcome: 'Welcome',
+                languageLabel: '🌐 Language:',
+                themeLabel: '🌓 Theme:',
+                themeNight: '🌙 Night',
+                themeDay: '☀️ Day',
+                deletePostConfirm: 'Delete this post?',
+                deleteCommentConfirm: 'Delete this comment?',
+                postDeleted: 'Post deleted',
+                commentDeleted: 'Comment deleted',
+                delete: 'Delete',
+				notificationsModalTitle: '🔔 Notifications',
+                noNotifications: 'No notifications',
+                studentCardTitle: 'Student Card'
             }
         };
 
@@ -425,10 +439,7 @@
             if (userId === 'admin') return translations[currentLanguage].adminName;
             const profile = profilesMap.get(userId);
             if (!profile) return 'User';
-            const t = translations[currentLanguage];
-            // choose according to currentLanguage
-            const name = profile[`name_${currentLanguage}`] || profile.name_ar || profile.name_en || profile.name_fr || 'User';
-            return name;
+            return profile[`name_${currentLanguage}`] || profile.name_ar || profile.name_en || profile.name_fr || 'User';
         }
 
         function getAvatarHtml(userId) {
@@ -452,7 +463,7 @@
         async function loadProfilesMap() {
             const { data: profiles, error } = await supabaseClient
                 .from('profiles')
-                .select('id, name_ar, name_en, name_fr, photo_url');
+                .select('id, name_ar, name_en, name_fr, photo_url, section_key, group_number, work_system, subjects, parent_name, parent_phone, attendance');
             if (error) {
                 console.warn('[Forum] Load profiles error', error.message);
                 return;
@@ -494,33 +505,18 @@
             }).join('');
         }
 
-        function openNewPostModal() {
-            document.getElementById('new-post-modal').classList.add('show');
-        }
-        function closeNewPostModal() {
-            document.getElementById('new-post-modal').classList.remove('show');
-        }
+        function openNewPostModal() { document.getElementById('new-post-modal').classList.add('show'); }
+        function closeNewPostModal() { document.getElementById('new-post-modal').classList.remove('show'); }
 
         async function createPost() {
             const title = document.getElementById('new-post-title').value.trim();
             const content = document.getElementById('new-post-content').value.trim();
             const t = translations[currentLanguage];
-            if (!title || !content) {
-                alert(t.titleContentRequired);
-                return;
-            }
+            if (!title || !content) { alert(t.titleContentRequired); return; }
             const userId = currentUser ? currentUser.id : null;
-            if (!userId || userId === 'admin') {
-                alert(t.loginRequired);
-                return;
-            }
-            const { error } = await supabaseClient
-                .from('forum_posts')
-                .insert({ title, content, author_id: userId });
-            if (error) {
-                alert('Error: ' + error.message);
-                return;
-            }
+            if (!userId || userId === 'admin') { alert(t.loginRequired); return; }
+            const { error } = await supabaseClient.from('forum_posts').insert({ title, content, author_id: userId });
+            if (error) { alert('Error: ' + error.message); return; }
             closeNewPostModal();
             document.getElementById('new-post-title').value = '';
             document.getElementById('new-post-content').value = '';
@@ -531,21 +527,13 @@
         async function openPostDetail(postId) {
             currentPostId = postId;
             const t = translations[currentLanguage];
-            const { data: post, error } = await supabaseClient
-                .from('forum_posts')
-                .select('*')
-                .eq('id', postId)
-                .single();
-
-            if (error) {
-                console.warn('[Forum] Post detail error', error.message);
-                return;
-            }
+            const { data: post, error } = await supabaseClient.from('forum_posts').select('*').eq('id', postId).single();
+            if (error) { console.warn('[Forum] Post detail error', error.message); return; }
 
             const authorName = getDisplayName(post.author_id);
             const avatarHtml = getAvatarHtml(post.author_id);
             document.getElementById('detail-title').textContent = post.title;
-            document.getElementById('detail-content').innerHTML = `
+            let detailHtml = `
                 <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
                     ${avatarHtml}
                     <span style="font-weight:bold;">${authorName}</span>
@@ -553,30 +541,33 @@
                 </div>
                 ${post.content}
             `;
+            if (currentUser && currentUser.isAdmin) {
+                detailHtml += `<button class="btn btn-danger" style="margin-top:10px;" onclick="deletePost('${post.id}')">${t.delete}</button>`;
+            }
+            document.getElementById('detail-content').innerHTML = detailHtml;
 
             const { data: comments, error: commentsError } = await supabaseClient
                 .from('forum_comments')
                 .select('id, content, author_id, created_at')
                 .eq('post_id', postId)
                 .order('created_at', { ascending: true });
-
-            if (commentsError) {
-                console.warn('[Forum] Comments error', commentsError.message);
-                return;
-            }
+            if (commentsError) { console.warn('[Forum] Comments error', commentsError.message); return; }
 
             const commentsHtml = comments.length
                 ? comments.map(comment => {
                     const commentAuthor = getDisplayName(comment.author_id);
                     const commentAvatar = getAvatarHtml(comment.author_id);
+                    const canDelete = (currentUser && (currentUser.isAdmin || comment.author_id === currentUser.id));
+                    const deleteButton = canDelete ? `<button class="btn btn-danger" style="padding:2px 8px; margin-left:auto;" onclick="deleteComment('${comment.id}')">🗑️</button>` : '';
                     return `
                     <div class="comment-item">
                         ${commentAvatar}
-                        <div>
+                        <div style="flex:1;">
                             <div class="comment-author">${commentAuthor}</div>
                             <div class="comment-content">${comment.content}</div>
                             <div class="comment-time">${new Date(comment.created_at).toLocaleString()}</div>
                         </div>
+                        ${deleteButton}
                     </div>`;
                 }).join('')
                 : `<p>${t.noComments}</p>`;
@@ -593,25 +584,124 @@
         async function addComment() {
             const content = document.getElementById('comment-input').value.trim();
             const t = translations[currentLanguage];
-            if (!currentPostId || !content) {
-                alert(t.commentRequired);
-                return;
-            }
+            if (!currentPostId || !content) { alert(t.commentRequired); return; }
             const userId = currentUser ? currentUser.id : null;
-            if (!userId || userId === 'admin') {
-                alert(t.loginRequired);
-                return;
-            }
-            const { error } = await supabaseClient
-                .from('forum_comments')
-                .insert({ post_id: currentPostId, author_id: userId, content });
-            if (error) {
-                alert('Error: ' + error.message);
-                return;
-            }
+            if (!userId || userId === 'admin') { alert(t.loginRequired); return; }
+            const { error } = await supabaseClient.from('forum_comments').insert({ post_id: currentPostId, author_id: userId, content });
+            if (error) { alert('Error: ' + error.message); return; }
             document.getElementById('comment-input').value = '';
             openPostDetail(currentPostId);
             toast(t.commentAdded);
+        }
+
+        async function deleteComment(commentId) {
+            if (!currentUser) return;
+            const t = translations[currentLanguage];
+            if (!confirm(t.deleteCommentConfirm)) return;
+            const { error } = await supabaseClient.from('forum_comments').delete().eq('id', commentId);
+            if (error) { alert('Error: ' + error.message); return; }
+            toast(t.commentDeleted);
+            openPostDetail(currentPostId);
+        }
+
+        async function deletePost(postId) {
+            if (!currentUser || !currentUser.isAdmin) return;
+            const t = translations[currentLanguage];
+            if (!confirm(t.deletePostConfirm)) return;
+            const { error } = await supabaseClient.from('forum_posts').delete().eq('id', postId);
+            if (error) { alert('Error: ' + error.message); return; }
+            toast(t.postDeleted);
+            closePostDetailModal();
+            loadPosts();
+        }
+
+        // Notifications
+        async function loadNotifications() {
+            if (!currentUser || currentUser.isAdmin) return;
+            const { data, error } = await supabaseClient
+                .from('notifications')
+                .select('*')
+                .eq('user_id', currentUser.id)
+                .order('created_at', { ascending: false })
+                .limit(20);
+            if (error) { console.warn('[Notifications]', error.message); return; }
+            currentNotifications = data || [];
+            renderNotifications();
+        }
+
+        function renderNotifications() {
+            const list = document.getElementById('notifications-list');
+            const t = translations[currentLanguage];
+            if (currentNotifications.length === 0) {
+                list.innerHTML = `<li>${t.noNotifications}</li>`;
+                return;
+            }
+            list.innerHTML = currentNotifications.map(n => {
+                const title = n['title_' + currentLanguage] || n.title;
+                const body = n['body_' + currentLanguage] || n.body;
+                return `<li style="padding:10px; border-bottom:1px solid var(--table-border);">
+                    <strong>${title}</strong>
+                    <div>${body}</div>
+                    <small>${new Date(n.created_at).toLocaleString()}</small>
+                </li>`;
+            }).join('');
+        }
+
+        function openNotificationsModal() {
+            loadNotifications();
+            document.getElementById('notifications-modal').classList.add('show');
+        }
+        function closeNotificationsModal() {
+            document.getElementById('notifications-modal').classList.remove('show');
+        }
+
+        // Student Card
+        function openStudentCardModal() {
+    if (!currentUser || currentUser.isAdmin) return;
+    const profile = profilesMap.get(currentUser.id);
+    if (!profile) return;
+    const t = translations[currentLanguage];
+    const name = getDisplayName(currentUser.id);
+    const section = profile.section_key || '—';
+    const group = profile.group_number ? `${t.groupLabel || 'Group'} ${profile.group_number}` : '';
+    const workSystem = profile.work_system || '—';
+    const subjects = profile.subjects === 'all' ? t.allSubjects : (Array.isArray(profile.subjects) ? profile.subjects.map(s => s).join(', ') : '—');
+    const parentName = profile.parent_name || '—';
+    const parentPhone = profile.parent_phone || '—';
+    const avatarHtml = getAvatarHtml(currentUser.id);
+    const content = `
+        <div style="display:flex; align-items:center; gap:20px;">
+            ${avatarHtml}
+            <div>
+                <div style="font-size:1.8rem; font-weight:bold;">${name}</div>
+                <div style="opacity:0.8;">${section} ${group}</div>
+            </div>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(200px,1fr)); gap:15px; margin-top:10px;">
+            <div style="background:var(--notes-bg); padding:12px; border-radius:10px;">
+                <strong style="opacity:0.7;">${t.workSystemLabel || 'Work System'}</strong>
+                <div>${workSystem}</div>
+            </div>
+            <div style="background:var(--notes-bg); padding:12px; border-radius:10px;">
+                <strong style="opacity:0.7;">${t.subjectsLabel || 'Subjects'}</strong>
+                <div>${subjects}</div>
+            </div>
+            <div style="background:var(--notes-bg); padding:12px; border-radius:10px;">
+                <strong style="opacity:0.7;">${t.parentName || 'Parent'}</strong>
+                <div>${parentName}</div>
+            </div>
+            <div style="background:var(--notes-bg); padding:12px; border-radius:10px;">
+                <strong style="opacity:0.7;">${t.parentPhone || 'Parent Phone'}</strong>
+                <div>${parentPhone}</div>
+            </div>
+        </div>
+    `;
+    document.getElementById('student-card-content').innerHTML = content;
+    document.getElementById('student-card-footer').innerHTML = `<a href="profile.html" style="color:inherit;">${t.editProfile || 'Edit Profile'}</a>`;
+    document.getElementById('student-card-modal').classList.add('show');
+}
+        function closeStudentCardModal() {
+            document.getElementById('student-card-modal').classList.remove('show');
         }
 
         function applyLanguage(lang) {
@@ -622,7 +712,6 @@
             const t = translations[lang];
             document.getElementById('forum-title').textContent = t.forumTitle;
             document.getElementById('forum-subtitle').textContent = t.forumSubtitle;
-            document.getElementById('back-home-link').textContent = t.backHome;
             document.getElementById('new-post-btn').textContent = t.newPostBtn;
             document.getElementById('new-post-title-label').textContent = t.newPostTitleLabel;
             document.getElementById('post-title-label').textContent = t.postTitleLabel;
@@ -638,7 +727,41 @@
             document.getElementById('footer-last-update').textContent = t.footerLastUpdate;
             document.getElementById('footer-contact').textContent = t.footerContact;
             document.getElementById('footer-privacy-policy').textContent = t.footerPrivacyPolicy;
+            document.getElementById('student-card-btn').textContent = t.studentCardBtn;
+            document.getElementById('logout-btn').textContent = t.logoutBtn;
+            document.getElementById('language-label').textContent = t.languageLabel;
+            document.getElementById('theme-label').textContent = t.themeLabel;
+            document.getElementById('theme-toggle').textContent = document.body.classList.contains('dark') ? t.themeDay : t.themeNight;
+            document.getElementById('notifications-modal-title').textContent = t.notificationsModalTitle;
+            document.getElementById('student-card-modal-title').textContent = t.studentCardTitle;
+			document.getElementById('backHome').textContent = t.backHome;
+            updateUserInfo();
             loadPosts();
+            if (currentUser && !currentUser.isAdmin) loadNotifications();
+        }
+
+        function applyTheme(theme) {
+            document.body.classList.toggle('dark', theme === 'dark');
+            localStorage.setItem('edschedule_theme', theme);
+            const t = translations[currentLanguage];
+            document.getElementById('theme-toggle').textContent = theme === 'light' ? t.themeNight : t.themeDay;
+        }
+
+        function updateUserInfo() {
+            const t = translations[currentLanguage];
+            const loggedName = document.getElementById('logged-name');
+            const avatar = document.getElementById('user-avatar');
+            if (currentUser && currentUser.isAdmin) {
+                loggedName.innerHTML = `${t.welcome}، ${t.adminName}`;
+                avatar.textContent = 'A';
+            } else if (currentUser) {
+                const profile = profilesMap.get(currentUser.id);
+                const name = profile ? (profile[`name_${currentLanguage}`] || profile.name_ar || profile.name_en || profile.name_fr || 'User') : 'User';
+                loggedName.innerHTML = `${t.welcome}، ${name}`;
+                avatar.innerHTML = profile && profile.photo_url
+                    ? `<img src="${profile.photo_url}" alt="${name}" style="width:100%; height:100%; object-fit:cover; border-radius:10px;">`
+                    : name.charAt(0).toUpperCase();
+            }
         }
 
         function getLoggedInUser() {
@@ -657,24 +780,40 @@
                 return;
             }
             await loadProfilesMap();
+            const savedLang = localStorage.getItem('edschedule_language') || 'ar';
+            const savedTheme = localStorage.getItem('edschedule_theme') || 'light';
+            document.getElementById('language-select').value = savedLang;
+            applyTheme(savedTheme);
+            applyLanguage(savedLang);
             if (currentUser.isAdmin) {
                 document.getElementById('new-post-btn').style.display = 'none';
             }
-            applyLanguage(currentLanguage);
+            updateUserInfo();
         })();
 
         // Event listeners
         document.getElementById('new-post-btn').addEventListener('click', openNewPostModal);
-        document.getElementById('new-post-modal').addEventListener('click', function(e) {
-            if (e.target === this) closeNewPostModal();
-        });
-        document.getElementById('post-detail-modal').addEventListener('click', function(e) {
-            if (e.target === this) closePostDetailModal();
-        });
+        document.getElementById('new-post-modal').addEventListener('click', function(e) { if (e.target === this) closeNewPostModal(); });
+        document.getElementById('post-detail-modal').addEventListener('click', function(e) { if (e.target === this) closePostDetailModal(); });
         document.getElementById('language-select').addEventListener('change', e => applyLanguage(e.target.value));
         document.getElementById('theme-toggle').addEventListener('click', () => {
-            document.body.classList.toggle('dark');
+            const newTheme = document.body.classList.contains('dark') ? 'light' : 'dark';
+            applyTheme(newTheme);
+            applyLanguage(currentLanguage);
         });
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            localStorage.removeItem('edschedule_admin_logged');
+            localStorage.removeItem('edschedule_student_id');
+            window.location.href = 'index.html';
+        });
+        document.getElementById('student-card-btn').addEventListener('click', openStudentCardModal);
+        document.getElementById('notifications-btn').addEventListener('click', openNotificationsModal);
+        document.getElementById('notifications-modal').addEventListener('click', function(e) { if (e.target === this) closeNotificationsModal(); });
+        document.getElementById('student-card-modal').addEventListener('click', function(e) { if (e.target === this) closeStudentCardModal(); });
+
+        // Expose delete functions globally
+        window.deleteComment = deleteComment;
+        window.deletePost = deletePost;
     </script>
 </body>
 </html>

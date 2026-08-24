@@ -1774,11 +1774,12 @@ localStorage.setItem('edschedule_language', lang);
 			}
 
 			function applyTheme(theme) {
-				currentTheme = theme;
-				body.classList.toggle('dark', theme === 'dark');
-				const t = translations[currentLanguage];
-				themeToggle.textContent = theme === 'light' ? t.themeNight : t.themeDay;
-			}
+    currentTheme = theme;
+    body.classList.toggle('dark', theme === 'dark');
+    localStorage.setItem('edschedule_theme', theme);
+    const t = translations[currentLanguage];
+    themeToggle.textContent = theme === 'light' ? t.themeNight : t.themeDay;
+}
 
 			// ==================== MODAL FUNCTIONS ====================
 			function parseAttendanceDate(dateStr) {
@@ -2246,8 +2247,11 @@ localStorage.setItem('edschedule_language', lang);
 						userInfoDiv.style.display = 'none';
 					}
 					
-					applyLanguage('ar');
-					applyTheme('light');
+					const savedLang = localStorage.getItem('edschedule_language') || 'ar';
+const savedTheme = localStorage.getItem('edschedule_theme') || 'light';
+applyLanguage(savedLang);
+applyTheme(savedTheme);
+        document.getElementById('language-select').value = savedLang;
 					rebuildScheduleTable();
 					} else {
 					// Show error or fallback (optional)
