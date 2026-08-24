@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>المنتدى</title>
+    <style>
+        :root {
+            --bg-color: #f4f7fc;
+            --container-bg: #ffffff;
+            --text-color: #2c3e50;
+            --table-border: #d0d7de;
+            --table-header-bg: #2c3e50;
+            --table-header-text: #ffffff;
+            --table-row-odd: #fafbfc;
+            --table-row-even: #f1f5f9;
+            --highlight-bg: #e8f0fe;
+            --highlight-text: #1a56a0;
+            --notes-bg: #f8f9fa;
+            --notes-border: #2c3e50;
+            --shadow: 0 8px 25px rgba(0,0,0,0.1);
+            --danger: #e74c3c;
+            --success: #10b981;
+        }
+        body.dark {
+            --bg-color: #1a1a2e;
+            --container-bg: #16213e;
+            --text-color: #e0e0e0;
+            --table-border: #444;
+            --table-header-bg: #0f3460;
+            --table-header-text: #ffffff;
+            --table-row-odd: #1f2a44;
+            --table-row-even: #1a1f36;
+            --highlight-bg: #2c3e6b;
+            --highlight-text: #a8c6ff;
+            --notes-bg: #1a1a2e;
+            --notes-border: #0f3460;
+            --shadow: 0 8px 25px rgba(0,0,0,0.5);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; transition: background-color 0.3s, color 0.3s, border-color 0.3s; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-color);
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: var(--container-bg);
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 5px;
+            font-size: 28px;
+        }
+        .subtitle {
+            text-align: center;
+            opacity: 0.8;
+            margin-bottom: 25px;
+            font-size: 14px;
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            text-decoration: none;
+            color: #fff;
+            background: var(--table-header-bg);
+            transition: background-color 0.2s;
+        }
+        .btn:hover { background: var(--primary-hover, #1a252f); }
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--table-header-bg);
+            color: var(--table-header-bg);
+        }
+        .btn-outline:hover { background: var(--table-header-bg); color: #fff; }
+        .btn-danger { background: var(--danger); }
+        .btn-danger:hover { background: #c0392b; }
+        .post-list {
+            margin-top: 20px;
+        }
+        .post-item {
+            border: 1px solid var(--table-border);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .post-item:hover { background: var(--notes-bg); }
+        .post-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .post-meta {
+            font-size: 12px;
+            opacity: 0.7;
+            margin-top: 5px;
+        }
+        .post-content {
+            margin-top: 10px;
+            white-space: pre-wrap;
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal {
+            background: var(--container-bg);
+            color: var(--text-color);
+            border-radius: 12px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 25px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+        .modal h2 {
+            margin-bottom: 15px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--table-border);
+            border-radius: 6px;
+            background: var(--notes-bg);
+            color: var(--text-color);
+        }
+        .form-group textarea {
+            min-height: 80px;
+        }
+        .comment-item {
+            border-bottom: 1px solid var(--table-border);
+            padding: 10px 0;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .comment-author {
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .comment-content {
+            margin-top: 5px;
+            white-space: pre-wrap;
+        }
+        .comment-time {
+            font-size: 11px;
+            opacity: 0.7;
+        }
+        .author-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex-shrink: 0;
+            border: 1px solid var(--table-border);
+        }
+        .author-avatar-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--highlight-bg);
+            color: var(--highlight-text);
+            font-weight: bold;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #333;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 6px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: 2000;
+        }
+        .toast.show { opacity: 1; }
+        .footer {
+            max-width: 800px;
+            margin: 20px auto;
+            background: var(--container-bg);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            padding: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            color: var(--text-color);
+        }
+        .footer-column {
+            flex: 1;
+            min-width: 150px;
+        }
+        .footer-column p {
+            margin: 5px 0;
+            line-height: 1.6;
+        }
+        .footer a {
+            color: var(--text-color);
+            text-decoration: none;
+        }
+        .footer a:hover { text-decoration: underline; }
+        @media (max-width: 768px) {
+            .container { padding: 15px; }
+            .footer { padding: 15px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 id="forum-title">💬 المنتدى</h1>
+        <p class="subtitle" id="forum-subtitle">مجتمع التلاميذ</p>
+        <div class="controls">
+            <select id="language-select">
+                <option value="ar">العربية</option>
+                <option value="fr">Français</option>
+                <option value="en">English</option>
+            </select>
+            <button id="theme-toggle">🌙</button>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <a href="index.html" class="btn btn-outline" id="back-home-link">العودة للرئيسية</a>
+            <button id="new-post-btn" class="btn">+ منشور جديد</button>
+        </div>
+        <div id="post-list" class="post-list"></div>
+    </div>
+
+    <!-- New Post Modal -->
+    <div class="modal-overlay" id="new-post-modal">
+        <div class="modal">
+            <h2 id="new-post-title-label">منشور جديد</h2>
+            <div class="form-group">
+                <label id="post-title-label">العنوان</label>
+                <input type="text" id="new-post-title" placeholder="عنوان المنشور">
+            </div>
+            <div class="form-group">
+                <label id="post-content-label">المحتوى</label>
+                <textarea id="new-post-content" placeholder="اكتب هنا..."></textarea>
+            </div>
+            <div style="display:flex; gap:10px; justify-content:flex-end;">
+                <button class="btn btn-success" id="publish-btn" onclick="createPost()">نشر</button>
+                <button class="btn btn-danger" id="cancel-btn" onclick="closeNewPostModal()">إلغاء</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Post Detail Modal -->
+    <div class="modal-overlay" id="post-detail-modal">
+        <div class="modal">
+            <h2 id="detail-title"></h2>
+            <div id="detail-content" style="white-space:pre-wrap; margin-bottom:15px;"></div>
+            <div id="detail-comments"></div>
+            <div class="form-group" style="margin-top:20px;">
+                <label id="comment-label">أضف تعليق</label>
+                <textarea id="comment-input" placeholder="اكتب تعليقك..."></textarea>
+            </div>
+            <div style="display:flex; gap:10px; justify-content:flex-end;">
+                <button class="btn btn-success" id="add-comment-btn" onclick="addComment()">تعليق</button>
+                <button class="btn btn-danger" id="close-btn" onclick="closePostDetailModal()">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer" id="footer">
+        <div class="footer-column">
+            <p><span id="footer-developed-by"></span><br><span id="footer-hosted-on"></span></p>
+        </div>
+        <div class="footer-column">
+            <p><span id="footer-version"></span><br><span id="footer-last-update"></span></p>
+        </div>
+        <div class="footer-column">
+            <p><a href="#" id="footer-contact"></a><br><a href="#" id="footer-privacy-policy"></a></p>
+        </div>
+    </footer>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://ewvvlqujimxdubreulni.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV3dnZscXVqaW14ZHVicmV1bG5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxMzc0ODAsImV4cCI6MjEwMjcxMzQ4MH0._-i_8bMsMM1uhmE024MrgWo66GAQjt8vONlur9LfOtg';
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        let currentUser = null;
+        let currentLanguage = localStorage.getItem('edschedule_language') || 'ar';
+        let currentPostId = null;
+        let profilesMap = new Map(); // id -> profile object
+
+        const translations = {
+            ar: {
+                forumTitle: '💬 المنتدى',
+                forumSubtitle: 'مجتمع التلاميذ',
+                backHome: 'العودة للرئيسية',
+                newPostBtn: '+ منشور جديد',
+                newPostTitleLabel: 'منشور جديد',
+                postTitleLabel: 'العنوان',
+                postContentLabel: 'المحتوى',
+                publish: 'نشر',
+                cancel: 'إلغاء',
+                commentLabel: 'أضف تعليق',
+                addComment: 'تعليق',
+                close: 'إغلاق',
+                noPosts: 'لا توجد منشورات بعد.',
+                noComments: 'لا تعليقات بعد.',
+                footerDevelopedBy: 'تم التطوير بواسطة ماجري زياد',
+                footerHostedOn: 'مستضاف على Netlify و Github و Supabase',
+                footerVersion: 'الإصدار: 0.0.3',
+                footerLastUpdate: 'آخر تحديث: 07/08/2026',
+                footerContact: 'اتصل بنا',
+                footerPrivacyPolicy: 'سياسة الخصوصية',
+                loginRequired: 'يجب تسجيل الدخول',
+                titleContentRequired: 'العنوان والمحتوى مطلوبان',
+                commentRequired: 'التعليق مطلوب',
+                postPublished: 'تم نشر المنشور',
+                commentAdded: 'تم إضافة التعليق',
+                adminName: 'المدير'
+            },
+            fr: {
+                forumTitle: '💬 Forum',
+                forumSubtitle: 'Communauté des élèves',
+                backHome: 'Retour à l\'accueil',
+                newPostBtn: '+ Nouveau message',
+                newPostTitleLabel: 'Nouveau message',
+                postTitleLabel: 'Titre',
+                postContentLabel: 'Contenu',
+                publish: 'Publier',
+                cancel: 'Annuler',
+                commentLabel: 'Ajouter un commentaire',
+                addComment: 'Commenter',
+                close: 'Fermer',
+                noPosts: 'Aucun message pour le moment.',
+                noComments: 'Aucun commentaire.',
+                footerDevelopedBy: 'Développé par Mejri Ziad',
+                footerHostedOn: 'Hébergé sur Netlify, Github et Supabase',
+                footerVersion: 'Version : 0.0.3',
+                footerLastUpdate: 'Dernière mise à jour : 07/08/2026',
+                footerContact: 'Contact',
+                footerPrivacyPolicy: 'Politique de confidentialité',
+                loginRequired: 'Veuillez vous connecter',
+                titleContentRequired: 'Le titre et le contenu sont requis',
+                commentRequired: 'Le commentaire est requis',
+                postPublished: 'Message publié',
+                commentAdded: 'Commentaire ajouté',
+                adminName: 'Admin'
+            },
+            en: {
+                forumTitle: '💬 Forum',
+                forumSubtitle: 'Student Community',
+                backHome: 'Back to Home',
+                newPostBtn: '+ New Post',
+                newPostTitleLabel: 'New Post',
+                postTitleLabel: 'Title',
+                postContentLabel: 'Content',
+                publish: 'Publish',
+                cancel: 'Cancel',
+                commentLabel: 'Add Comment',
+                addComment: 'Comment',
+                close: 'Close',
+                noPosts: 'No posts yet.',
+                noComments: 'No comments yet.',
+                footerDevelopedBy: 'Developed by Mejri Ziad',
+                footerHostedOn: 'Hosted on Netlify, Github and Supabase',
+                footerVersion: 'Version : 0.0.3',
+                footerLastUpdate: 'Last update : 07/08/2026',
+                footerContact: 'Contact',
+                footerPrivacyPolicy: 'Privacy Policy',
+                loginRequired: 'Please log in',
+                titleContentRequired: 'Title and content are required',
+                commentRequired: 'Comment is required',
+                postPublished: 'Post published',
+                commentAdded: 'Comment added',
+                adminName: 'Admin'
+            }
+        };
+
+        function toast(message) {
+            const t = document.getElementById('toast');
+            t.textContent = message;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 2000);
+        }
+
+        function getDisplayName(userId) {
+            if (userId === 'admin') return translations[currentLanguage].adminName;
+            const profile = profilesMap.get(userId);
+            if (!profile) return 'User';
+            const t = translations[currentLanguage];
+            // choose according to currentLanguage
+            const name = profile[`name_${currentLanguage}`] || profile.name_ar || profile.name_en || profile.name_fr || 'User';
+            return name;
+        }
+
+        function getAvatarHtml(userId) {
+            const profile = profilesMap.get(userId);
+            let avatarUrl = null;
+            let initial = '?';
+            if (userId === 'admin') {
+                initial = 'A';
+            } else if (profile) {
+                avatarUrl = profile.photo_url;
+                const name = profile[`name_${currentLanguage}`] || profile.name_ar || profile.name_en || profile.name_fr || 'User';
+                initial = name.charAt(0).toUpperCase();
+            }
+            if (avatarUrl) {
+                return `<img class="author-avatar" src="${avatarUrl}" alt="${getDisplayName(userId)}">`;
+            } else {
+                return `<span class="author-avatar-placeholder">${initial}</span>`;
+            }
+        }
+
+        async function loadProfilesMap() {
+            const { data: profiles, error } = await supabaseClient
+                .from('profiles')
+                .select('id, name_ar, name_en, name_fr, photo_url');
+            if (error) {
+                console.warn('[Forum] Load profiles error', error.message);
+                return;
+            }
+            profilesMap.clear();
+            (profiles || []).forEach(p => profilesMap.set(p.id, p));
+        }
+
+        async function loadPosts() {
+            const { data: posts, error } = await supabaseClient
+                .from('forum_posts')
+                .select('id, title, content, author_id, created_at, is_pinned')
+                .order('is_pinned', { ascending: false })
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.warn('[Forum] Load posts error', error.message);
+                return;
+            }
+
+            const list = document.getElementById('post-list');
+            const t = translations[currentLanguage];
+            if (!posts || posts.length === 0) {
+                list.innerHTML = `<p>${t.noPosts}</p>`;
+                return;
+            }
+
+            list.innerHTML = posts.map(post => {
+                const authorName = getDisplayName(post.author_id);
+                const avatarHtml = getAvatarHtml(post.author_id);
+                return `
+                <div class="post-item" onclick="openPostDetail('${post.id}')">
+                    <div class="post-title">${post.title}</div>
+                    <div class="post-meta">
+                        ${avatarHtml} <span style="margin-left:5px;">${authorName}</span> · ${new Date(post.created_at).toLocaleString()}
+                    </div>
+                    <div class="post-content">${post.content.substring(0, 200)}...</div>
+                </div>`;
+            }).join('');
+        }
+
+        function openNewPostModal() {
+            document.getElementById('new-post-modal').classList.add('show');
+        }
+        function closeNewPostModal() {
+            document.getElementById('new-post-modal').classList.remove('show');
+        }
+
+        async function createPost() {
+            const title = document.getElementById('new-post-title').value.trim();
+            const content = document.getElementById('new-post-content').value.trim();
+            const t = translations[currentLanguage];
+            if (!title || !content) {
+                alert(t.titleContentRequired);
+                return;
+            }
+            const userId = currentUser ? currentUser.id : null;
+            if (!userId || userId === 'admin') {
+                alert(t.loginRequired);
+                return;
+            }
+            const { error } = await supabaseClient
+                .from('forum_posts')
+                .insert({ title, content, author_id: userId });
+            if (error) {
+                alert('Error: ' + error.message);
+                return;
+            }
+            closeNewPostModal();
+            document.getElementById('new-post-title').value = '';
+            document.getElementById('new-post-content').value = '';
+            loadPosts();
+            toast(t.postPublished);
+        }
+
+        async function openPostDetail(postId) {
+            currentPostId = postId;
+            const t = translations[currentLanguage];
+            const { data: post, error } = await supabaseClient
+                .from('forum_posts')
+                .select('*')
+                .eq('id', postId)
+                .single();
+
+            if (error) {
+                console.warn('[Forum] Post detail error', error.message);
+                return;
+            }
+
+            const authorName = getDisplayName(post.author_id);
+            const avatarHtml = getAvatarHtml(post.author_id);
+            document.getElementById('detail-title').textContent = post.title;
+            document.getElementById('detail-content').innerHTML = `
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                    ${avatarHtml}
+                    <span style="font-weight:bold;">${authorName}</span>
+                    <span style="font-size:12px; opacity:0.7;">${new Date(post.created_at).toLocaleString()}</span>
+                </div>
+                ${post.content}
+            `;
+
+            const { data: comments, error: commentsError } = await supabaseClient
+                .from('forum_comments')
+                .select('id, content, author_id, created_at')
+                .eq('post_id', postId)
+                .order('created_at', { ascending: true });
+
+            if (commentsError) {
+                console.warn('[Forum] Comments error', commentsError.message);
+                return;
+            }
+
+            const commentsHtml = comments.length
+                ? comments.map(comment => {
+                    const commentAuthor = getDisplayName(comment.author_id);
+                    const commentAvatar = getAvatarHtml(comment.author_id);
+                    return `
+                    <div class="comment-item">
+                        ${commentAvatar}
+                        <div>
+                            <div class="comment-author">${commentAuthor}</div>
+                            <div class="comment-content">${comment.content}</div>
+                            <div class="comment-time">${new Date(comment.created_at).toLocaleString()}</div>
+                        </div>
+                    </div>`;
+                }).join('')
+                : `<p>${t.noComments}</p>`;
+
+            document.getElementById('detail-comments').innerHTML = commentsHtml;
+            document.getElementById('post-detail-modal').classList.add('show');
+        }
+
+        function closePostDetailModal() {
+            document.getElementById('post-detail-modal').classList.remove('show');
+            currentPostId = null;
+        }
+
+        async function addComment() {
+            const content = document.getElementById('comment-input').value.trim();
+            const t = translations[currentLanguage];
+            if (!currentPostId || !content) {
+                alert(t.commentRequired);
+                return;
+            }
+            const userId = currentUser ? currentUser.id : null;
+            if (!userId || userId === 'admin') {
+                alert(t.loginRequired);
+                return;
+            }
+            const { error } = await supabaseClient
+                .from('forum_comments')
+                .insert({ post_id: currentPostId, author_id: userId, content });
+            if (error) {
+                alert('Error: ' + error.message);
+                return;
+            }
+            document.getElementById('comment-input').value = '';
+            openPostDetail(currentPostId);
+            toast(t.commentAdded);
+        }
+
+        function applyLanguage(lang) {
+            currentLanguage = lang;
+            localStorage.setItem('edschedule_language', lang);
+            document.documentElement.lang = lang;
+            document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+            const t = translations[lang];
+            document.getElementById('forum-title').textContent = t.forumTitle;
+            document.getElementById('forum-subtitle').textContent = t.forumSubtitle;
+            document.getElementById('back-home-link').textContent = t.backHome;
+            document.getElementById('new-post-btn').textContent = t.newPostBtn;
+            document.getElementById('new-post-title-label').textContent = t.newPostTitleLabel;
+            document.getElementById('post-title-label').textContent = t.postTitleLabel;
+            document.getElementById('post-content-label').textContent = t.postContentLabel;
+            document.getElementById('publish-btn').textContent = t.publish;
+            document.getElementById('cancel-btn').textContent = t.cancel;
+            document.getElementById('comment-label').textContent = t.commentLabel;
+            document.getElementById('add-comment-btn').textContent = t.addComment;
+            document.getElementById('close-btn').textContent = t.close;
+            document.getElementById('footer-developed-by').textContent = t.footerDevelopedBy;
+            document.getElementById('footer-hosted-on').textContent = t.footerHostedOn;
+            document.getElementById('footer-version').textContent = t.footerVersion;
+            document.getElementById('footer-last-update').textContent = t.footerLastUpdate;
+            document.getElementById('footer-contact').textContent = t.footerContact;
+            document.getElementById('footer-privacy-policy').textContent = t.footerPrivacyPolicy;
+            loadPosts();
+        }
+
+        function getLoggedInUser() {
+            const adminLogged = localStorage.getItem('edschedule_admin_logged');
+            const studentId = localStorage.getItem('edschedule_student_id');
+            if (adminLogged === 'true') return { isAdmin: true, id: 'admin' };
+            if (studentId) return { isAdmin: false, id: studentId };
+            return null;
+        }
+
+        // Initialize
+        (async function init() {
+            currentUser = getLoggedInUser();
+            if (!currentUser) {
+                window.location.href = 'index.html';
+                return;
+            }
+            await loadProfilesMap();
+            if (currentUser.isAdmin) {
+                document.getElementById('new-post-btn').style.display = 'none';
+            }
+            applyLanguage(currentLanguage);
+        })();
+
+        // Event listeners
+        document.getElementById('new-post-btn').addEventListener('click', openNewPostModal);
+        document.getElementById('new-post-modal').addEventListener('click', function(e) {
+            if (e.target === this) closeNewPostModal();
+        });
+        document.getElementById('post-detail-modal').addEventListener('click', function(e) {
+            if (e.target === this) closePostDetailModal();
+        });
+        document.getElementById('language-select').addEventListener('change', e => applyLanguage(e.target.value));
+        document.getElementById('theme-toggle').addEventListener('click', () => {
+            document.body.classList.toggle('dark');
+        });
+    </script>
+</body>
+</html>

@@ -1,3 +1,6 @@
+Here is the updated `supabase_actions.txt` content. It includes all current tables, functions, SQL examples, and notes for push notifications and the Edge Function.
+
+```markdown
 Supabase Integration for EDSchedule – Actual Configuration and SQL
 ==================================================================
 
@@ -8,11 +11,13 @@ Anon Public Key   : eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSI
 
 Important:
 - The anon key is used in both index.html and admin.html.
-- The service_role key was NOT used and must remain secret.
+- The service_role key was NOT used in frontend.
 - Row Level Security (RLS) is disabled on all tables for simplicity.
 - Student passwords are stored as plaintext in the profiles table (demo only).
 - Admin authentication is handled via the admins table, not hardcoded constants.
 - The frontend no longer contains admin credentials in source code.
+- Web Push notifications are sent via the `send-push` Edge Function.
+- VAPID public key is in frontend; VAPID private key is stored as an Edge Function secret.
 
 Database Tables
 -----------------------
@@ -30,6 +35,7 @@ Supporting tables:
 7. EDSschedule_backup
 8. notifications
 9. notification_batches
+10. push_subscriptions
 
 ---
 
@@ -232,14 +238,6 @@ $$;
 grant execute on function public.increment_interaction_count(text) to anon, authenticated;
 ```
 
-Extract interactions:
-
-```sql
-select event_type, count, created_at, last_updated
-from public."EDSschedule_interactions_counts"
-order by last_updated desc;
-```
-
 ---
 
 ## 4. Backup / Photo Backup
@@ -294,14 +292,6 @@ end;
 $$;
 
 grant execute on function public.append_photo_backup(uuid, text, text, text) to anon, authenticated;
-```
-
-Extract backups:
-
-```sql
-select user_id, username, photos, created_at, updated_at
-from public."EDSschedule_backup"
-order by updated_at desc;
 ```
 
 ---
@@ -446,12 +436,6 @@ grant execute on function public.send_notification(text, text, text, text, text,
 alter publication supabase_realtime add table public.notifications;
 ```
 
-If the publication name is different, check with:
-
-```sql
-select * from pg_publication;
-```
-
 ---
 
 ## 6. Direct SQL Examples for Sending Notifications
@@ -519,26 +503,191 @@ select public.send_notification(
 
 ---
 
-## 7. Extracting Notifications and History
+## 7. Push Subscriptions Table
 
 ```sql
--- Recent notifications for a user
-select *
-from public.notifications
-where user_id = 'USER_UUID'
-order by created_at desc
-limit 20;
+create table if not exists public.push_subscriptions (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid not null references public.profiles(id) on delete cascade,
+  subscription jsonb not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint push_subscriptions_user_id_unique unique (user_id)
+);
 
--- All notification batches
-select *
-from public.notification_batches
-order by created_at desc
-limit 50;
+alter table public.push_subscriptions disable row level security;
+
+grant select, insert, update, delete on public.push_subscriptions to anon, authenticated;
 ```
 
 ---
 
-## 8. Verification Queries
+## 8. VAPID Keys (for Web Push)
+
+- Public key (in frontend `index.html`):
+  ```
+  BKAovYnLBGttYz0N1yrwJsu8Dj_anomAHnpeSIxi0bGTWOpgKlk6Sd-Gi1oYsKzhtJ9cwAB1To6G7ES-Gw5oZfg
+  ```
+- Private key (Edge Function secret only):
+  ```
+  xPNqDlBEMUkQV1jiRgr10Gh8sSXku7u1NTyxu8azIqA
+  ```
+- Email:
+  ```
+  mailto:dorar.02126@gmail.com
+  ```
+
+---
+
+## 9. Edge Function: `send-push`
+
+Deploy a Supabase Edge Function named `send-push` with the following code. It includes CORS support.
+
+```javascript
+import { createClient } from 'npm:@supabase/supabase-js@2';
+import webpush from 'npm:web-push@3';
+
+const VAPID_EMAIL = Deno.env.get('VAPID_EMAIL') || 'mailto:dorar.02126@gmail.com';
+const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY') || '';
+const VAPID_PUBLIC_KEY = Deno.env.get('VAPID_PUBLIC_KEY') || '';
+
+webpush.setVapidDetails(
+  VAPID_EMAIL,
+  VAPID_PUBLIC_KEY,
+  VAPID_PRIVATE_KEY
+);
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      },
+    });
+  }
+
+  if (req.method !== 'POST') {
+    return new Response('Method not allowed', {
+      status: 405,
+      headers: { 'Access-Control-Allow-Origin': '*' }
+    });
+  }
+
+  let body;
+  try {
+    body = await req.json();
+  } catch {
+    return new Response('Invalid JSON', {
+      status: 400,
+      headers: { 'Access-Control-Allow-Origin': '*' }
+    });
+  }
+
+  const { title, body: messageBody, target_type, target_value } = body;
+  if (!title || !messageBody) {
+    return new Response('Missing title or body', {
+      status: 400,
+      headers: { 'Access-Control-Allow-Origin': '*' }
+    });
+  }
+
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL') || '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+  );
+
+  let userIds = [];
+  if (target_type === 'all' || !target_type) {
+    const { data: allUsers, error: usersError } = await supabase
+      .from('profiles')
+      .select('id');
+    if (usersError) return new Response(JSON.stringify({ error: usersError.message }), { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } });
+    userIds = allUsers.map(u => u.id);
+  } else if (target_type === 'student') {
+    userIds = [target_value];
+  } else if (target_type === 'group') {
+    const { data: users, error: usersError } = await supabase
+      .from('profiles')
+      .select('id')
+      .filter('section_key', 'not.is', null)
+      .filter('group_number', 'not.is', null);
+    if (usersError) return new Response(JSON.stringify({ error: usersError.message }), { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } });
+    userIds = users
+      .filter(u => `${u.section_key}-g${u.group_number}` === target_value)
+      .map(u => u.id);
+  } else if (target_type === 'section') {
+    const { data: users, error: usersError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('section_key', target_value);
+    if (usersError) return new Response(JSON.stringify({ error: usersError.message }), { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } });
+    userIds = users.map(u => u.id);
+  } else if (target_type === 'day') {
+    const { data: profiles, error: profError } = await supabase
+      .from('profiles')
+      .select('id, section_key, group_number');
+    if (profError) return new Response(JSON.stringify({ error: profError.message }), { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } });
+
+    const { data: scheduleSlots, error: schedError } = await supabase
+      .from('schedule_slots')
+      .select('day_key, assignment')
+      .eq('day_key', target_value);
+    if (schedError) return new Response(JSON.stringify({ error: schedError.message }), { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } });
+
+    userIds = profiles.filter(p => {
+      return scheduleSlots.some(s => {
+        const assignment = s.assignment;
+        const hasSection = Array.isArray(assignment)
+          ? assignment.includes(p.section_key)
+          : assignment === p.section_key;
+        const hasGroup = p.group_number && (Array.isArray(assignment)
+          ? assignment.includes(`${p.section_key}-g${p.group_number}`)
+          : assignment === `${p.section_key}-g${p.group_number}`);
+        return hasSection || hasGroup;
+      });
+    }).map(p => p.id);
+  }
+
+  if (userIds.length === 0) {
+    return new Response(JSON.stringify({ results: [] }), { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
+  }
+
+  const { data: subscriptions, error } = await supabase
+    .from('push_subscriptions')
+    .select('*')
+    .in('user_id', userIds);
+
+  if (error) {
+    return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } });
+  }
+
+  const payload = JSON.stringify({ title, body: messageBody, url: './index.html' });
+  const results = [];
+
+  for (const sub of subscriptions) {
+    try {
+      await webpush.sendNotification(sub.subscription, payload);
+      results.push({ id: sub.id, status: 'sent' });
+    } catch (err) {
+      if (err.statusCode === 410 || err.statusCode === 404) {
+        await supabase.from('push_subscriptions').delete().eq('id', sub.id);
+        results.push({ id: sub.id, status: 'expired' });
+      } else {
+        results.push({ id: sub.id, status: 'failed', error: err.message });
+      }
+    }
+  }
+
+  return new Response(JSON.stringify({ results }), { status: 200, headers: { 'Access-Control-Allow-Origin': '*' } });
+});
+```
+
+---
+
+## 10. Verification Queries
 
 ```sql
 select 'sections' as table_name, count(*) as rows from public.sections
@@ -557,7 +706,9 @@ select 'backup', count(*) from public."EDSschedule_backup"
 union all
 select 'notifications', count(*) from public.notifications
 union all
-select 'notification_batches', count(*) from public.notification_batches;
+select 'notification_batches', count(*) from public.notification_batches
+union all
+select 'push_subscriptions', count(*) from public.push_subscriptions;
 ```
 
 Expected minimum counts after initial data:

@@ -863,8 +863,9 @@ body[dir="rtl"] {
         <span id="user-avatar" class="avatar"></span>
         <span id="logged-name"></span>
     </div>
-    <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;">
         <button id="admin-btn" class="admin-btn" style="display:none;" onclick="window.location.href='admin.html'">🛠️ Admin Panel</button>
+                <button id="forum-btn" class="forum-btn" style="display:none;" onclick="window.location.href='forum.html'">💬 المنتدى</button>
         <button id="notifications-btn" class="notifications-btn" style="display:none;">🔔 <span id="notifications-badge" class="notifications-badge" style="display:none;">0</span></button>
         <button id="student-card-btn" class="student-card-btn">بطاقة التلميذ</button>
         <button id="logout-btn" class="logout-btn">تسجيل الخروج</button>
@@ -1679,6 +1680,7 @@ window.toast = toast;
 					renderAdminSections();
 					notificationsBtn.style.display = 'none';
 					notificationsBadge.style.display = 'none';
+					document.getElementById('forum-btn').style.display = 'inline-block';
 					document.getElementById('admin-students-panel').style.display = 'block';
 					document.getElementById('admin-subjects-panel').style.display = 'block';
 					document.getElementById('admin-sections-panel').style.display = 'block';
@@ -1699,6 +1701,7 @@ window.toast = toast;
 					document.getElementById('admin-students-panel').style.display = 'none';
 					document.getElementById('admin-subjects-panel').style.display = 'none';
 					document.getElementById('admin-sections-panel').style.display = 'none';
+					document.getElementById('forum-btn').style.display = 'none';
 				}
 				
 				if (currentUser) {
@@ -1712,6 +1715,7 @@ window.toast = toast;
 					updateHomeworkPanel();
 					updateUserInfo();
 					studentCardBtn.style.display = 'inline-block';
+					document.getElementById('forum-btn').style.display = 'inline-block';
 					} else {
 					rebuildScheduleTable();
 					personalScheduleDiv.classList.remove('visible');
@@ -1722,6 +1726,7 @@ window.toast = toast;
 					parentInfoPanelDiv.classList.remove('visible');
 					document.getElementById('homework-panel').style.display = 'none';
 					document.getElementById('admin-sections-panel').style.display = 'none';
+					document.getElementById('forum-btn').style.display = 'none';
 					notificationsBtn.style.display = 'none';
 					notificationsBadge.style.display = 'none';
 					studentCardBtn.style.display = 'inline-block';
@@ -1752,6 +1757,8 @@ window.toast = toast;
 				document.getElementById('homework-title').textContent = t.homeworkTitle;
 				document.getElementById('notes').innerHTML = t.notes;
 				document.getElementById('student-card-btn').textContent = t.studentCardBtn;
+				document.getElementById('forum-btn').textContent = t.forumBtnLabel;
+localStorage.setItem('edschedule_language', lang);
 				document.getElementById('footer-developed-by').textContent = t.footerDevelopedBy;
 				document.getElementById('footer-hosted-on').textContent = t.footerHostedOn;
 				document.getElementById('footer-version').textContent = t.footerVersion;
@@ -2003,6 +2010,7 @@ window.toast = toast;
 					loginPasswordPlaceholder: 'الرقم السري',
 					loginBtn: 'دخول',
 					logoutBtn: 'تسجيل الخروج',
+					forumBtnLabel: '💬 المنتدى',
 					studentCardBtn: 'بطاقة التلميذ',
 					modalTitle: 'بطاقة التلميذ',
 					editProfile: 'تعديل ملفي الشخصي',
@@ -2071,6 +2079,7 @@ window.toast = toast;
 					loginPasswordPlaceholder: 'Mot de passe',
 					loginBtn: 'Entrer',
 					logoutBtn: 'Déconnexion',
+					forumBtnLabel: '💬 Forum',
 					studentCardBtn: 'Carte étudiant',
 					modalTitle: 'Carte étudiant',
 					editProfile: 'Modifier mon profil',
@@ -2139,6 +2148,7 @@ window.toast = toast;
 					loginPasswordPlaceholder: 'Password',
 					loginBtn: 'Sign In',
 					logoutBtn: 'Logout',
+					forumBtnLabel: '💬 Forum',
 					studentCardBtn: 'Student Card',
 					modalTitle: 'Student Card',
 					editProfile: 'Edit my profile',
