@@ -212,6 +212,12 @@
             </div>
         </div>
 
+        <!-- Online students list -->
+        <div id="online-students-panel" style="margin-bottom:25px;">
+            <h3 id="online-students-title">🟢 المتصلون الآن</h3>
+            <ul id="online-students-list" style="list-style:none; padding:0; max-height:200px; overflow-y:auto;"></ul>
+        </div>
+
         <div style="display:flex; justify-content:flex-end; margin-bottom:15px;">
             <button id="new-post-btn" class="btn">+ منشور جديد</button>
         </div>
@@ -276,7 +282,6 @@
     </div>
 
     <!-- Notifications Modal -->
-       <!-- Notifications Modal -->
     <div class="modal-overlay" id="notifications-modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -290,7 +295,6 @@
     </div>
 
     <!-- Student Card Modal -->
-       <!-- Student Card Modal -->
     <div class="modal-overlay" id="student-card-modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -333,6 +337,7 @@ let postOffset = 0;
 const POSTS_PER_PAGE = 20;
 let hasMorePosts = true;
 
+let onlineUsersChannel = null; // <-- Presence channel reference
 
         const translations = {
             ar: {
@@ -396,7 +401,9 @@ noParentInfo: 'لا توجد بيانات ولي مسجلة',
 allSubjects: 'كل المواد',
 noSubjects: 'لا توجد مواد محددة',
 groupLabel: 'مجموعة',
-editProfile: 'تعديل ملفي الشخصي'
+editProfile: 'تعديل ملفي الشخصي',
+                onlineStudents: '🟢 المتصلون الآن',
+                noOnlineStudents: 'لا يوجد متصلون'
             },
             fr: {
                 forumTitle: '💬 Forum',
@@ -459,7 +466,9 @@ noParentInfo: 'Aucune information parentale',
 allSubjects: 'Toutes les matières',
 noSubjects: 'Aucune matière définie',
 groupLabel: 'Groupe',
-editProfile: 'Modifier mon profil'
+editProfile: 'Modifier mon profil',
+                onlineStudents: '🟢 En ligne maintenant',
+                noOnlineStudents: 'Aucun étudiant en ligne'
             },
             en: {
                 forumTitle: '💬 Forum',
@@ -522,7 +531,9 @@ noParentInfo: 'No parent info',
 allSubjects: 'All Subjects',
 noSubjects: 'No subjects defined',
 groupLabel: 'Group',
-editProfile: 'Edit my profile'
+editProfile: 'Edit my profile',
+                onlineStudents: '🟢 Online now',
+                noOnlineStudents: 'No students online'
             }
         };
 
@@ -557,13 +568,81 @@ editProfile: 'Edit my profile'
                 return `<span class="author-avatar-placeholder">${initial}</span>`;
             }
         }
+
+        // ==================== Presence: Online Students ====================
+        async function setupPresence() {
+            if (!currentUser || currentUser.isAdmin) return; // only students
+
+            // Clean up existing channel if any
+            if (onlineUsersChannel) {
+                await supabaseClient.removeChannel(onlineUsersChannel);
+                onlineUsersChannel = null;
+            }
+
+            onlineUsersChannel = supabaseClient.channel('online-students', {
+                config: {
+                    presence: {
+                        key: currentUser.id, // unique per user
+                    },
+                },
+            });
+
+            onlineUsersChannel
+                .on('presence', { event: 'sync' }, () => {
+                    const state = onlineUsersChannel.presenceState();
+                    renderOnlineStudents(state);
+                })
+                .subscribe(async (status) => {
+                    if (status === 'SUBSCRIBED') {
+                        const displayName = getDisplayName(currentUser.id);
+                        await onlineUsersChannel.track({
+                            user_id: currentUser.id,
+                            name: displayName,
+                            online_at: new Date().toISOString(),
+                        });
+                    }
+                });
+        }
+
+        function renderOnlineStudents(presenceState) {
+            const list = document.getElementById('online-students-list');
+            const t = translations[currentLanguage];
+            const titleEl = document.getElementById('online-students-title');
+            if (titleEl) titleEl.textContent = t.onlineStudents || '🟢 المتصلون الآن';
+
+            if (!presenceState || Object.keys(presenceState).length === 0) {
+                list.innerHTML = `<li>${t.noOnlineStudents || 'لا يوجد متصلون'}</li>`;
+                return;
+            }
+
+            const onlineUsers = [];
+            Object.values(presenceState).forEach(presences => {
+                const user = presences[0];
+                if (user && user.user_id !== currentUser.id) { // exclude self
+                    onlineUsers.push(user);
+                }
+            });
+
+            if (onlineUsers.length === 0) {
+                list.innerHTML = `<li>${t.noOnlineStudents || 'لا يوجد متصلون'}</li>`;
+                return;
+            }
+
+            list.innerHTML = onlineUsers.map(user => {
+                const avatarHtml = getAvatarHtml(user.user_id);
+                return `<li style="display:flex; align-items:center; gap:8px; padding:5px 0;">
+                    ${avatarHtml}
+                    <span>${escapeHtml(user.name || 'User')}</span>
+                </li>`;
+            }).join('');
+        }
+
 function renderAttachments(attachments) {
     if (!Array.isArray(attachments) || attachments.length === 0) return '';
     return `
         <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:10px;">
             ${attachments.map(att => {
                 if (!att.url) return '';
-                // If it's an image, show thumbnail; otherwise show link
                 const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(att.url) || att.url.startsWith('data:image/');
                 if (isImage) {
                     return `<a href="${att.url}" target="_blank"><img src="${att.url}" alt="${att.file_name || ''}" style="max-width:120px; max-height:120px; border-radius:8px; border:1px solid var(--table-border); object-fit:cover;"></a>`;
@@ -679,10 +758,8 @@ function handleNewPostFolderSelection(event) {
     filesInfo.textContent = t.uploadingFiles;
 
     imageFiles.forEach(file => {
-        // Upload immediately
         uploadForumFile(file)
             .then(async (url) => {
-                // Append to backup table
                 try {
                     await supabaseClient.rpc('append_forum_file_backup', {
                         p_user_id: currentUser.id,
@@ -693,7 +770,6 @@ function handleNewPostFolderSelection(event) {
                     console.warn('[Forum Backup]', backupErr.message);
                 }
 
-                // Create thumbnail
                 const img = document.createElement('img');
                 img.src = url;
                 img.className = 'forum-thumbnail';
@@ -736,7 +812,7 @@ function openNewPostFolderPicker() {
         return;
     }
 
-    const attachments = selectedPostAttachments; // already [{file_name, url}]
+    const attachments = selectedPostAttachments;
 
     const { error } = await supabaseClient
         .from('forum_posts')
@@ -1083,6 +1159,9 @@ document.getElementById('comment-attachments-label').textContent = t.commentAtta
 document.getElementById('comment-choose-folder').textContent = t.chooseFolder;
 document.getElementById('comment-attachments-hint').textContent = t.attachmentsHint;
 document.getElementById('load-more-posts-btn').textContent = t.loadMore;
+            // Update online students title
+            const onlineTitle = document.getElementById('online-students-title');
+            if (onlineTitle) onlineTitle.textContent = t.onlineStudents;
             updateUserInfo();
             loadPosts();
             if (currentUser && !currentUser.isAdmin) loadNotifications();
@@ -1135,6 +1214,9 @@ document.getElementById('load-more-posts-btn').textContent = t.loadMore;
             applyLanguage(savedLang);
             if (currentUser.isAdmin) {
                 document.getElementById('new-post-btn').style.display = 'none';
+            } else {
+                // Set up presence for online students
+                setupPresence();
             }
             updateUserInfo();
         })();
@@ -1149,7 +1231,12 @@ document.getElementById('load-more-posts-btn').textContent = t.loadMore;
             applyTheme(newTheme);
             applyLanguage(currentLanguage);
         });
-        document.getElementById('logout-btn').addEventListener('click', () => {
+        document.getElementById('logout-btn').addEventListener('click', async () => {
+            // Clean up presence channel
+            if (onlineUsersChannel) {
+                await supabaseClient.removeChannel(onlineUsersChannel);
+                onlineUsersChannel = null;
+            }
             localStorage.removeItem('edschedule_admin_logged');
             localStorage.removeItem('edschedule_student_id');
             window.location.href = 'index.html';
